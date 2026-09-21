@@ -57,8 +57,8 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
           <h2 id="gallery-heading" class="mt-2">{t(workGallery ? 'gallery.workTitle' : illustrative ? 'gallery.artTitle' : 'gallery.title')}</h2>
           <p class="mt-3 text-[var(--text-lg)] text-[var(--color-muted)]">{t(workGallery ? 'gallery.workIntro' : illustrative ? 'gallery.artIntro' : 'gallery.intro')}</p>
           {workGallery && <div class="mt-5 flex flex-wrap gap-3" data-gallery-social>
-            <Button href={clinic.social.instagram} variant="outline" target="_blank" rel="noopener noreferrer"><span class="u-ltr">Instagram</span></Button>
-            {clinic.social.facebook && <Button href={clinic.social.facebook} variant="outline" target="_blank" rel="noopener noreferrer"><span class="u-ltr">Facebook</span></Button>}
+            <Button href={clinic.social.instagram} variant="outline" icon="instagram" target="_blank" rel="noopener noreferrer"><span class="u-ltr">Instagram</span></Button>
+            {clinic.social.facebook && <Button href={clinic.social.facebook} variant="outline" icon="facebook" target="_blank" rel="noopener noreferrer"><span class="u-ltr">Facebook</span></Button>}
           </div>}
         </div>
 
