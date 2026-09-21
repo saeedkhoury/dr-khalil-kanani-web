@@ -152,7 +152,22 @@ export const clinic = {
  */
 export const VERIFICATION: Record<
   string,
-  { tier: Verification; blocking: boolean; note?: string }
+  {
+    tier: Verification;
+    blocking: boolean;
+    note?: string;
+    /**
+     * Whether the value is actually RENDERED while unverified.
+     *
+     * `false` means a guard (hasAddress, hasHours, hasGeo...) hides it, so the
+     * visitor sees nothing rather than something false. Absent information is
+     * not a lie, so those warn instead of failing a production build.
+     *
+     * Defaults to true — a field must opt IN to being treated as hidden, so
+     * forgetting the flag fails safe.
+     */
+    published?: boolean;
+  }
 > = {
   'doctor.he': { tier: 'verified', blocking: true, note: 'Logo + flyer + Instagram' },
   'doctor.ar': {
@@ -180,11 +195,16 @@ export const VERIFICATION: Record<
     note: 'Flyer + IG bio + post footer. WhatsApp presence NOT yet confirmed.',
   },
   email: { tier: 'placeholder', blocking: false, note: 'No published address found.' },
-  'address.street': { tier: 'placeholder', blocking: true, note: 'Owner must supply.' },
+  'address.street': { tier: 'placeholder', blocking: true, published: false, note: 'Owner must supply. hasAddress() hides it.' },
   'address.locality': { tier: 'owner', blocking: false, note: 'IG address + post footer' },
-  'address.geo': { tier: 'placeholder', blocking: true, note: 'Needs confirmed map pin.' },
-  hours: { tier: 'placeholder', blocking: true, note: 'Owner must supply. Never guess.' },
-  siteUrl: { tier: 'placeholder', blocking: true, note: 'Owner must confirm domain.' },
+  'address.geo': { tier: 'placeholder', blocking: true, published: false, note: 'Needs confirmed map pin. hasGeo() hides Maps/Waze.' },
+  hours: { tier: 'placeholder', blocking: true, published: false, note: 'Owner must supply. hasHours() hides the block.' },
+  siteUrl: {
+    tier: 'placeholder',
+    blocking: true,
+    published: false,
+    note: 'Overridden by ASTRO_SITE in CI, so the placeholder never ships.',
+  },
   'social.instagram': { tier: 'verified', blocking: false },
 };
 

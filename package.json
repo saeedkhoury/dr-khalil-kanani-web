@@ -13,8 +13,12 @@
     "check": "astro check",
     "lint:claims": "node scripts/lint-claims.mjs",
     "lint:scripts": "node scripts/lint-mixed-scripts.mjs",
-    "verify": "npm run lint:claims && npm run lint:scripts && npm run check",
-    "astro": "astro"
+    "verify": "npm run lint:claims && npm run lint:scripts && npm run lint:assets && npm run check",
+    "astro": "astro",
+    "lint:assets": "node scripts/check-assets.mjs",
+    "prepare": "git config core.hooksPath .githooks",
+    "test": "node --experimental-strip-types --test \"tests/unit/*.test.ts\"",
+    "test:watch": "node --experimental-strip-types --test --watch \"tests/unit/*.test.ts\""
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

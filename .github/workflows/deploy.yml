@@ -1,8 +1,15 @@
-name: Deploy Astro Site to GitHub Pages
+name: Deploy to Production
+
+# Production only. Runs on main, never on a pull request.
+#
+# This used to run `build:preview` (VERIFY_RELAX=1), which disabled the
+# content-integrity gate entirely — the live site shipped unverified data and
+# the gate protected nothing. It now runs the real build with an EXPLICIT
+# acknowledgement list, so a new placeholder cannot slip in unnoticed.
 
 on:
   push:
-    branches: ["main"]
+    branches: ['main']
   workflow_dispatch:
 
 permissions:
@@ -11,48 +18,72 @@ permissions:
   id-token: write
 
 concurrency:
-  group: "pages"
+  group: 'pages'
   cancel-in-progress: false
 
 jobs:
-  build:
+  verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: 'npm'
+      - run: npm ci
 
-      - name: Install dependencies
-        run: npm ci
+      # Gates run BEFORE the build so a failure is reported as what it is.
+      - name: Medical claims linter
+        run: npm run lint:claims
+      - name: Mixed-script linter
+        run: npm run lint:scripts
+      - name: Type check
+        run: npm run check
+      - name: Unit tests
+        run: npm test
 
-      - name: Build site
+  build:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci
+
+      - name: Build (strict launch gate)
         env:
+          NODE_ENV: production
           ASTRO_SITE: https://www.drkhalilkanani.com
           ASTRO_BASE: /
-        run: npm run build:preview
+          # ── ACKNOWLEDGED UNVERIFIED FIELDS ──────────────────────────────
+          # Each entry is a value that IS displayed but has not been confirmed
+          # by the clinic owner. Shipping them is a conscious decision, not an
+          # accident. Any OTHER unverified published field fails this build.
+          #
+          #   doctor.ar   Arabic spelling inferred from the Hebrew
+          #   doctor.en   Latin transliteration not yet fixed by the owner
+          #   tagline.ar  Arabic translation needs native review
+          #
+          # Remove entries as they are verified. Do not add without a reason.
+          ACK_UNVERIFIED: 'doctor.ar,doctor.en,tagline.ar'
+        run: npm run build
 
-      - name: Prepare GitHub Pages files
-        run: |
-          touch ./dist/.nojekyll
-          cp CNAME ./dist/CNAME
+      - name: Prepare Pages files
+        run: touch ./dist/.nojekyll
 
-      - name: Upload GitHub Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v3
         with:
           path: ./dist
 
   deploy:
+    needs: build
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to GitHub Pages
+      - uses: actions/deploy-pages@v5
         id: deployment
-        uses: actions/deploy-pages@v5
