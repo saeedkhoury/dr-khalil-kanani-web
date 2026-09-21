@@ -29,3 +29,7 @@
 - Client bundle pulled in all of Zod (85KB) for one phone regex
 - Every locale downloaded all three script fonts (393KB)
 - A Cyrillic homoglyph had slipped into an Arabic word
+- Astro's scaffolder ships `CLAUDE.md` as a symlink to `AGENTS.md`; writing one
+  silently destroyed the other. Symlink removed, both are real files.
+- Two macOS filename-collision artifacts (`AGENTS 2.md`, `src/pages/index 2.astro`)
+  — the second was emitting a junk `/index 2/` route into the build
