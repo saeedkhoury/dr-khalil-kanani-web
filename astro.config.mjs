@@ -54,9 +54,9 @@ export default defineConfig({
     locales: ['he', 'ar', 'en'],
     defaultLocale: 'he',
     routing: {
-      // Every locale is prefixed, including the default. `/` redirects to /he/.
+      // Every locale is prefixed, including the default. `/` renders default locale via index.astro.
       prefixDefaultLocale: true,
-      redirectToDefaultLocale: true,
+      redirectToDefaultLocale: false,
     },
   },
 

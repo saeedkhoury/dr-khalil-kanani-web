@@ -36,15 +36,16 @@ interface Props {
   hideActionBar?: boolean;
   breadcrumbs?: Array<{ name: string; path: string }>;
   noindex?: boolean;
+  canonical?: string;
 }
 
-const { locale, title, description, hideActionBar = false, breadcrumbs, noindex = false } = Astro.props;
+const { locale, title, description, hideActionBar = false, breadcrumbs, noindex = false, canonical: customCanonical } = Astro.props;
 
 const meta = LOCALE_META[locale];
 const t = useTranslations(locale);
 
 const pathname = Astro.url.pathname;
-const canonical = new URL(pathname, Astro.site ?? clinic.siteUrl).toString();
+const canonical = customCanonical ?? new URL(pathname, Astro.site ?? clinic.siteUrl).toString();
 const alternates = alternatesFor(pathname);
 
 // x-default points at the default locale — the correct fallback for a visitor
