@@ -72,6 +72,10 @@
   --text-2xl: clamp(1.625rem, 1.35rem + 1.2vw, 2.125rem);
   --text-3xl: clamp(2rem, 1.5rem + 2.2vw, 3rem);
   --text-4xl: clamp(2.375rem, 1.7rem + 3.1vw, 3.75rem);
+  /* One display step above the scale, for a single hero moment per page.
+     Scale contrast is what the site was missing: every heading sat within a
+     narrow band, so nothing read as the primary thing on the screen. */
+  --text-display: clamp(2.75rem, 1.6rem + 5.2vw, 5rem);
 
   /* ---- Shape: specific radius per element type. Consistency is
          non-negotiable; mixed radii are the tell of an unsystematised UI. ---- */
@@ -79,6 +83,7 @@
   --radius-btn: 12px;
   --radius-field: 10px;
   --radius-pill: 999px;
+  --radius-media: 18px; /* photography reads softer than UI at the same radius */
 
   /* ---- Motion: subtle tier. Motion conveys arrival, never decoration. ---- */
   --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
@@ -236,6 +241,58 @@
     padding-block: clamp(3rem, 2rem + 4vw, 5.5rem);
   }
 
+  /* Rhythm variants. Every section used identical padding on alternating
+     tints, which made the page read as one long undifferentiated column.
+     These give a few deliberate gears. */
+  .section-lg {
+    padding-block: clamp(4.5rem, 3rem + 6vw, 8rem);
+  }
+  .section-sm {
+    padding-block: clamp(2rem, 1.5rem + 2vw, 3rem);
+  }
+
+  /* Escape the shell without breaking RTL or causing horizontal scroll.
+     Uses margin-inline so it mirrors correctly; 100vw would overflow when a
+     scrollbar is present, hence the dvw fallback chain. */
+  .full-bleed {
+    inline-size: 100%;
+    max-inline-size: 100%;
+    margin-inline: 0;
+  }
+  @supports (width: 100dvw) {
+    .full-bleed {
+      position: relative;
+      inline-size: 100dvw;
+      max-inline-size: 100dvw;
+      margin-inline-start: calc(50% - 50dvw);
+      margin-inline-end: calc(50% - 50dvw);
+    }
+  }
+
+  /* Media. Photography gets its own radius and a consistent placeholder tint
+     so an image that is slow or missing still occupies a considered shape
+     rather than collapsing. */
+  .media {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    border-radius: var(--radius-media);
+    background-color: var(--color-haze);
+    object-fit: cover;
+  }
+
+  /* Scrim for text over photography. Contrast over an unknown image is the
+     classic failure — a reference site sets gold headings over a photo at
+     1.81:1 that flips legibility mid-heading. Text on media must sit on this. */
+  .media-scrim {
+    background-image: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--color-ink-deep) 78%, transparent) 0%,
+      color-mix(in srgb, var(--color-ink-deep) 45%, transparent) 42%,
+      transparent 78%
+    );
+  }
+
   /* Eyebrow label. Uppercase + 600 + wide tracking is used HERE ONLY —
      applying it elsewhere dilutes the one typographic accent in the system.
      Latin-only: Hebrew and Arabic have no uppercase, so the transform is
@@ -378,6 +435,66 @@
     border-color: var(--color-line-strong);
   }
 
+
+  /* ---- Dialog entry (gallery lightbox) ----------------------------------
+     A modal that appears instantly reads as a glitch; one that takes its
+     time reads as slow. ~200ms of rise and fade is enough to tell the eye
+     that a new layer arrived on top of the page, and short enough that
+     nobody waits for it.
+
+     @starting-style is what lets a transition run on an element entering
+     the top layer, which is otherwise impossible — <dialog> has no "before
+     open" state to transition FROM. Browsers without it simply show the
+     dialog immediately, which is the correct fallback, so this needs no
+     feature query.
+
+     Y and opacity only: rule 5. Nothing here needs mirroring in RTL. */
+  dialog[open] {
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+      opacity var(--dur-base) var(--ease-out),
+      transform var(--dur-base) var(--ease-out),
+      overlay var(--dur-base) allow-discrete,
+      display var(--dur-base) allow-discrete;
+  }
+  @starting-style {
+    dialog[open] {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
+  /* Closing runs backwards through the same values. */
+  dialog:not([open]) {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  dialog[open]::backdrop {
+    opacity: 1;
+    transition:
+      opacity var(--dur-base) var(--ease-out),
+      overlay var(--dur-base) allow-discrete,
+      display var(--dur-base) allow-discrete;
+  }
+  @starting-style {
+    dialog[open]::backdrop {
+      opacity: 0;
+    }
+  }
+
+  /* ---- Map facade -------------------------------------------------------
+     The iframe fades up once Google has actually painted tiles. Without
+     this the placeholder is replaced by a white rectangle for as long as
+     the network takes, which looks like a break rather than a load. */
+  .map-frame {
+    opacity: 0;
+    transition: opacity var(--dur-slow) var(--ease-out);
+  }
+  .map-frame.is-loaded {
+    opacity: 1;
+  }
+
   /* ---- Reduced motion ---------------------------------------------------
      Everything lands in its final state instantly. Nothing is hidden, and
      nothing waits. global.css also zeroes all durations further up. */
@@ -388,6 +505,15 @@
       transform: none;
       animation: none;
       transition-delay: 0ms;
+    }
+
+    /* The dialog and the map still appear — they just appear at once. */
+    dialog[open],
+    dialog[open]::backdrop,
+    .map-frame {
+      opacity: 1;
+      transform: none;
+      transition: none;
     }
   }
 }

@@ -3,20 +3,32 @@
  * Hero.
  *
  * Answers, in order: WHERE (eyebrow), WHAT (h1), WHO + WHY (subtitle), and
- * WHAT NEXT (two actions). It does not open with a biography — one reference
- * site does, and its H1 is a 450-character paragraph as a result.
+ * WHAT NEXT (actions). It does not open with a biography — one reference site
+ * does, and its H1 is a 450-character paragraph as a result.
  *
- * The visual side is a layered tinted composition built from the brand mark,
- * not stock clinical photography. Until real clinic photography exists, an
- * honest geometric treatment is better than a generic stock image — and the
- * advertising regulations make invented clinical imagery a liability.
+ * ── TWO STATES, BOTH DELIBERATE ───────────────────────────────────────────
+ * WITH a photograph: split composition, image bleeding to the inline edge.
+ * WITHOUT one: a TYPOGRAPHIC hero — the display type becomes the subject,
+ * over a layered tinted field, with the clinic's real facts as the supporting
+ * structure.
+ *
+ * The previous version put the logo mark in concentric boxes, which read as
+ * "assets pending". A typographic hero is a choice a designer makes on
+ * purpose; an empty image frame is one they were forced into. Since no
+ * approved clinic photography exists, and inventing some is prohibited, the
+ * honest move is to make type carry the screen.
+ *
+ * Dropping in the real photo later is a one-line change in src/data/media.ts.
+ * Nothing here needs redesigning.
  */
+import { Image } from 'astro:assets';
 import { localizePath, type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
 import { clinic, telUrl, whatsappUrl } from '../../data/clinic';
+import { heroImage, hasHeroImage } from '../../data/media';
+import { resolveImage } from '../../lib/images';
 import Button from '../primitives/Button.astro';
 import Icon from '../primitives/Icon.astro';
-import Logo from '../primitives/Logo.astro';
 
 interface Props {
   locale: Locale;
@@ -29,37 +41,66 @@ const waMessage = {
   ar: 'مرحبًا، أودّ حجز موعد في العيادة.',
   en: 'Hello, I would like to request an appointment.',
 }[locale];
+
+/** The three facts the clinic can state today without any owner input. */
+const facts = [
+  { icon: 'globe', label: t('trust.languages.title') },
+  { icon: 'map-pin', label: clinic.address.locality[locale] },
+  { icon: 'check', label: t('trust.explanation.title') },
+] as const;
+
+// Resolve to a real asset. A manifest entry whose file is missing falls back
+// to the typographic hero rather than rendering a broken image.
+const heroAsset = heroImage ? resolveImage(heroImage.file) : undefined;
+const withImage = hasHeroImage() && heroAsset !== undefined;
 ---
 
-<section class="relative overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-porcelain)]">
-  <!-- Decorative tinted wash. Depth from layered colour, not shadow. -->
+<section
+  class="relative overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-porcelain)]"
+  aria-labelledby="hero-heading"
+>
+  <!-- Depth from layered tint, never a shadow. -->
   <div
     aria-hidden="true"
     class="pointer-events-none absolute inset-0 -z-10"
     style="background:
-      radial-gradient(60rem 32rem at 85% -10%, var(--color-haze) 0%, transparent 65%),
-      radial-gradient(40rem 26rem at 5% 105%, var(--color-mist) 0%, transparent 70%);"
+      radial-gradient(64rem 34rem at 82% -12%, var(--color-haze) 0%, transparent 62%),
+      radial-gradient(44rem 28rem at 4% 108%, var(--color-mist) 0%, transparent 68%);"
   >
   </div>
 
-  <div class="shell grid items-center gap-12 py-14 md:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
-    <div>
+  <div
+    class:list={[
+      'shell grid items-center gap-10 py-16 md:py-24',
+      withImage ? 'lg:grid-cols-[1fr_0.92fr] lg:gap-16' : 'lg:gap-14',
+    ]}
+  >
+    <div class={withImage ? '' : 'max-w-4xl'}>
       <p class="eyebrow enter flex items-center gap-1.5" style="--i:0">
         <Icon name="map-pin" size={15} />
         {t('hero.eyebrow')}
       </p>
 
-      <h1 class="enter mt-3" style="--i:1">{t('hero.title')}</h1>
+      <!-- The one display moment on the page. -->
+      <h1
+        id="hero-heading"
+        class="enter mt-4"
+        style={`--i:1; font-size:${withImage ? 'var(--text-3xl)' : 'var(--text-display)'}`}
+      >
+        {t('hero.title')}
+      </h1>
 
-      <p class="enter mt-5 max-w-xl text-[var(--text-lg)] leading-relaxed text-[var(--color-muted)]" style="--i:2">
+      <p
+        class="enter mt-6 max-w-xl text-[var(--text-lg)] leading-relaxed text-[var(--color-muted)]"
+        style="--i:2"
+      >
         {t('hero.subtitle')}
       </p>
 
-      <div class="enter mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap" style="--i:3">
+      <div class="enter mt-9 flex flex-col gap-3 sm:flex-row sm:flex-wrap" style="--i:3">
         <Button href={localizePath(locale, 'contact')} variant="primary" size="lg" icon="plus">
           {t('action.bookAppointment')}
         </Button>
-
         <Button
           href={whatsappUrl(waMessage)}
           variant="whatsapp"
@@ -72,10 +113,9 @@ const waMessage = {
         </Button>
       </div>
 
-      <!-- Phone stated as text as well as a link: the flyer's own call to
-           action is "call now", and on desktop the number must be readable
-           without tapping. Bidi-isolated so it never reorders inside RTL. -->
-      <p class="enter mt-6 text-[var(--text-sm)] text-[var(--color-muted)]" style="--i:4">
+      <!-- The flyer's own call to action is "call now", so the number is
+           readable without tapping. Bidi-isolated so it never reorders. -->
+      <p class="enter mt-7 text-[var(--text-sm)] text-[var(--color-muted)]" style="--i:4">
         {t('action.callNow')}:{' '}
         <a
           href={telUrl('landline')}
@@ -86,21 +126,46 @@ const waMessage = {
       </p>
     </div>
 
-    <!-- Visual: concentric tinted panels holding the clinic mark. -->
-    <div class="enter relative mx-auto hidden w-full max-w-md lg:block" style="--i:2">
-      <div
-        class="aspect-square rounded-[2rem] border border-[var(--color-line)] bg-[var(--color-mist)] p-8"
-      >
-        <div
-          class="flex h-full items-center justify-center rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-haze)] p-10"
-        >
-          <div
-            class="flex size-full items-center justify-center rounded-[1rem] bg-[var(--color-porcelain)]"
-          >
-            <Logo size={148} />
-          </div>
+    {
+      withImage && heroImage && heroAsset ? (
+        <div class="enter relative" style="--i:2">
+          <Image
+            src={heroAsset}
+            alt={heroImage.alt[locale]}
+            width={heroImage.width}
+            height={heroImage.height}
+            widths={[640, 960, 1280]}
+            sizes="(min-width: 1024px) 46vw, 100vw"
+            loading="eager"
+            fetchpriority="high"
+            class="media aspect-[4/3] w-full"
+          />
         </div>
-      </div>
-    </div>
+      ) : null
+    }
   </div>
+
+  {
+    /* Fact strip. Without photography this is what gives the hero a base and
+       stops it floating — and every item is a fact the clinic can state today
+       with no owner input required. */
+    !withImage && (
+      <div class="border-t border-[var(--color-line)] bg-[var(--color-mist)]/60">
+        <ul
+          class="shell flex flex-wrap items-center gap-x-8 gap-y-3 py-5"
+          style="list-style:none;padding-inline-start:0;margin:0"
+        >
+          {facts.map((f, i) => (
+            <li
+              class="enter flex items-center gap-2 text-[var(--text-sm)] text-[var(--color-muted)]"
+              style={`--i:${5 + i}`}
+            >
+              <Icon name={f.icon} size={16} class="text-[var(--color-signal)]" />
+              {f.label}
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  }
 </section>

@@ -1,0 +1,229 @@
+---
+/**
+ * Clinic gallery — editorial grid + accessible lightbox.
+ *
+ * Data-driven: everything comes from `gallery` in src/data/media.ts. Adding,
+ * removing or reordering images is an edit to that array. This component
+ * never changes.
+ *
+ * ── HIDES ITSELF WHEN EMPTY ───────────────────────────────────────────────
+ * No approved clinic photography exists yet. Rather than render placeholder
+ * boxes that could be mistaken for the real clinic — or worse, stock imagery
+ * implying a clinic that does not look like this — the whole section returns
+ * nothing. An absent section is honest; a fake one is not.
+ *
+ * ── LAYOUT ────────────────────────────────────────────────────────────────
+ * Desktop: asymmetric editorial grid. Entries marked `feature` span two
+ * columns and two rows, so the composition has a subject instead of being a
+ * uniform contact sheet. Mobile: a single column, no carousel — a carousel
+ * hides most of the content behind an interaction and needs its own
+ * accessibility work for no gain at this size.
+ *
+ * ── LIGHTBOX ──────────────────────────────────────────────────────────────
+ * Native <dialog>. Focus trap, Escape-to-close, inert background and focus
+ * restore are all browser behaviour, so the only hand-written parts are
+ * arrow-key navigation and swipe. Roughly 1.5KB of JS for the whole thing.
+ */
+import { Image } from 'astro:assets';
+import { type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { gallery } from '../../data/media';
+import { resolveImage } from '../../lib/images';
+import Icon from '../primitives/Icon.astro';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+// Drop entries whose file is missing rather than rendering a broken image.
+const items = gallery
+  .map((asset) => ({ asset, resolved: resolveImage(asset.file) }))
+  .filter((i): i is { asset: (typeof gallery)[number]; resolved: NonNullable<ReturnType<typeof resolveImage>> } =>
+    i.resolved !== undefined,
+  );
+---
+
+{
+  items.length > 0 && (
+    <section class="section-lg bg-[var(--color-mist)]" aria-labelledby="gallery-heading">
+      <div class="shell">
+        <div class="max-w-2xl">
+          <p class="eyebrow">{t('gallery.eyebrow')}</p>
+          <h2 id="gallery-heading" class="mt-2">{t('gallery.title')}</h2>
+          <p class="mt-3 text-[var(--text-lg)] text-[var(--color-muted)]">{t('gallery.intro')}</p>
+        </div>
+
+        <ul
+          class="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:auto-rows-[15rem]"
+          style="list-style:none;padding-inline-start:0;margin-block-end:0"
+        >
+          {items.map(({ asset, resolved }, i) => (
+            <li
+              class:list={[
+                'reveal',
+                asset.feature ? 'lg:col-span-2 lg:row-span-2' : '',
+              ]}
+              style={`--i:${i % 3}`}
+            >
+              <button
+                type="button"
+                class="group relative block size-full cursor-pointer overflow-hidden rounded-[var(--radius-media)] border border-[var(--color-line)] bg-[var(--color-haze)] p-0"
+                data-gallery-open={i}
+                aria-label={asset.alt[locale]}
+              >
+                <Image
+                  src={resolved}
+                  alt=""
+                  widths={[400, 800, 1200]}
+                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                  loading={i < 2 ? 'eager' : 'lazy'}
+                  class="size-full object-cover transition-transform duration-[var(--dur-slow)] ease-[var(--ease-out)] group-hover:scale-[1.03]"
+                />
+                {asset.caption && (
+                  <span class="media-scrim pointer-events-none absolute inset-x-0 bottom-0 p-4 text-start text-[var(--text-sm)] font-semibold text-white">
+                    {asset.caption[locale]}
+                  </span>
+                )}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* ---- Lightbox ---- */}
+      <dialog
+        id="gallery-lightbox"
+        class="m-auto max-h-[92dvh] w-[min(92vw,72rem)] rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-0 backdrop:bg-[color-mix(in_srgb,var(--color-ink-deep)_78%,transparent)]"
+        aria-labelledby="lightbox-caption"
+      >
+        <div class="relative">
+          <div class="flex items-center justify-between gap-4 border-b border-[var(--color-line)] p-3">
+            <p
+              id="lightbox-caption"
+              class="min-w-0 flex-1 truncate text-[var(--text-sm)] text-[var(--color-muted)]"
+            ></p>
+            <button
+              type="button"
+              data-gallery-close
+              class="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-btn)] text-[var(--color-ink)] transition-colors duration-[var(--dur-fast)] hover:bg-[var(--color-mist)]"
+              aria-label={t('gallery.close')}
+            >
+              <Icon name="close" size={22} />
+            </button>
+          </div>
+
+          <div class="flex items-center justify-center bg-[var(--color-haze)] p-2">
+            {/* Swapped by script; alt is set alongside src so it never lies. */}
+            <img id="lightbox-image" src="" alt="" class="max-h-[70dvh] w-auto rounded-[var(--radius-field)]" />
+          </div>
+
+          <div class="flex items-center justify-between gap-3 border-t border-[var(--color-line)] p-3">
+            <button
+              type="button"
+              data-gallery-prev
+              class="flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-btn)] px-4 text-[var(--text-sm)] font-semibold text-[var(--color-ink)] transition-colors duration-[var(--dur-fast)] hover:bg-[var(--color-mist)]"
+            >
+              <Icon name="chevron" size={18} class="u-flip rotate-180" />
+              {t('gallery.previous')}
+            </button>
+            <p id="lightbox-position" class="u-ltr text-[var(--text-sm)] text-[var(--color-muted)]"></p>
+            <button
+              type="button"
+              data-gallery-next
+              class="flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-btn)] px-4 text-[var(--text-sm)] font-semibold text-[var(--color-ink)] transition-colors duration-[var(--dur-fast)] hover:bg-[var(--color-mist)]"
+            >
+              {t('gallery.next')}
+              <Icon name="chevron" size={18} />
+            </button>
+          </div>
+        </div>
+      </dialog>
+
+      {/* Source data for the lightbox. Kept as JSON rather than data-attributes
+          on every tile so the markup stays clean and alt text is not duplicated. */}
+
+      {/* ── WHY is:inline ────────────────────────────────────────────────
+          A normal Astro <script> is hoisted into the page bundle whenever
+          this component is part of the page — even when it renders nothing.
+          With no photography registered that shipped ~1.5KB of lightbox
+          code to every visitor on every page, to drive a dialog that did
+          not exist. Inline keeps the script inside the conditional, so it
+          exists only when there are actually images to open. Plain JS, not
+          TypeScript: inline scripts are passed through untransformed. */}
+      <script is:inline>
+        (() => {
+          const dialog = document.getElementById('gallery-lightbox');
+          const dataEl = document.getElementById('gallery-data');
+          if (!dialog || !dataEl) return;
+
+          const slides = JSON.parse(dataEl.textContent || '[]');
+          const img = document.getElementById('lightbox-image');
+          const caption = document.getElementById('lightbox-caption');
+          const position = document.getElementById('lightbox-position');
+          let index = 0;
+
+          const isRtl = () => document.documentElement.dir === 'rtl';
+
+          function show(i) {
+            index = (i + slides.length) % slides.length;
+            const slide = slides[index];
+            // src and alt are set together — an image whose alt describes a
+            // different picture is worse than no alt at all.
+            img.src = slide.src;
+            img.alt = slide.alt;
+            caption.textContent = slide.caption || slide.alt;
+            position.textContent = `${index + 1} / ${slides.length}`;
+          }
+
+          document.querySelectorAll('[data-gallery-open]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+              show(Number(btn.dataset.galleryOpen));
+              dialog.showModal();
+            });
+          });
+
+          dialog.querySelector('[data-gallery-close]')?.addEventListener('click', () => dialog.close());
+          dialog.querySelector('[data-gallery-prev]')?.addEventListener('click', () => show(index - 1));
+          dialog.querySelector('[data-gallery-next]')?.addEventListener('click', () => show(index + 1));
+
+          // Arrow keys follow VISUAL direction, so in RTL the left arrow advances.
+          dialog.addEventListener('keydown', (event) => {
+            if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+            const forward = isRtl() ? event.key === 'ArrowLeft' : event.key === 'ArrowRight';
+            show(index + (forward ? 1 : -1));
+            event.preventDefault();
+          });
+
+          // Swipe, same direction logic.
+          let startX = 0;
+          dialog.addEventListener('touchstart', (e) => { startX = e.changedTouches[0].clientX; }, { passive: true });
+          dialog.addEventListener('touchend', (e) => {
+            const dx = e.changedTouches[0].clientX - startX;
+            if (Math.abs(dx) < 48) return;
+            const forward = isRtl() ? dx > 0 : dx < 0;
+            show(index + (forward ? 1 : -1));
+          }, { passive: true });
+
+          // Clicking the backdrop closes, matching the expectation set by the dim.
+          dialog.addEventListener('click', (event) => {
+            if (event.target === dialog) dialog.close();
+          });
+        })();
+      </script>
+
+      <script
+        type="application/json"
+        id="gallery-data"
+        set:html={JSON.stringify(
+          items.map(({ asset, resolved }) => ({
+            src: resolved.src,
+            alt: asset.alt[locale],
+            caption: asset.caption?.[locale] ?? '',
+          })),
+        )}
+      />
+    </section>
+  )
+}

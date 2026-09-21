@@ -66,6 +66,16 @@ export interface MediaAsset {
 export const gallery: MediaAsset[] = [];
 
 /**
+ * Hero image. One landscape photograph — the clinic, or the dentist at work.
+ * Carries the most weight of any asset on the site.
+ *
+ * While null, the hero renders a typographic composition instead. That is a
+ * deliberate design, not a placeholder: see Hero.astro.
+ * OWNER ACTION REQUIRED.
+ */
+export const heroImage: MediaAsset | null = null;
+
+/**
  * Doctor portrait. Separate from the gallery because it has one specific
  * home in DoctorIntro and a different aspect ratio.
  * OWNER ACTION REQUIRED.
@@ -78,6 +88,10 @@ export function hasGallery(): boolean {
 
 export function hasPortrait(): boolean {
   return portrait !== null;
+}
+
+export function hasHeroImage(): boolean {
+  return heroImage !== null;
 }
 
 /** Gallery entries for one category, preserving manifest order. */

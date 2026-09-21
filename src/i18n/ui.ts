@@ -148,6 +148,19 @@ export const ui = {
     'feedback.body': 'חוות דעת על המרפאה מתפרסמות בפרופיל Google של המרפאה. אפשר לקרוא אותן שם.',
     'feedback.cta': 'קריאת חוות הדעת ב-Google',
 
+    'gallery.eyebrow': 'המרפאה',
+    'gallery.title': 'הצצה למרפאה',
+    'gallery.intro': 'תמונות מהמרפאה בג׳דיידה-מכר.',
+    'gallery.close': 'סגירת התמונה',
+    'gallery.previous': 'הקודמת',
+    'gallery.next': 'הבאה',
+
+    'map.load': 'הצגת מפה',
+    'map.privacy': 'המפה נטענת מ-Google. דבר אינו נשלח עד שתלחצו.',
+    'map.frameTitle': 'מפה של מיקום המרפאה',
+    'feedback.basedOn': 'מבוסס על {n} חוות דעת ב-Google',
+    'feedback.ratingLabel': 'דירוג ממוצע ב-Google',
+
     'footer.rights': 'כל הזכויות שמורות',
 
     'error.404.title': 'הדף לא נמצא',
@@ -285,6 +298,19 @@ export const ui = {
     'feedback.title': 'آراء المرضى',
     'feedback.body': 'تُنشر الآراء حول العيادة في ملف Google الخاص بها. يمكنكم قراءتها هناك.',
     'feedback.cta': 'قراءة الآراء على Google',
+
+    'gallery.eyebrow': 'العيادة',
+    'gallery.title': 'لمحة عن العيادة',
+    'gallery.intro': 'صور من العيادة في الجديدة-المكر.',
+    'gallery.close': 'إغلاق الصورة',
+    'gallery.previous': 'السابقة',
+    'gallery.next': 'التالية',
+
+    'map.load': 'عرض الخريطة',
+    'map.privacy': 'يتم تحميل الخريطة من Google. لا يُرسَل أي شيء حتى تضغطوا.',
+    'map.frameTitle': 'خريطة موقع العيادة',
+    'feedback.basedOn': 'استنادًا إلى {n} تقييمًا على Google',
+    'feedback.ratingLabel': 'متوسط التقييم على Google',
 
     'footer.rights': 'جميع الحقوق محفوظة',
 
@@ -424,6 +450,19 @@ export const ui = {
     'feedback.title': 'Patient feedback',
     'feedback.body': 'Reviews of the clinic are published on its Google profile. You can read them there.',
     'feedback.cta': 'Read reviews on Google',
+
+    'gallery.eyebrow': 'The clinic',
+    'gallery.title': 'A look inside',
+    'gallery.intro': 'Photographs of the clinic in Jadeidi-Makr.',
+    'gallery.close': 'Close image',
+    'gallery.previous': 'Previous',
+    'gallery.next': 'Next',
+
+    'map.load': 'Show map',
+    'map.privacy': 'The map is loaded from Google. Nothing is sent until you press.',
+    'map.frameTitle': 'Map of the clinic location',
+    'feedback.basedOn': 'Based on {n} Google reviews',
+    'feedback.ratingLabel': 'Average rating on Google',
 
     'footer.rights': 'All rights reserved',
 
