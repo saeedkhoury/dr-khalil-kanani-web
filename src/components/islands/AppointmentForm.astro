@@ -127,10 +127,9 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
         autocomplete="name"
         maxlength="80"
         class={fieldBase}
-        aria-describedby="f-name-error"
         data-label={t('msg.name')}
       />
-      <p id="f-name-error" class={errorBase} hidden>
+      <p id="f-name-error" class={`${errorBase} invisible`} aria-hidden="true">
         <Icon name="alert" size={16} />
         <span>{t('form.error.name')}</span>
       </p>
@@ -152,10 +151,9 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
         dir="ltr"
         maxlength="20"
         class={`${fieldBase} u-ltr`}
-        aria-describedby="f-phone-error"
         data-label={t('msg.phone')}
       />
-      <p id="f-phone-error" class={errorBase} hidden>
+      <p id="f-phone-error" class={`${errorBase} invisible`} aria-hidden="true">
         <Icon name="alert" size={16} />
         <span>{t('form.error.phone')}</span>
       </p>
@@ -242,13 +240,12 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
         required
         value="true"
         class="mt-1 size-5 shrink-0 accent-[var(--color-ink)]"
-        aria-describedby="f-consent-error"
       />
       <span class="text-[var(--text-sm)] leading-relaxed">
         {t('form.consent')} <span aria-hidden="true">*</span>
       </span>
     </label>
-    <p id="f-consent-error" class={errorBase} hidden>
+    <p id="f-consent-error" class={`${errorBase} invisible`} aria-hidden="true">
       <Icon name="alert" size={16} />
       <span>{t('form.error.consent')}</span>
     </p>
@@ -341,7 +338,14 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
       const field = document.getElementById(id)!;
       const error = document.getElementById(`${id}-error`);
       field.setAttribute('aria-invalid', invalid ? 'true' : 'false');
-      if (error) error.hidden = !invalid;
+      if (invalid) field.setAttribute('aria-describedby', `${id}-error`);
+      else field.removeAttribute('aria-describedby');
+      // Reserve the error's space: blur runs between pointer-down and click,
+      // so collapsing it can move the next control out from under the pointer.
+      if (error) {
+        error.classList.toggle('invisible', !invalid);
+        error.setAttribute('aria-hidden', invalid ? 'false' : 'true');
+      }
     }
 
     // Validate on blur, not on every keystroke.

@@ -102,6 +102,23 @@ for (const locale of locales) {
     await page.waitForURL('https://wa.me/**');
   });
 
+  test(`${locale}: desktop consent click survives blur validation`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(`/${locale}/contact/`);
+    await page.locator('#f-phone').fill('123');
+    await page.locator('#f-consent').check();
+    await expect(page.locator('#f-phone-error')).toBeVisible();
+    await page.locator('#f-consent').uncheck();
+    await page.locator('#f-submit').click();
+    await page.locator('#f-name').fill('QA Test');
+    await page.locator('#f-phone').fill('0501234567');
+    await page.locator('#f-consent').check();
+    await expect(page.locator('#f-consent')).toBeChecked();
+    await expect(page.locator('#f-phone-error')).toBeHidden();
+    await expect(page.locator('#f-phone')).not.toHaveAttribute('aria-describedby');
+  });
+
   test(`${locale}: motion fails visible and no-JS contact fallback works`, async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 375, height: 812 } });
     const page = await context.newPage();

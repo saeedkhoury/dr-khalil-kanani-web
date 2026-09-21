@@ -44,11 +44,11 @@ build settings. Never put secrets or clinic data in public build variables.
 Synthetic browser fixtures live in an OS temporary copy and are never included
 in the uploaded site.
 
-A separate Cloudflare Workers Git integration currently also reports a build
-check. It is not the GitHub Pages deployment workflow. Its failure predates
-Phase 3; see `HANDOFF.md` for investigation status. Do not add a Worker adapter,
-restore the removed appointment server, disable a content gate, or change DNS
-merely to make that separate check pass.
+The unused Cloudflare Worker's Git connection was disconnected with owner
+approval on 2026-09-21. It had no public URL or custom domain and lacked the
+build environment required by the launch gate. Historical failed Workers
+checks remain on older commits; new pushes use GitHub Pages only. Do not
+reconnect it or add a Worker adapter without a deliberate hosting decision.
 
 ## After deployment
 

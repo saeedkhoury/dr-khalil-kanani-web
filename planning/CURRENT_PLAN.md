@@ -13,12 +13,14 @@ the premium upgrade in `CHANGELOG.md`, merged through PR #1.
 - Asset, content, locale, claims and built-HTML accessibility gates.
 - Follow-up fixes for gallery initialization, tablet layout, WhatsApp handoff,
   Western Arabic numerals, Hebrew tracking, safe-area clearance and reveals.
-- 76 unit tests and 19 Chromium/axe tests, enforced in preview/production CI.
+- 76 unit tests and 22 Chromium/axe tests, enforced in preview/production CI.
+- Phase 3 merge deployed successfully; unused Cloudflare Git connection
+  disconnected after diagnosis and explicit owner approval.
+- Desktop consent-click regression fixed by preserving inline error space.
 - Homepage/contact screenshot samples reviewed at 375/768/1440px in he/ar/en.
 
 ## Remaining launch follow-up
 
-- Verify the production workflow and live three-locale smoke checks.
 - Complete human checks in `docs/QA-CHECKLIST.md`: VoiceOver, real iPhone/Android
   handoff, native-language review and outdoor legibility.
 - Owner confirmation of address, map pin, hours, domain, doctor spellings,

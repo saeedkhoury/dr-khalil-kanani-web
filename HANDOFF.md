@@ -13,18 +13,24 @@ Current repository state. Not a history — see `CHANGELOG.md` for that.
 
 Phase 3 is merged into `main` through
 [PR #1](https://github.com/saeedkhoury/dr-khalil-kanani-web/pull/1), following the
-owner's explicit merge/deploy instruction on 2026-09-21. The production workflow
-runs on push; its latest successful run is the deployment source of truth.
-The implementation passed 76 unit tests, 19 Chromium/axe tests and the 41-page
-HTML audit locally and in PR CI. Owner verification and manual checks below
+owner's explicit merge/deploy instruction on 2026-09-21. Merge `ea6f49e` deployed
+successfully in [production run 35603231942](https://github.com/saeedkhoury/dr-khalil-kanani-web/actions/runs/35603231942).
+The production workflow runs on push; its latest successful run is the
+deployment source of truth. The implementation passed 76 unit tests, 19
+Chromium/axe tests and the 41-page HTML audit locally and in production CI.
+A live desktop form check then exposed blur validation moving the consent
+checkbox during a click. Inline error space is now reserved, with three new
+locale regression tests bringing the browser suite to 22. Owner verification and manual checks below
 remain outstanding; merge authorization did not change fact verification.
 
-The PR also receives a separate `Workers Builds: dr-khalil-kanani-web` check
-from Cloudflare. It failed on `9c6f440`; GitHub exposes no failure log, and the
-linked Cloudflare dashboard requires sign-in. Its cause is unverified. This is
-separate from the repository's GitHub Pages workflows and needs investigation
-in the Cloudflare account before treating all PR checks as green. No hosting
-settings were changed here.
+The separate Cloudflare `Workers Builds: dr-khalil-kanani-web` failure was
+investigated after account sign-in. Its build had no environment variables, so
+the launch gate correctly refused the three unconfirmed published fields.
+That unused Worker had both public/preview URLs disabled and no custom domain
+or route. With explicit owner approval, its Git connection was disconnected on
+2026-09-21; the dashboard now offers **Connect**. Future pushes use the gated
+GitHub Pages workflow. Historical failed checks remain historical; the Worker
+was not deleted, and DNS and clinic verification were not changed.
 
 ### ⚠️ Open safety item — read `docs/GIT-HISTORY-REMEDIATION.md`
 
@@ -62,7 +68,7 @@ owner's decision, and probably a lawyer's.
 | Accessibility audit of built HTML | `npm run lint:a11y` | preview + deploy |
 | Unit tests (76) | `npm test` | CI |
 | Type/template check | `npm run check` | verify + CI |
-| Chromium + axe browser QA (19 tests) | `npm run test:e2e` | preview + deploy |
+| Chromium + axe browser QA (22 tests) | `npm run test:e2e` | preview + deploy |
 
 `VERIFY_RELAX=1` is **preview only**. Production uses `ACK_UNVERIFIED`, an
 explicit per-field allowlist; anything not on it fails the build.
@@ -144,7 +150,7 @@ Also blocking, but not build-enforced:
 
 1. Read `docs/GIT-HISTORY-REMEDIATION.md` and decide. This is time-sensitive in
    a way the rest is not.
-2. Confirm the latest `Deploy to Production` run and the live three-locale
-   smoke check; investigate the separate Cloudflare check after signing in.
+2. Use the latest `Deploy to Production` run for deployment status. The obsolete
+   Cloudflare Git connection has been disconnected with owner approval.
 3. Complete the remaining human checks in `docs/QA-CHECKLIST.md`.
 4. Send the owner the verification list above. Everything else waits on it.

@@ -1,11 +1,18 @@
 # Changelog
 
-## [Unreleased]
+## 2026-09-21
 
 ### Phase 3 — premium production upgrade
 
 Merged to `main` through PR #1 on 2026-09-21. Production deployment is tracked
 by the `Deploy to Production` GitHub workflow.
+
+- Production merge deployment succeeded. Diagnosed and disconnected the unused
+  Cloudflare Worker Git integration with owner approval; live GitHub Pages and
+  DNS are unchanged.
+- Fixed a desktop consent click lost when blur validation collapsed an inline
+  error. Error space now stays stable and only active errors describe fields;
+  three locale regression tests bring the browser suite to 22.
 
 **QA completion (2026-09-21 follow-up)**
 - Added 19 Chromium/axe tests covering locales at 375/768/1440px, contact
