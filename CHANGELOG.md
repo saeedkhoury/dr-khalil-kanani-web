@@ -2,6 +2,14 @@
 
 ## 2026-09-21
 
+### Early light-only opt-out
+
+- Changed the HTML color-scheme declaration from `light` to `only light` and
+  placed it immediately after the charset, before style loading, to explicitly
+  opt out of automatic darkening from the start of document parsing.
+- Retained the light-only CSS palette; no inversion filters or theme scripts.
+- App-level forced recoloring is separate from the site’s system-theme support.
+
 ### Mobile presentation and contact cleanup
 
 - Removed individual Instagram links from gallery cards and the lightbox;

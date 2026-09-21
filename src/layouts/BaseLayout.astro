@@ -64,6 +64,8 @@ const graph = buildGraph({ locale, pathname, title: fullTitle, description, brea
 <html lang={meta.lang} dir={meta.dir} class="no-js">
   <head>
     <meta charset="utf-8" />
+    <!-- Declare the automatic-darkening opt-out before styles or content load. -->
+    <meta name="color-scheme" content="only light" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
@@ -105,7 +107,6 @@ const graph = buildGraph({ locale, pathname, title: fullTitle, description, brea
     <meta property="og:site_name" content={t('site.shortName')} />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <meta name="color-scheme" content="light" />
     <meta name="theme-color" content="#fcfdfe" />
     <link rel="icon" href={`${import.meta.env.BASE_URL}favicon.svg`} type="image/svg+xml" />
 

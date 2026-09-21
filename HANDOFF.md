@@ -89,8 +89,12 @@ owner's decision, and probably a lawyer's.
 - Click-to-load map facade (ADR 0008), renders nothing without a confirmed pin
 - Accessibility statement and privacy policy (drafts, need legal review)
 
-The site permanently uses the light palette, including native controls when the
-OS prefers dark mode. The homepage closing contact banner, repeated hero phone
+The site uses the light palette, including native controls when the OS prefers
+dark mode. An early `color-scheme: only light` meta declaration explicitly opts
+out of browser auto-darkening before CSS loads, backed by the same CSS policy.
+An app-level forced recoloring mode can still override site rendering; the
+owner’s iPhone screenshots show inverted photographs and require checking the
+app’s Auto Dark mode, not just emulating the OS preference. The homepage closing contact banner, repeated hero phone
 line, map phone blocks and footer contact/hours columns were removed. The
 contact page retains full details; desktop header and mobile action bar retain
 quick contact. The browser suite now contains 34 tests.

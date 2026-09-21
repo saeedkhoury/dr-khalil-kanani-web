@@ -45,6 +45,7 @@ for (const locale of locales) {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
     await page.goto(`/${locale}/`);
+    await expect(page.locator('meta[name="color-scheme"]')).toHaveAttribute('content', 'only light');
     await expect(page.locator('html')).toHaveCSS('color-scheme', 'light only');
     const logo = await page.locator('[data-hero-logo]').boundingBox();
     expect(logo).not.toBeNull();
@@ -58,6 +59,7 @@ for (const locale of locales) {
     await expect(page.locator('a[href^="tel:"]:visible')).toHaveCount(1);
     await page.goto(`/${locale}/contact/`);
     await page.emulateMedia({ colorScheme: 'dark' });
+    await expect(page.locator('meta[name="color-scheme"]')).toHaveAttribute('content', 'only light');
     await expect(page.locator('html')).toHaveCSS('color-scheme', 'light only');
     await expect(page.locator('main a[href="tel:' + clinic.phone.landline.tel + '"]').first()).toBeVisible();
   });
