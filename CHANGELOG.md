@@ -2,6 +2,17 @@
 
 ## 2026-09-21
 
+### Owner-selected Instagram work gallery
+
+- Replaced the visible illustration gallery with three supplied treatment
+  photographs matched visually to the clinic's Instagram posts.
+- Preserved complete image compositions; added original-post links to the
+  cards and full-size viewer, with Hebrew, Arabic and English descriptions.
+- Recorded the owner's explicit publishing direction and exact selection in
+  ADR 0009. Other media remains outside the published manifest.
+- Updated gallery regression checks for image loading, uncropped presentation,
+  original-post links and source changes during lightbox navigation.
+
 ### Remove empty doctor portrait card
 
 - Removed the empty name/portrait panel from the homepage and About pages.

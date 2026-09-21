@@ -58,6 +58,15 @@ No image containing a patient, any part of a patient, or a before/after
 comparison may ever be registered — not with consent, not cropped, not
 anonymised. Move such files to `.private-assets/` (gitignored).
 
+**Scoped owner instruction, 2026-09-21:** the owner subsequently explicitly
+directed publication of three selected clinic Instagram work posts after this
+restriction was explained. Those exact assets are documented in
+`docs/decisions/0009-owner-directed-instagram-gallery.md` and supersede the
+blanket project exclusion above for that selection only. Do not remove them
+as unreviewed material. This records the owner's publishing direction, not
+verified patient consent or a legal clearance. All other media still follow
+the default rule; the asset guard and explicit staging remain mandatory.
+
 This rule exists because thirteen patient before/after images reached the
 public repository in a single unreviewed `git add -A`. The guard cannot
 recognise a patient photograph; it makes skipping the look impossible.

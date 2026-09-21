@@ -40,7 +40,7 @@ const assets = [1, 2].map((number) => ({
   caption: { he: `סמל בדיקה ${number}`, ar: `رمز اختبار ${number}`, en: `Test mark ${number}` },
 }));
 writeFileSync(mediaPath, readFileSync(mediaPath, 'utf8').replace(
-  'export const gallery: MediaAsset[] = [];', `export const gallery: MediaAsset[] = ${JSON.stringify(assets)};`,
+  /export const gallery: MediaAsset\[\] = \[[\s\S]*?\];/, `export const gallery: MediaAsset[] = ${JSON.stringify(assets)};`,
 ));
 const clinicPath = join(fixture, 'src/data/clinic.ts');
 const clinicSource = readFileSync(clinicPath, 'utf8');

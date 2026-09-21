@@ -24,6 +24,9 @@ discoverability** — in that order.
 
 - Publish any unverified fact about the doctor or clinic.
 - Publish testimonials, patient photographs, prices or promotions.
+  The owner's subsequent explicit instruction permits the three selected
+  Instagram work photographs listed in ADR 0009 as a scoped project exception;
+  it does not assert legal clearance or permit other patient material.
 - Use manipulative urgency.
 - Claim an unrecognised specialty.
 - Auto-redirect visitors by IP or browser language.
@@ -41,3 +44,6 @@ reviews · before/after gallery.
 
 The last two are out of scope because they are **prohibited**, not merely
 deferred. See ADR 0005 and 0006.
+
+The later owner-directed scope exception in ADR 0009 adds only the selected
+Instagram work gallery. Reviews remain out of scope.

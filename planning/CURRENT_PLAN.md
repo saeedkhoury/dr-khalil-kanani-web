@@ -20,8 +20,9 @@ the premium upgrade in `CHANGELOG.md`, merged through PR #1.
 - Owner-supplied Street 1003 and Waze destination enabled across languages.
   Redesigned directions/map section and removed the narrow hero fact strip.
 - Homepage/contact screenshot samples reviewed at 375/768/1440px in he/ar/en.
-- Visible gallery of reviewed, explicitly labelled dental illustrations with
-  full-size viewing; actual clinic photographs can replace these when supplied.
+- Visible gallery of three real treatment photos, matched to the clinic’s
+  Instagram at the owner’s direction (ADR 0009), with full-size viewing and
+  original-post links. The empty doctor portrait panel is removed.
 - Original tooth mark at the hero's top-left with 3D mouse tracking, static on
   touch/reduced-motion/no-JS; hero screenshots reviewed across the same matrix.
 

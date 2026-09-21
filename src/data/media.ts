@@ -18,10 +18,10 @@
  * Registering an asset here is an explicit statement that someone opened the
  * file, looked at it, and classified it. That is the control.
  *
- * ── WHAT MAY NEVER BE REGISTERED ──────────────────────────────────────────
- * No image containing a patient, any part of a patient, or a before/after
- * treatment comparison. Not with consent, not cropped, not anonymised.
- * See docs/decisions/0006-no-before-after-gallery.md.
+ * Selected clinic Instagram treatment posts are included under the owner's
+ * explicit instruction on 2026-09-21. This is a scoped publishing direction,
+ * not a statement that patient consent or legal review has been verified.
+ * See docs/decisions/0009-owner-directed-instagram-gallery.md.
  */
 
 import type { Locale } from '../i18n/config';
@@ -34,7 +34,8 @@ export type MediaCategory =
   | 'doctor'
   | 'team'
   | 'atmosphere'
-  | 'illustration';
+  | 'illustration'
+  | 'treatment-work';
 
 export interface MediaAsset {
   /** Filename inside src/assets/images/. See docs/ASSETS.md for the convention. */
@@ -52,18 +53,46 @@ export interface MediaAsset {
   height: number;
   /** Given more weight in the editorial grid. Aim for one or two. */
   feature?: boolean;
+  /** Original clinic post, visually matched before publication. */
+  sourcePostUrl?: string;
 }
 
 /**
- * OWNER ACTION REQUIRED — this is empty on purpose.
- *
- * No clinic photography exists yet. While this is empty, the picture section
- * uses the explicitly labelled illustrations below.
- *
- * To populate: drop files into src/assets/images/ following docs/ASSETS.md,
- * then add one entry each below. No component needs to change.
+ * Owner-directed treatment gallery. The original local files were opened and
+ * matched visually to the clinic's Instagram posts on 2026-09-21.
  */
-export const gallery: MediaAsset[] = [];
+export const gallery: MediaAsset[] = [
+  {
+    file: 'work-veneers-01.jpg', category: 'treatment-work', width: 1254, height: 1254,
+    sourcePostUrl: 'https://www.instagram.com/p/DdJ042BMJUu/',
+    alt: {
+      he: 'פרסום של המרפאה עם שתי תמונות של השיניים הקדמיות, מסומנות לפני ואחרי',
+      ar: 'منشور للعيادة يعرض صورتين للأسنان الأمامية مع علامتي قبل وبعد',
+      en: 'Clinic post with two photographs of front teeth labelled before and after',
+    },
+    caption: { he: 'ציפויי שיניים', ar: 'قشور الأسنان', en: 'Veneers' },
+  },
+  {
+    file: 'work-cleaning-01.jpg', category: 'treatment-work', width: 1254, height: 1254,
+    sourcePostUrl: 'https://www.instagram.com/p/DdWvC8csM-6/',
+    alt: {
+      he: 'פרסום של המרפאה עם שתי תמונות של השיניים והחניכיים, מסומנות לפני ואחרי ניקוי',
+      ar: 'منشور للعيادة يعرض صورتين للأسنان واللثة مع علامتي قبل التنظيف وبعده',
+      en: 'Clinic post with two photographs of teeth and gums labelled before and after cleaning',
+    },
+    caption: { he: 'ניקוי אבנית', ar: 'تنظيف الجير', en: 'Dental cleaning' },
+  },
+  {
+    file: 'work-cleaning-02.jpg', category: 'treatment-work', width: 1290, height: 1380,
+    sourcePostUrl: 'https://www.instagram.com/p/Da8QjY7MiIP/',
+    alt: {
+      he: 'פרסום של המרפאה עם ארבע תמונות של שיניים בזוויות שונות, מסומנות לפני ואחרי',
+      ar: 'منشور للعيادة يعرض أربع صور للأسنان من زوايا مختلفة مع علامتي قبل وبعد',
+      en: 'Clinic post with four photographs of teeth from different angles labelled before and after',
+    },
+    caption: { he: 'ניקוי שיניים', ar: 'تنظيف الأسنان', en: 'Teeth cleaning' },
+  },
+];
 
 /** Original AI-generated artwork, visually reviewed on 2026-09-21.
  * Inanimate objects only; never presented as clinic or patient photography.

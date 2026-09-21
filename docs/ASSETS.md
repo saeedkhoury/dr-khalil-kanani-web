@@ -21,6 +21,11 @@ which you can write without having seen the file.
 
 ## What may never be published
 
+The owner's later explicit instruction adds the three individually reviewed
+Instagram work posts documented in [ADR 0009](./decisions/0009-owner-directed-instagram-gallery.md).
+That selection is the sole exception to the default exclusion below. It does
+not establish patient consent or legal clearance.
+
 - A patient, or any part of a patient
 - A before/after treatment comparison
 - Anything with a face, mouth, or intraoral view of a real person
@@ -43,6 +48,7 @@ tell the owner why it cannot be used.
 | `team` | Staff, if any | 0–2 |
 | `atmosphere` | Detail shots, texture, light | 1–2 |
 | `illustration` | Clearly labelled artwork of inanimate dental objects | 3 currently |
+| `treatment-work` | The three owner-selected, source-linked Instagram posts in ADR 0009 | 3 |
 
 `illustrations` is separate from the clinic-photo `gallery` array. When there
 are no clinic photographs, the component shows the illustrations with explicit

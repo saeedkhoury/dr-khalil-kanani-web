@@ -29,32 +29,27 @@ Location/design follow-up on 2026-09-21: the owner supplied Street 1003 and
 Google Maps, the original Waze link and the opt-in map panel now render in all
 three locales. The location section is a unified directions/map layout; the
 narrow fact strip at the bottom of the hero was removed as requested.
-Three destination/embed tests bring the browser suite to 25. Clinic/doctor
-imagery is still pending a usable source: the repository has no approved
-photography, and quarantined patient images remain excluded.
+Three destination/embed tests brought the browser suite to 25.
 The real Google iframe was also loaded in Chromium and its rendered map/marker
 visually checked. This confirms rendering, not an on-site arrival check.
 
-Picture/logo follow-up on 2026-09-21: the homepage now shows three original,
-visually reviewed dental illustrations, explicitly labelled as AI-generated
-illustrations in all locales and in each image caption. They are inanimate
-objects, not clinic or patient photographs. The manifest keeps clinic photos
-separate; approved photos take precedence when supplied. See
-[docs/ILLUSTRATIONS.md](docs/ILLUSTRATIONS.md) for assets and exact prompts.
+The gallery now shows three real treatment-work photographs, individually
+opened and matched to posts on the clinic's Instagram. The owner explicitly
+requested these after the prior exclusion was explained; the scoped direction
+and source URLs are recorded in [ADR 0009](docs/decisions/0009-owner-directed-instagram-gallery.md).
+Each original is shown uncropped, with localized descriptive text, a full-size
+viewer and a link to its source post. These replace the AI illustrations in the
+visible gallery; the original illustration assets remain available as fallback.
+Patient consent and legal clearance have not been independently verified.
+
 The original vector tooth mark sits at the physical top-left of the hero in
 all locales, with layered 3D depth and hero-scoped mouse tracking. Touch,
-reduced-motion and no-JS visitors receive the static mark. Six new browser
-checks bring the suite to 31; all 76 unit tests, production build, verify,
-41-page HTML audit and 31 browser checks pass locally.
-
-The owner subsequently requested removal of the empty doctor portrait card.
-DoctorIntro now omits the entire image column until a reviewed portrait is
-registered, retaining the useful introduction without an empty panel. The 13
-newly supplied/replaced image files were individually opened: they contain
-patient treatment, before/after or extracted-tooth imagery, not doctor portraits.
-They were preserved under the gitignored `.private-assets/reviewed-2026-09-21-upload/`
-and were not committed or deployed. The original aligner illustration was
-restored after preserving the patient image that had replaced it locally.
+reduced-motion and no-JS visitors receive the static mark. The empty portrait
+panel remains removed from the homepage and About pages; no actual doctor
+portrait has been supplied. Other supplied treatment images remain outside
+the published manifest in `.private-assets/reviewed-2026-09-21-upload/`.
+The original aligner illustration was restored after preserving the patient
+image that had replaced it locally.
 
 The separate Cloudflare `Workers Builds: dr-khalil-kanani-web` failure was
 investigated after account sign-in. Its build had no environment variables, so
@@ -69,9 +64,9 @@ was not deleted, and DNS and clinic verification were not changed.
 
 Thirteen patient before/after photographs were committed to this **public**
 repository on 2026-09-21 in `7cd7ea5`. They were removed from the tree in
-`e822ce7` but **remain in public Git history**. They were never referenced by
-the site and were never served to a visitor — the exposure is the repository,
-not the website.
+`e822ce7` but **remain in public Git history**. They were not referenced by the site at that time. The later owner-directed
+gallery publishes only the three reviewed originals listed in ADR 0009; it
+does not resolve the historical exposure of the remaining files.
 
 Nothing irreversible has been done about this. The recommendation, the risks of
 each option, and the order to do them in are in
@@ -85,7 +80,7 @@ owner's decision, and probably a lawyer's.
 - 6 treatments × 3 locales, authored to the medical-claims discipline
 - Appointment requests hand off to WhatsApp (ADR 0007) — nothing is stored
 - Picture gallery, editorial grid + `<dialog>` lightbox, data-driven from
-  `src/data/media.ts`; labelled illustrations while clinic photography is absent
+  `src/data/media.ts`; three owner-selected Instagram treatment posts and source links
 - Original tooth logo with layered 3D depth and optional mouse tracking
 - Google review aggregate + link-out, renders nothing until figures are supplied
 - Click-to-load map facade (ADR 0008), renders nothing without a confirmed pin
@@ -123,6 +118,7 @@ explicit per-field allowlist; anything not on it fails the build.
 | Motion | Normal/reduced-motion, no JS, and failed observer initialization checked |
 | Populated Phase 3 components | Gallery opens/navigates/closes/restores focus; Arabic Western digits; map loads only after press (request intercepted) |
 | Visual review | Homepage/contact screenshots sampled at top, middle and footer in all three locales × three widths; synthetic lightbox inspected |
+| Instagram gallery follow-up | Three matched originals load; uncropped tiles and source links checked in he/ar/en at 375/768/1440px; mobile lightboxes visually inspected; gallery axe and navigation pass |
 | Picture/logo follow-up | Hero screenshots inspected in all locales at 375/768/1440px; loaded gallery and lightbox checked; desktop pointer tracking/reset, reduced-motion and emulated coarse-pointer fallback pass |
 
 Browser fixtures build in an OS temporary copy using the existing vector mark
@@ -170,7 +166,7 @@ Also blocking, but not build-enforced:
   Google by legal necessity (ADR 0005); this is the clinic's only review surface.
 - **Clinic photography** — 9–12 images (exterior, reception, rooms, equipment)
   plus a doctor portrait and one hero landscape. See `docs/ASSETS.md`.
-  **No patients, no before/after, no exceptions** (ADR 0006).
+  These are still distinct from the three treatment posts selected under ADR 0009.
 
 ## Known gaps (not blockers)
 
@@ -178,7 +174,7 @@ Also blocking, but not build-enforced:
 - The logo wordmark is Hebrew-only; no Arabic or English lockup exists. The UI
   works around this with the mark plus localised HTML text.
 - Actual clinic and doctor photography is still pending. The hero uses the
-  original mark and the picture gallery uses explicitly labelled illustrations.
+  original mark and the picture gallery uses the three selected Instagram posts.
 
 ## Recommended next action
 

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { clinic } from '../../src/data/clinic';
+import { gallery as publishedGallery } from '../../src/data/media';
 
 const locales = ['he', 'ar', 'en'] as const;
 const routes = ['', 'about/', 'contact/', 'faq/', 'privacy/', 'accessibility/', 'treatments/',
@@ -8,12 +9,17 @@ const routes = ['', 'about/', 'contact/', 'faq/', 'privacy/', 'accessibility/', 
     .map((slug) => `treatments/${slug}/`)];
 
 for (const locale of locales) {
-  test(`${locale}: visible illustration gallery and full-size navigation`, async ({ page }) => {
+  test(`${locale}: clinic work photographs, source links and full-size navigation`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(`/${locale}/`);
     const gallery = page.locator('section[aria-labelledby="gallery-heading"]');
     const tiles = gallery.locator('[data-gallery-open]');
+    await expect(gallery).toHaveAttribute('data-gallery-kind', 'work');
     await expect(tiles).toHaveCount(3);
+    for (const [index, asset] of publishedGallery.entries()) {
+      await expect(gallery.locator('[data-gallery-source]').nth(index)).toHaveAttribute('href', asset.sourcePostUrl!);
+      await expect(tiles.nth(index).locator('img')).toHaveCSS('object-fit', 'contain');
+    }
     await gallery.scrollIntoViewIfNeeded();
     for (const image of await tiles.locator('img').all()) {
       await expect(image).toBeVisible();
@@ -23,9 +29,12 @@ for (const locale of locales) {
     const dialog = page.locator('#gallery-lightbox');
     await expect(dialog).toBeVisible();
     await expect(page.locator('#lightbox-position')).toHaveText('1 / 3');
+    await expect(page.locator('#lightbox-source')).toHaveAttribute('href', publishedGallery[0].sourcePostUrl!);
+    await expect(page.locator('#lightbox-source')).toBeVisible();
     await expect.poll(() => page.locator('#lightbox-image').evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
     await page.locator('[data-gallery-next]').click();
     await expect(page.locator('#lightbox-position')).toHaveText('2 / 3');
+    await expect(page.locator('#lightbox-source')).toHaveAttribute('href', publishedGallery[1].sourcePostUrl!);
     await expect(page.locator('#lightbox-image')).toHaveAttribute('alt', await tiles.nth(1).getAttribute('aria-label') ?? '');
     await page.locator('[data-gallery-prev]').click();
     await expect(page.locator('#lightbox-position')).toHaveText('1 / 3');

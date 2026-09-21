@@ -100,11 +100,9 @@ describe('form options', () => {
 });
 
 describe('media manifest', () => {
-  test('is empty — no clinic photography has been supplied and approved', () => {
-    // This test is expected to CHANGE when real photos arrive. It exists so
-    // that populating the gallery is a deliberate act with a visible diff.
-    assert.equal(gallery.length, 0);
-    assert.equal(hasGallery(), false);
+  test('contains the three owner-directed clinic posts, with no invented portrait', () => {
+    assert.equal(gallery.length, 3);
+    assert.equal(hasGallery(), true);
     assert.equal(portrait, null);
     assert.equal(hasPortrait(), false);
   });
@@ -121,14 +119,16 @@ describe('media manifest', () => {
     }
   });
 
-  test('no asset may be categorised as patient material', () => {
-    // The category union has no patient/before-after member by design; this
-    // asserts nobody widened it.
-    const allowed = [
-      'exterior', 'reception', 'treatment-room', 'equipment', 'doctor', 'team', 'atmosphere',
-    ];
+  test('each treatment photo has its individually reviewed Instagram source', () => {
+    const reviewed = new Map([
+      ['work-veneers-01.jpg', 'https://www.instagram.com/p/DdJ042BMJUu/'],
+      ['work-cleaning-01.jpg', 'https://www.instagram.com/p/DdWvC8csM-6/'],
+      ['work-cleaning-02.jpg', 'https://www.instagram.com/p/Da8QjY7MiIP/'],
+    ]);
     for (const asset of gallery) {
-      assert.ok(allowed.includes(asset.category), `${asset.file}: illegal category`);
+      assert.equal(asset.category, 'treatment-work');
+      assert.ok(reviewed.has(asset.file), `${asset.file}: requires an explicit review`);
+      assert.equal(asset.sourcePostUrl, reviewed.get(asset.file));
     }
   });
 });
