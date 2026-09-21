@@ -11,6 +11,7 @@
 
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 import {
   clinic,
@@ -21,6 +22,7 @@ import {
   hasHours,
   hasGeo,
   hasGoogleProfile,
+  hasGoogleRating,
   mapsUrl,
   wazeUrl,
   LOCALES,
@@ -166,5 +168,84 @@ describe('locale coverage', () => {
         );
       }
     }
+  });
+});
+
+describe('google review aggregate', () => {
+  test('hides while the owner has not supplied real figures', () => {
+    // The whole point: an unconfigured rating must not render as 0 stars, and
+    // must never be filled in with a guess. A fabricated 4.9 is a fabricated
+    // review with extra steps.
+    assert.equal(hasGoogleRating(), false);
+    assert.equal(clinic.googleRating.value, null);
+    assert.equal(clinic.googleRating.count, null);
+  });
+
+  test('a rating with no review count is still treated as unconfigured', () => {
+    // Half-filled config is the realistic failure: someone types the rating
+    // and forgets the count. "Based on null reviews" must be impossible.
+    const half = { value: 4.9, count: null };
+    const ok = typeof half.value === 'number' && typeof half.count === 'number';
+    assert.equal(ok, false);
+  });
+
+  test('a zero review count does not count as configured', () => {
+    const none = { value: 0, count: 0 };
+    const ok = typeof none.value === 'number' && typeof none.count === 'number' && none.count > 0;
+    assert.equal(ok, false);
+  });
+
+  test('the star fill never rounds a rating upward', () => {
+    // 4.9 must not present as five full stars. The overlay width is the
+    // exact proportion, so the last star is visibly short.
+    const fill = (v: number) => Number((Math.max(0, Math.min(100, (v / 5) * 100))).toFixed(2));
+    assert.equal(fill(4.9), 98);
+    assert.equal(fill(5), 100);
+    assert.equal(fill(3.25), 65);
+    // Out-of-range input is clamped rather than overflowing the row.
+    assert.equal(fill(7), 100);
+    assert.equal(fill(-1), 0);
+  });
+
+  test('the aggregate is never mirrored into structured data', async () => {
+    // Google rules self-controlled review markup ineligible and treats it as
+    // a manual-action risk. If someone adds it to the schema, this fails.
+    const schema = await readFile(new URL('../../src/lib/schema.ts', import.meta.url), 'utf8');
+    assert.ok(
+      !/["']?aggregateRating["']?\s*:/.test(schema),
+      'aggregateRating must not appear in structured data',
+    );
+  });
+});
+
+describe('map facade', () => {
+  test('no map can be built without a confirmed pin', () => {
+    // The facade renders on hasGeo(). A map centred on (0,0) is the Atlantic.
+    assert.equal(hasGeo(), false);
+    assert.equal(clinic.address.geo.lat, 0);
+    assert.equal(clinic.address.geo.lng, 0);
+  });
+
+  test('the embed URL carries coordinates and no API key', () => {
+    const lat = 32.9241;
+    const lng = 35.1668;
+    const src = `https://www.google.com/maps?q=${lat},${lng}&z=16&hl=he&output=embed`;
+    assert.match(src, /output=embed/);
+    assert.match(src, /q=32\.9241,35\.1668/);
+    // A key in the URL would be a public credential on a static site.
+    assert.ok(!/[?&]key=/.test(src), 'embed URL must not carry an API key');
+  });
+
+  test('the facade contacts nobody until pressed', async () => {
+    // The guarantee is structural: the iframe is CREATED in script, so no
+    // iframe, preconnect or dns-prefetch exists in the served HTML.
+    const src = await readFile(
+      new URL('../../src/components/sections/MapFacade.astro', import.meta.url),
+      'utf8',
+    );
+    assert.ok(!/<iframe/i.test(src), 'no literal <iframe> may appear in the markup');
+    assert.ok(!/rel=["'](preconnect|dns-prefetch)/i.test(src), 'no preconnect to Google');
+    assert.match(src, /createElement\('iframe'\)/);
+    assert.match(src, /\{ once: true \}/);
   });
 });

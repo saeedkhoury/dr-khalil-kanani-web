@@ -18,7 +18,8 @@
     "lint:assets": "node scripts/check-assets.mjs",
     "prepare": "git config core.hooksPath .githooks",
     "test": "node --experimental-strip-types --test \"tests/unit/*.test.ts\"",
-    "test:watch": "node --experimental-strip-types --test --watch \"tests/unit/*.test.ts\""
+    "test:watch": "node --experimental-strip-types --test --watch \"tests/unit/*.test.ts\"",
+    "lint:a11y": "node scripts/audit-html.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

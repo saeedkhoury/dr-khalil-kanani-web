@@ -102,7 +102,15 @@ npm run build       # includes the launch gate and locale-parity gate
 | **Claims linter** | Prohibited advertising patterns in he/ar/en | `scripts/lint-claims.mjs` |
 | **Mixed-script linter** | Cyrillic/Greek homoglyphs inside Hebrew or Arabic text | `scripts/lint-mixed-scripts.mjs` |
 | **Asset guard** | Committing an image nobody has opened and classified | `scripts/check-assets.mjs` + `.githooks/pre-commit` |
+| **Accessibility audit** | Heading skips, duplicate ids, missing alt, unnamed controls, wrong `lang`/`dir` — in the **built** HTML | `scripts/audit-html.mjs`, `npm run lint:a11y` |
 | **Unit tests** | Regressions in config, locales, contact URLs, gating | `npm test` |
+
+Heading order is not a style preference here. IS 5568 promotes WCAG 2.4.10
+Section Headings to **mandatory at AA** in Israel, where WCAG itself treats it
+as AAA — so a skipped level is a conformance failure. The audit runs against
+`dist/` because a component can be correct and still emit a duplicate id once
+it renders three times on one page. It runs in both workflows and blocks the
+deploy.
 
 **`VERIFY_RELAX=1` is preview-only.** It disables the gate entirely and must
 never touch production — it did once, and the live site shipped unverified data
@@ -236,10 +244,15 @@ Every file needs a reason to exist. Never create `temp`, `new`, `final2`,
 
 - [ ] `npm run verify` passes
 - [ ] `npm run build` passes (with the launch gate, not `VERIFY_RELAX`)
+- [ ] `npm test` passes
+- [ ] `npm run lint:a11y` passes against the fresh build
 - [ ] Verified in **all three locales**, both directions
 - [ ] Verified at 375px and desktop
 - [ ] axe-core: zero violations
-- [ ] Heading order has no skips
+- [ ] Heading order has no skips (`npm run lint:a11y` proves this mechanically)
+- [ ] Anything claimed as *visually* verified was actually looked at. If it was
+      not, say so — `docs/QA-CHECKLIST.md` is the list of what only a person
+      can check
 - [ ] No new medical claim introduced
 - [ ] No unverified fact promoted to verified
 - [ ] `HANDOFF.md` reflects reality

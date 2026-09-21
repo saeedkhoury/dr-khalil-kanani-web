@@ -61,6 +61,12 @@ jobs:
           ASTRO_SITE: https://preview.invalid
         run: npm run build:preview
 
+      # Fails the PR. The preview build relaxes the DATA gate, never the
+      # accessibility one — heading order is AA-mandatory under IS 5568 and
+      # is not a "fix it before production" item.
+      - name: Accessibility audit (built HTML)
+        run: npm run lint:a11y
+
       - name: Report what the strict gate would say
         continue-on-error: true
         env:
