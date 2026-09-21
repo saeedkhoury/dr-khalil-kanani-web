@@ -2,16 +2,17 @@
 /**
  * "How to reach the clinic" — location, hours and navigation.
  *
- * ── WHY THERE IS NO EMBEDDED MAP ──────────────────────────────────────────
- * This site contacts ZERO third parties. That is not incidental — the whole
- * Amendment 13 privacy posture, and the ability to ship without a cookie
- * banner, rests on it. A Google Maps iframe would contact Google, set
+ * ── WHY THE MAP IS NOT EMBEDDED ───────────────────────────────────────────
+ * This site contacts ZERO third parties on load. That is not incidental —
+ * the whole Amendment 13 privacy posture, and the ability to ship without a
+ * cookie banner, rests on it. A Google Maps iframe would contact Google, set
  * cookies and add several hundred KB before the visitor asked for a map.
  *
- * So navigation is offered as LINKS, not an embed. The visitor taps and
- * their own map app opens — which is what someone actually driving to a
- * clinic wants anyway. If an interactive map is ever wanted, it should be a
- * click-to-load facade, never an eager embed.
+ * So navigation is offered as LINKS first. The visitor taps and their own
+ * map app opens — which is what someone actually driving to a clinic wants.
+ * An interactive map is available below them as a CLICK-TO-LOAD FACADE
+ * (MapFacade.astro): nothing reaches Google until the visitor presses a
+ * button that says so.
  *
  * ── WHY EVERYTHING IS GUARDED ─────────────────────────────────────────────
  * The street address and map pin are unverified placeholders. Rather than
@@ -36,6 +37,7 @@ import {
   wazeUrl,
 } from '../../data/clinic';
 import Icon from '../primitives/Icon.astro';
+import MapFacade from './MapFacade.astro';
 
 interface Props {
   locale: Locale;
@@ -194,5 +196,7 @@ const actionClass =
         </div>
       </div>
     </div>
+
+    <MapFacade locale={locale} />
   </div>
 </section>

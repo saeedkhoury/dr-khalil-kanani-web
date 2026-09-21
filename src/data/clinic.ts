@@ -137,6 +137,31 @@ export const clinic = {
     googleBusiness: '',
   },
 
+  /**
+   * Google review aggregate.
+   *
+   * The RATING and COUNT only — never individual reviews. Israeli dental
+   * advertising regulations prohibit publishing patient identities, so quotes,
+   * names and dates stay on Google where the patient published them
+   * (ADR 0005). An aggregate is Google's own published figure about the
+   * business, not a patient's identity.
+   *
+   * These must be copied from the live Google Business Profile, never
+   * estimated. Leave at null and the block does not render.
+   *
+   * NOTE: do NOT mirror these into AggregateRating structured data. Google
+   * rules self-controlled review markup ineligible for stars and it risks a
+   * manual action. See src/lib/schema.ts.
+   */
+  googleRating: {
+    /** e.g. 4.9 — as displayed on the profile. */
+    value: null as number | null,
+    /** e.g. 27 */
+    count: null as number | null,
+    /** When these numbers were last copied across. */
+    checkedOn: '' as string,
+  },
+
   /** Production origin. Owner must confirm the domain. */
   siteUrl: 'https://example.invalid',
 } as const;
@@ -240,6 +265,12 @@ export function hasGeo(): boolean {
 /** True once a Google Business Profile URL has been supplied. */
 export function hasGoogleProfile(): boolean {
   return clinic.social.googleBusiness.trim() !== '';
+}
+
+/** True once a real rating AND count have been copied from the profile. */
+export function hasGoogleRating(): boolean {
+  const r = clinic.googleRating;
+  return typeof r.value === 'number' && typeof r.count === 'number' && r.count > 0;
 }
 
 /**
