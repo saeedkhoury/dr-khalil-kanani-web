@@ -21,6 +21,8 @@ pending, and nothing is lost.
 | DNS access to `drkhalilkanani.com` | To prove you own the sending domain | — |
 | A real inbox for `MAIL_TO` | Where requests land | — |
 
+`MAIL_TO` is set as a secret, not committed — see step 2.
+
 A clinic receiving a few requests a day sits inside both free tiers with room
 to spare.
 
@@ -54,12 +56,16 @@ npm install -g wrangler
 wrangler login
 ```
 
-Set `MAIL_TO` in `wrangler.toml` to the inbox that should receive requests.
-Then set the API key — this is a secret and never goes in a file:
+Set both secrets. Neither goes in a file, because this repository is public:
 
 ```bash
-wrangler secret put RESEND_API_KEY
+wrangler secret put RESEND_API_KEY   # paste the Resend API key
+wrangler secret put MAIL_TO          # paste the doctor's inbox address
 ```
+
+`MAIL_TO` is not a credential, but it is a personal email address. Committed to
+a public repo it would be scraped and spammed within days, and there is no way
+to take it back. Keeping it as a secret costs nothing and avoids that.
 
 Deploy:
 

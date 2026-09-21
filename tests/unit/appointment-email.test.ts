@@ -212,4 +212,40 @@ describe('site wiring', () => {
     assert.ok(!/RESEND_API_KEY\s*=/.test(toml), 'the key must be a wrangler secret, never a var');
     assert.ok(!/re_[A-Za-z0-9]{10,}/.test(toml), 'no Resend key literal');
   });
+
+  test('the destination inbox is a secret, not a committed var', async () => {
+    // This repository is PUBLIC. MAIL_TO is the doctor's personal address:
+    // not a credential, but scraped and spammed within days if committed,
+    // and impossible to take back. It is set with `wrangler secret put`.
+    const toml = await readFile(
+      new URL('../../workers/appointment-email/wrangler.toml', import.meta.url),
+      'utf8',
+    );
+    assert.ok(!/^\s*MAIL_TO\s*=/m.test(toml), 'MAIL_TO must not be a [vars] entry');
+  });
+
+  test('no personal inbox address is committed anywhere in the repo', async () => {
+    // A blunt guard against the obvious future mistake: someone pastes the
+    // real address into the config or a doc "just to make it work".
+    //
+    // request@ on the clinic's own domain is deliberately allowed — it is a
+    // send-only role address and belongs in a reviewable diff.
+    const { execFileSync } = await import('node:child_process');
+    const root = new URL('../../', import.meta.url).pathname;
+    const tracked = execFileSync('git', ['ls-files'], { cwd: root, encoding: 'utf8' })
+      .split('\n')
+      .filter((f) => /\.(ts|js|mjs|astro|md|toml|json|ya?ml)$/.test(f));
+
+    const PERSONAL = /[A-Za-z0-9._%+-]+@(gmail|googlemail|hotmail|outlook|yahoo|walla|icloud)\.[a-z.]{2,}/i;
+    const offenders: string[] = [];
+
+    for (const file of tracked) {
+      const body = await readFile(new URL(file, new URL('../../', import.meta.url)), 'utf8').catch(() => '');
+      const hit = body.match(PERSONAL);
+      // The test file itself contains the pattern by necessity.
+      if (hit && !file.endsWith('appointment-email.test.ts')) offenders.push(`${file}: ${hit[0]}`);
+    }
+
+    assert.deepEqual(offenders, [], `personal email address committed:\n${offenders.join('\n')}`);
+  });
 });

@@ -2,12 +2,20 @@ name = "drkanani-appointment-email"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
 
-# ── NO SECRETS IN THIS FILE ────────────────────────────────────────────────
-# RESEND_API_KEY is set out of band:  wrangler secret put RESEND_API_KEY
+# ── NOTHING PRIVATE IN THIS FILE ───────────────────────────────────────────
+# This repository is PUBLIC. Two values are therefore set out of band rather
+# than committed here:
 #
-# The three below are not secret — they are two addresses and an origin — so
-# they live here, where a change to them shows up in a diff and gets reviewed.
+#   wrangler secret put RESEND_API_KEY   # a credential
+#   wrangler secret put MAIL_TO          # the doctor's personal inbox
+#
+# MAIL_TO is not a credential, but it is a personal address. A personal email
+# committed to a public repository is scraped and spammed within days, and the
+# clinic would have no way to undo it. Keeping it as a secret costs nothing.
+#
+# The two below are deliberately public: MAIL_FROM is a send-only role address
+# on the clinic's own domain, and ALLOWED_ORIGIN is the website. Both belong in
+# a diff where a change to them gets reviewed.
 [vars]
 MAIL_FROM = "Dr. Khalil Kanani <request@drkhalilkanani.com>"
-MAIL_TO = ""                                        # REQUIRED — the clinic inbox
 ALLOWED_ORIGIN = "https://www.drkhalilkanani.com"
