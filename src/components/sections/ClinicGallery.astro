@@ -3,7 +3,7 @@
  * Clinic gallery — editorial grid + accessible lightbox.
  *
  * Owner-selected clinic posts take precedence over original illustrations.
- * Work posts retain their full composition and link to the verified source.
+ * Work posts retain their full composition; social buttons link to clinic profiles.
  *
  * ── LAYOUT ────────────────────────────────────────────────────────────────
  * Treatment work uses equal tiles that preserve the full original image.
@@ -25,6 +25,7 @@ import { gallery, illustrations } from '../../data/media';
 import { clinic } from '../../data/clinic';
 import { resolveImage } from '../../lib/images';
 import Icon from '../primitives/Icon.astro';
+import Button from '../primitives/Button.astro';
 
 interface Props {
   locale: Locale;
@@ -55,7 +56,10 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
           <p class="eyebrow">{t(workGallery ? 'gallery.workEyebrow' : illustrative ? 'gallery.artEyebrow' : 'gallery.eyebrow')}</p>
           <h2 id="gallery-heading" class="mt-2">{t(workGallery ? 'gallery.workTitle' : illustrative ? 'gallery.artTitle' : 'gallery.title')}</h2>
           <p class="mt-3 text-[var(--text-lg)] text-[var(--color-muted)]">{t(workGallery ? 'gallery.workIntro' : illustrative ? 'gallery.artIntro' : 'gallery.intro')}</p>
-          {workGallery && <a href={clinic.social.instagram} target="_blank" rel="noopener noreferrer" class="mt-3 inline-flex min-h-11 items-center font-semibold text-[var(--color-ink)] underline underline-offset-4">{t('gallery.profile')}</a>}
+          {workGallery && <div class="mt-5 flex flex-wrap gap-3" data-gallery-social>
+            <Button href={clinic.social.instagram} variant="outline" target="_blank" rel="noopener noreferrer"><span class="u-ltr">Instagram</span></Button>
+            {clinic.social.facebook && <Button href={clinic.social.facebook} variant="outline" target="_blank" rel="noopener noreferrer"><span class="u-ltr">Facebook</span></Button>}
+          </div>}
         </div>
 
         <ul
@@ -96,7 +100,6 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
                   </span>
                 )}
               </button>
-              {asset.sourcePostUrl && <a data-gallery-source href={asset.sourcePostUrl} target="_blank" rel="noopener noreferrer" class="mt-2 inline-flex min-h-11 items-center text-[var(--text-sm)] font-semibold text-[var(--color-ink)] underline underline-offset-4">{t('gallery.source')}</a>}
             </li>
           ))}
         </ul>
@@ -126,7 +129,7 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
 
           <div class="flex items-center justify-center bg-[var(--color-haze)] p-2">
             {/* Swapped by script; alt is set alongside src so it never lies. */}
-            <img id="lightbox-image" src="" alt="" class:list={['w-auto rounded-[var(--radius-field)]', workGallery ? 'max-h-[58dvh]' : 'max-h-[70dvh]']} />
+            <img id="lightbox-image" src="" alt="" class="w-auto max-h-[65dvh] rounded-[var(--radius-field)]" />
           </div>
 
           <div class="flex items-center justify-between gap-3 border-t border-[var(--color-line)] p-3">
@@ -148,7 +151,6 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
               <Icon name="chevron" size={18} />
             </button>
           </div>
-          <a id="lightbox-source" hidden target="_blank" rel="noopener noreferrer" class="m-3 min-h-11 items-center justify-center rounded-[var(--radius-btn)] p-3 text-center font-semibold text-[var(--color-ink)] underline underline-offset-4">{t('gallery.source')}</a>
         </div>
       </dialog>
 
@@ -162,7 +164,6 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
             src: fullSize.src,
             alt: asset.alt[locale],
             caption: asset.caption?.[locale] ?? '',
-            sourcePostUrl: asset.sourcePostUrl,
           })),
         ).replace(/</g, '\\u003c')}
       />
@@ -185,7 +186,6 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
           const img = document.getElementById('lightbox-image');
           const caption = document.getElementById('lightbox-caption');
           const position = document.getElementById('lightbox-position');
-          const source = document.getElementById('lightbox-source');
           let index = 0;
 
           const isRtl = () => document.documentElement.dir === 'rtl';
@@ -199,9 +199,6 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
             img.alt = slide.alt;
             caption.textContent = slide.caption || slide.alt;
             position.textContent = `${index + 1} / ${slides.length}`;
-            source.hidden = !slide.sourcePostUrl;
-            if (slide.sourcePostUrl) source.href = slide.sourcePostUrl;
-            else source.removeAttribute('href');
           }
 
           document.querySelectorAll('[data-gallery-open]').forEach((btn) => {
@@ -243,7 +240,3 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
     </section>
   )
 }
-
-<style>
-  #lightbox-source:not([hidden]) { display: flex; }
-</style>

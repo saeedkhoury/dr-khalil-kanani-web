@@ -12,7 +12,6 @@ import TrustStrip from '../components/sections/TrustStrip.astro';
 import TreatmentsGrid from '../components/sections/TreatmentsGrid.astro';
 import DoctorIntro from '../components/sections/DoctorIntro.astro';
 import FaqAccordion from '../components/sections/FaqAccordion.astro';
-import ContactCta from '../components/sections/ContactCta.astro';
 
 import { DEFAULT_LOCALE, localizePath } from '../i18n/config';
 import { useTranslations } from '../i18n/ui';
@@ -35,5 +34,4 @@ const canonical = new URL(localizePath(locale, ''), Astro.site ?? clinic.siteUrl
   <TreatmentsGrid locale={locale} treatments={treatments} limit={6} />
   <DoctorIntro locale={locale} />
   <FaqAccordion locale={locale} items={faq} id="home-faq" />
-  <ContactCta locale={locale} />
 </BaseLayout>

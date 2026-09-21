@@ -1,7 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { clinic } from '../../src/data/clinic';
-import { gallery as publishedGallery } from '../../src/data/media';
 
 const locales = ['he', 'ar', 'en'] as const;
 const routes = ['', 'about/', 'contact/', 'faq/', 'privacy/', 'accessibility/', 'treatments/',
@@ -9,17 +8,17 @@ const routes = ['', 'about/', 'contact/', 'faq/', 'privacy/', 'accessibility/', 
     .map((slug) => `treatments/${slug}/`)];
 
 for (const locale of locales) {
-  test(`${locale}: clinic work photographs, source links and full-size navigation`, async ({ page }) => {
+  test(`${locale}: clinic work photographs, profile buttons and full-size navigation`, async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(`/${locale}/`);
     const gallery = page.locator('section[aria-labelledby="gallery-heading"]');
     const tiles = gallery.locator('[data-gallery-open]');
     await expect(gallery).toHaveAttribute('data-gallery-kind', 'work');
     await expect(tiles).toHaveCount(3);
-    for (const [index, asset] of publishedGallery.entries()) {
-      await expect(gallery.locator('[data-gallery-source]').nth(index)).toHaveAttribute('href', asset.sourcePostUrl!);
-      await expect(tiles.nth(index).locator('img')).toHaveCSS('object-fit', 'contain');
-    }
+    await expect(gallery.locator('li a')).toHaveCount(0);
+    await expect(gallery.locator('[data-gallery-social] a[href="' + clinic.social.instagram + '"]')).toHaveText('Instagram');
+    if (clinic.social.facebook) await expect(gallery.locator('[data-gallery-social] a[href="' + clinic.social.facebook + '"]')).toHaveText('Facebook');
+    for (const tile of await tiles.all()) await expect(tile.locator('img')).toHaveCSS('object-fit', 'contain');
     await gallery.scrollIntoViewIfNeeded();
     for (const image of await tiles.locator('img').all()) {
       await expect(image).toBeVisible();
@@ -28,13 +27,11 @@ for (const locale of locales) {
     await tiles.first().click();
     const dialog = page.locator('#gallery-lightbox');
     await expect(dialog).toBeVisible();
+    await expect(dialog.locator('a')).toHaveCount(0);
     await expect(page.locator('#lightbox-position')).toHaveText('1 / 3');
-    await expect(page.locator('#lightbox-source')).toHaveAttribute('href', publishedGallery[0].sourcePostUrl!);
-    await expect(page.locator('#lightbox-source')).toBeVisible();
     await expect.poll(() => page.locator('#lightbox-image').evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
     await page.locator('[data-gallery-next]').click();
     await expect(page.locator('#lightbox-position')).toHaveText('2 / 3');
-    await expect(page.locator('#lightbox-source')).toHaveAttribute('href', publishedGallery[1].sourcePostUrl!);
     await expect(page.locator('#lightbox-image')).toHaveAttribute('alt', await tiles.nth(1).getAttribute('aria-label') ?? '');
     await page.locator('[data-gallery-prev]').click();
     await expect(page.locator('#lightbox-position')).toHaveText('1 / 3');
@@ -42,6 +39,27 @@ for (const locale of locales) {
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
     await expect(tiles.first()).toBeFocused();
+  });
+
+  test(`${locale}: mobile logo is centered, light mode is fixed and contact details are consolidated`, async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.emulateMedia({ colorScheme: 'dark', reducedMotion: 'reduce' });
+    await page.goto(`/${locale}/`);
+    await expect(page.locator('html')).toHaveCSS('color-scheme', 'light only');
+    const logo = await page.locator('[data-hero-logo]').boundingBox();
+    expect(logo).not.toBeNull();
+    expect(Math.abs(logo!.x + logo!.width / 2 - 375 / 2)).toBeLessThan(2);
+    const darkPreferenceBackground = await page.locator('body').evaluate(el => getComputedStyle(el).backgroundColor);
+    await page.emulateMedia({ colorScheme: 'light' });
+    await expect(page.locator('body')).toHaveCSS('background-color', darkPreferenceBackground);
+    await expect(page.locator('#cta-heading')).toHaveCount(0);
+    await expect(page.locator('main a[href^="tel:"]')).toHaveCount(0);
+    await expect(page.locator('footer a[href^="tel:"]')).toHaveCount(0);
+    await expect(page.locator('a[href^="tel:"]:visible')).toHaveCount(1);
+    await page.goto(`/${locale}/contact/`);
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await expect(page.locator('html')).toHaveCSS('color-scheme', 'light only');
+    await expect(page.locator('main a[href="tel:' + clinic.phone.landline.tel + '"]').first()).toBeVisible();
   });
 
   test(`${locale}: hero logo stays top-left and follows mouse only when motion is allowed`, async ({ page }) => {

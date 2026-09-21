@@ -42,3 +42,11 @@ original files, not screenshots of Instagram, and links directly to each post.
 
 The asset guard, production launch gate, claims linter and other checks stay
 enabled. Unit coverage records the exact selected file/source pairs.
+
+## Presentation update — 2026-09-21
+
+At the owner’s subsequent request, individual post links were removed from
+cards and the lightbox. The photos remain viewable; a single social-profile
+button row replaces repeated outbound links. Source URLs remain recorded in
+the manifest and this decision for provenance. Facebook is rendered only once
+its exact clinic URL is supplied.

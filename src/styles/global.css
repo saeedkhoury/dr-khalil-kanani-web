@@ -99,6 +99,7 @@
 
 @layer base {
   :root {
+    color-scheme: only light;
     --shell-max: 1180px;
     --gutter: 1rem;
     /* Height of the sticky mobile action bar, so content can clear it. */

@@ -124,6 +124,8 @@ export const clinic = {
 
   social: {
     instagram: 'https://www.instagram.com/dr.khalil.kanani',
+    /** Hidden until the owner supplies the clinic’s exact Facebook page. */
+    facebook: '' as string,
     /**
      * Google Business Profile. UNVERIFIED — no profile was found during
      * discovery and the clinic may not have claimed one yet.

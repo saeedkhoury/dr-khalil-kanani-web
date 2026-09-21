@@ -2,6 +2,17 @@
 
 ## 2026-09-21
 
+### Mobile presentation and contact cleanup
+
+- Removed individual Instagram links from gallery cards and the lightbox;
+  photos still open for viewing. Added a profile-button row above the gallery.
+  Instagram is available; Facebook awaits the clinic’s exact URL.
+- Fixed the site to light mode and centered the hero tooth logo on mobile.
+- Removed repeated homepage contact banner, hero phone line, map phone blocks
+  and footer contact/hours columns. Full details remain on the contact page.
+- Added three locale checks for dark system preference, centered mobile logo
+  and consolidated contact actions, bringing browser coverage to 34 tests.
+
 ### Owner-selected Instagram work gallery
 
 - Replaced the visible illustration gallery with three supplied treatment

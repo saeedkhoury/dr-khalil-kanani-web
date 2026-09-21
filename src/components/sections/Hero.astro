@@ -6,13 +6,13 @@
  * WHAT NEXT (actions). It does not open with a biography — one reference site
  * does, and its H1 is a 450-character paragraph as a result.
  *
- * The owner's tooth mark occupies the physical top-left in every locale.
+ * The owner's tooth mark occupies the top-left on desktop and center on mobile.
  * Pointer tilt is decorative; heading and contact actions remain static.
  */
 import { Image } from 'astro:assets';
 import { localizePath, type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
-import { clinic, telUrl, whatsappUrl } from '../../data/clinic';
+import { whatsappUrl } from '../../data/clinic';
 import { heroImage, hasHeroImage } from '../../data/media';
 import { resolveImage } from '../../lib/images';
 import Button from '../primitives/Button.astro';
@@ -91,17 +91,6 @@ const withImage = hasHeroImage() && heroAsset !== undefined;
         </Button>
       </div>
 
-      <!-- The flyer's own call to action is "call now", so the number is
-           readable without tapping. Bidi-isolated so it never reorders. -->
-      <p class="enter mt-7 text-[var(--text-sm)] text-[var(--color-muted)]" style="--i:4">
-        {t('action.callNow')}:{' '}
-        <a
-          href={telUrl('landline')}
-          class="u-ltr font-semibold text-[var(--color-ink)] no-underline hover:underline"
-        >
-          {clinic.phone.landline.display}
-        </a>
-      </p>
     </div>
 
     {

@@ -23,6 +23,7 @@ import Logo from '../primitives/Logo.astro';
     pointer-events: none;
     direction: ltr;
     margin-block-start: 0.5rem;
+    justify-self: center;
   }
   .hero-logo-object {
     position: relative;
@@ -46,6 +47,9 @@ import Logo from '../primitives/Logo.astro';
     overflow: visible;
   }
   .hero-logo-face { filter: drop-shadow(0 1px 0 #d3efff); }
+  @media (min-width: 768px) {
+    .hero-logo { justify-self: start; }
+  }
   @media (prefers-reduced-motion: reduce) {
     .hero-logo-object { transition: none; }
   }

@@ -85,27 +85,6 @@ const actionClass =
             </dd>
           </div>
 
-          <div>
-            <dt class="eyebrow">{t('contact.phoneLabel')}</dt>
-            <dd class="mt-1" style="margin-inline-start:0">
-              {/* min-h-11 (44px): these are phone numbers, the primary action
-                  on mobile. 24px would satisfy WCAG 2.2 and still be a poor
-                  thumb target. */}
-              <a
-                href={telUrl('landline')}
-                class="u-ltr -mx-2 flex min-h-11 items-center rounded-[var(--radius-btn)] px-2 no-underline transition-colors duration-[var(--dur-fast)] hover:bg-[var(--color-mist)]"
-              >
-                {clinic.phone.landline.display}
-              </a>
-              <a
-                href={telUrl('mobile')}
-                class="u-ltr -mx-2 flex min-h-11 items-center rounded-[var(--radius-btn)] px-2 no-underline transition-colors duration-[var(--dur-fast)] hover:bg-[var(--color-mist)]"
-              >
-                {clinic.phone.mobile.display}
-              </a>
-            </dd>
-          </div>
-
           {
             hasHours() && (
               <div class="sm:col-span-2">
@@ -164,7 +143,7 @@ const actionClass =
           )
         }
 
-        <div class="mt-4 flex flex-col gap-3">
+        {!canNavigate && <div class="mt-4 flex flex-col gap-3">
           <a
             href={telUrl('landline')}
             class={`${actionClass} border border-[var(--color-line-strong)] bg-[var(--color-porcelain)] text-[var(--color-ink)] hover:border-[var(--color-ink)]`}
@@ -181,7 +160,7 @@ const actionClass =
             <Icon name="whatsapp" size={18} />
             {t('action.whatsapp')}
           </a>
-        </div>
+        </div>}
       </div>
       </div>
       <MapFacade locale={locale} />

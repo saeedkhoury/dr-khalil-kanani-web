@@ -24,7 +24,6 @@ import FaqAccordion from '../../components/sections/FaqAccordion.astro';
 import ClinicGallery from '../../components/sections/ClinicGallery.astro';
 import PatientFeedback from '../../components/sections/PatientFeedback.astro';
 import FindTheClinic from '../../components/sections/FindTheClinic.astro';
-import ContactCta from '../../components/sections/ContactCta.astro';
 
 import { LOCALES, type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
@@ -50,5 +49,4 @@ const faq = generalFaq.slice(0, 5).map((f) => ({ q: f.q[locale], a: f.a[locale] 
   <PatientFeedback locale={locale} />
   <FaqAccordion locale={locale} items={faq} id="home-faq" />
   <FindTheClinic locale={locale} />
-  <ContactCta locale={locale} />
 </BaseLayout>

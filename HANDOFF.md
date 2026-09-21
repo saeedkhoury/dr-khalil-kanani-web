@@ -38,11 +38,14 @@ opened and matched to posts on the clinic's Instagram. The owner explicitly
 requested these after the prior exclusion was explained; the scoped direction
 and source URLs are recorded in [ADR 0009](docs/decisions/0009-owner-directed-instagram-gallery.md).
 Each original is shown uncropped, with localized descriptive text, a full-size
-viewer and a link to its source post. These replace the AI illustrations in the
+viewer. Per-photo links were removed at the owner’s request; one profile-button
+row sits above the gallery. Instagram is configured; Facebook stays hidden
+until the owner supplies its URL. Original post URLs remain in the manifest
+for internal provenance. These replace the AI illustrations in the
 visible gallery; the original illustration assets remain available as fallback.
 Patient consent and legal clearance have not been independently verified.
 
-The original vector tooth mark sits at the physical top-left of the hero in
+The original vector tooth mark sits at the top-left of the desktop hero and centered on mobile in
 all locales, with layered 3D depth and hero-scoped mouse tracking. Touch,
 reduced-motion and no-JS visitors receive the static mark. The empty portrait
 panel remains removed from the homepage and About pages; no actual doctor
@@ -86,6 +89,12 @@ owner's decision, and probably a lawyer's.
 - Click-to-load map facade (ADR 0008), renders nothing without a confirmed pin
 - Accessibility statement and privacy policy (drafts, need legal review)
 
+The site permanently uses the light palette, including native controls when the
+OS prefers dark mode. The homepage closing contact banner, repeated hero phone
+line, map phone blocks and footer contact/hours columns were removed. The
+contact page retains full details; desktop header and mobile action bar retain
+quick contact. The browser suite now contains 34 tests.
+
 ### Enforcement gates
 
 | Gate | Command | Blocks |
@@ -118,7 +127,7 @@ explicit per-field allowlist; anything not on it fails the build.
 | Motion | Normal/reduced-motion, no JS, and failed observer initialization checked |
 | Populated Phase 3 components | Gallery opens/navigates/closes/restores focus; Arabic Western digits; map loads only after press (request intercepted) |
 | Visual review | Homepage/contact screenshots sampled at top, middle and footer in all three locales × three widths; synthetic lightbox inspected |
-| Instagram gallery follow-up | Three matched originals load; uncropped tiles and source links checked in he/ar/en at 375/768/1440px; mobile lightboxes visually inspected; gallery axe and navigation pass |
+| Instagram gallery follow-up | Three matched originals load; uncropped tiles and profile buttons checked in he/ar/en at 375/768/1440px; mobile lightboxes visually inspected; gallery axe and navigation pass |
 | Picture/logo follow-up | Hero screenshots inspected in all locales at 375/768/1440px; loaded gallery and lightbox checked; desktop pointer tracking/reset, reduced-motion and emulated coarse-pointer fallback pass |
 
 Browser fixtures build in an OS temporary copy using the existing vector mark

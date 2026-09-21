@@ -1,17 +1,8 @@
 ---
-/**
- * Footer.
- *
- * Every contact fact here reads from src/data/clinic.ts. Nothing is
- * hardcoded — that is what prevents the NAP drift found on both reference
- * sites, each of which shipped three different phone numbers.
- *
- * Hours and address render only when verified; placeholders are never shown.
- */
+/** Compact identity, navigation and legal footer. Contact details live on the contact page. */
 import { localizePath, type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
-import { clinic, telUrl, hasAddress, hasHours } from '../../data/clinic';
-import Icon from '../primitives/Icon.astro';
+import { clinic } from '../../data/clinic';
 import Logo from '../primitives/Logo.astro';
 
 interface Props {
@@ -33,15 +24,10 @@ const legal = [
   { key: 'legal.privacy', path: 'privacy' },
 ] as const;
 
-const dayNames: Record<Locale, Record<string, string>> = {
-  he: { Sunday: 'ראשון', Monday: 'שני', Tuesday: 'שלישי', Wednesday: 'רביעי', Thursday: 'חמישי', Friday: 'שישי', Saturday: 'שבת' },
-  ar: { Sunday: 'الأحد', Monday: 'الإثنين', Tuesday: 'الثلاثاء', Wednesday: 'الأربعاء', Thursday: 'الخميس', Friday: 'الجمعة', Saturday: 'السبت' },
-  en: { Sunday: 'Sunday', Monday: 'Monday', Tuesday: 'Tuesday', Wednesday: 'Wednesday', Thursday: 'Thursday', Friday: 'Friday', Saturday: 'Saturday' },
-};
 ---
 
 <footer class="mt-8 border-t border-[var(--color-line)] bg-[var(--color-mist)]">
-  <div class="shell grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="shell grid gap-10 py-12 sm:grid-cols-2">
     <!-- Identity -->
     <div class="lg:col-span-1">
       <div class="flex items-center gap-2.5">
@@ -75,67 +61,6 @@ const dayNames: Record<Locale, Record<string, string>> = {
       </ul>
     </nav>
 
-    <!-- Contact -->
-    <div>
-      <h2 class="eyebrow mb-3">{t('contact.title')}</h2>
-      <ul class="space-y-2.5" style="list-style:none;padding-inline-start:0;margin:0">
-        <li class="flex items-center gap-2">
-          <Icon name="phone" size={17} class="shrink-0 text-[var(--color-signal)]" />
-          <a href={telUrl('landline')} class="u-ltr text-[var(--text-sm)] no-underline hover:underline">
-            {clinic.phone.landline.display}
-          </a>
-        </li>
-        <li class="flex items-center gap-2">
-          <Icon name="whatsapp" size={17} class="shrink-0 text-[var(--color-signal)]" />
-          <a href={telUrl('mobile')} class="u-ltr text-[var(--text-sm)] no-underline hover:underline">
-            {clinic.phone.mobile.display}
-          </a>
-        </li>
-        {
-          hasAddress(locale) && (
-            <li class="flex items-start gap-2">
-              <Icon name="map-pin" size={17} class="mt-0.5 shrink-0 text-[var(--color-signal)]" />
-              <span class="text-[var(--text-sm)]">
-                {clinic.address.street[locale]}, {clinic.address.locality[locale]}
-              </span>
-            </li>
-          )
-        }
-        {
-          clinic.email && (
-            <li class="flex items-center gap-2">
-              <Icon name="mail" size={17} class="shrink-0 text-[var(--color-signal)]" />
-              <a href={`mailto:${clinic.email}`} class="u-ltr text-[var(--text-sm)] no-underline hover:underline">
-                {clinic.email}
-              </a>
-            </li>
-          )
-        }
-      </ul>
-    </div>
-
-    <!-- Hours -->
-    <div>
-      <h2 class="eyebrow mb-3">{t('contact.hoursLabel')}</h2>
-      {
-        hasHours() ? (
-          <ul class="space-y-1" style="list-style:none;padding-inline-start:0;margin:0">
-            {clinic.hours.map((h) => (
-              <li class="flex justify-between gap-4 text-[var(--text-sm)]">
-                <span class="text-[var(--color-muted)]">{dayNames[locale][h.day]}</span>
-                <span class="u-ltr">{h.closed ? '—' : `${h.opens}–${h.closes}`}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p class="text-[var(--text-sm)] text-[var(--color-muted)]">
-            <a href={localizePath(locale, 'contact')} class="no-underline hover:underline">
-              {t('contact.subtitle')}
-            </a>
-          </p>
-        )
-      }
-    </div>
   </div>
 
   <!-- Legal -->
