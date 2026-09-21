@@ -31,15 +31,18 @@ jobs:
         run: npm ci
 
       - name: Build site
+        env:
+          ASTRO_SITE: https://saeedkhoury.github.io
+          ASTRO_BASE: /dr-khalil-kanani-web
         run: npm run build:preview
 
       - name: Create .nojekyll file
-        run: touch ./dist/client/.nojekyll
+        run: touch ./dist/client/dr-khalil-kanani-web/.nojekyll
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist/client
+          path: ./dist/client/dr-khalil-kanani-web
 
   deploy:
     environment:

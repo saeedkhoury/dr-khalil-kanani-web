@@ -105,7 +105,7 @@ const graph = buildGraph({ locale, pathname, title: fullTitle, description, brea
     <meta name="twitter:card" content="summary_large_image" />
 
     <meta name="theme-color" content="#0C5283" />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href={`${import.meta.env.BASE_URL}favicon.svg`} type="image/svg+xml" />
 
     <script is:inline>
       // Flip the no-js flag before paint so JS-dependent reveal states never

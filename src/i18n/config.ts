@@ -59,13 +59,17 @@ export function isRtl(locale: Locale): boolean {
 
 /** Build a locale-prefixed path: ('ar', 'treatments/dental-implants') -> '/ar/treatments/dental-implants' */
 export function localizePath(locale: Locale, path = ''): string {
+  const base = (import.meta.env.BASE_URL || '/').replace(/\/+$/, '');
   const clean = path.replace(/^\/+|\/+$/g, '');
-  return clean ? `/${locale}/${clean}/` : `/${locale}/`;
+  const prefix = base ? `${base}/${locale}` : `/${locale}`;
+  return clean ? `${prefix}/${clean}/` : `${prefix}/`;
 }
 
-/** Strip the locale prefix from a pathname: '/ar/faq/' -> 'faq' */
+/** Strip base and locale prefix from a pathname: '/ar/faq/' -> 'faq' */
 export function stripLocale(pathname: string): string {
+  const base = (import.meta.env.BASE_URL || '/').replace(/^\/+|\/+$/g, '');
   const parts = pathname.split('/').filter(Boolean);
+  if (base && parts[0] === base) parts.shift();
   if (isLocale(parts[0])) parts.shift();
   return parts.join('/');
 }

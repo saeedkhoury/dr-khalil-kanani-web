@@ -46,7 +46,8 @@ function launchGate() {
  * body copy, 600 is for eyebrow labels and UI, 700 for emphasis.
  */
 export default defineConfig({
-  site: clinic.siteUrl,
+  site: process.env.ASTRO_SITE || clinic.siteUrl,
+  base: process.env.ASTRO_BASE || undefined,
   trailingSlash: 'always',
 
   i18n: {
