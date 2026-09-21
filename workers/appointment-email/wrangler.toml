@@ -1,0 +1,13 @@
+name = "drkanani-appointment-email"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# ── NO SECRETS IN THIS FILE ────────────────────────────────────────────────
+# RESEND_API_KEY is set out of band:  wrangler secret put RESEND_API_KEY
+#
+# The three below are not secret — they are two addresses and an origin — so
+# they live here, where a change to them shows up in a diff and gets reviewed.
+[vars]
+MAIL_FROM = "Dr. Khalil Kanani <request@drkhalilkanani.com>"
+MAIL_TO = ""                                        # REQUIRED — the clinic inbox
+ALLOWED_ORIGIN = "https://www.drkhalilkanani.com"

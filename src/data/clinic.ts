@@ -122,6 +122,18 @@ export const clinic = {
   /*  Social                                                                   */
   /* ------------------------------------------------------------------------ */
 
+  /**
+   * Appointment-request email relay (Cloudflare Worker).
+   *
+   * Empty = the form uses the WhatsApp handoff only, exactly as before. That
+   * is the safe default: an unconfigured endpoint must never mean a silently
+   * dropped request. See workers/appointment-email/README.md.
+   *
+   * Once deployed, set this to the Worker URL. The form then emails the
+   * clinic and falls back to WhatsApp if the Worker is unreachable.
+   */
+  requestEndpoint: '' as string,
+
   social: {
     instagram: 'https://www.instagram.com/dr.khalil.kanani',
     /** Hidden until the owner supplies the clinic’s exact Facebook page. */
@@ -261,6 +273,11 @@ export function hasAddress(locale: Locale): boolean {
 /** True once the owner has confirmed a map pin. Never geocode a guess. */
 export function hasGeo(): boolean {
   return clinic.address.geo.lat !== 0 && clinic.address.geo.lng !== 0;
+}
+
+/** True once the email relay has been deployed and wired up. */
+export function hasRequestEndpoint(): boolean {
+  return clinic.requestEndpoint.trim() !== '';
 }
 
 /** True once a Google Business Profile URL has been supplied. */

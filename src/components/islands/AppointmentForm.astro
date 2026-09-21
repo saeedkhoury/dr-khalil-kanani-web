@@ -71,6 +71,8 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
   novalidate
   data-wa-number={clinic.phone.mobile.whatsapp}
   data-heading={t('form.messageHeading')}
+  data-endpoint={clinic.requestEndpoint}
+  data-locale={locale}
   class="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-6 sm:p-8"
 >
   <h2 class="text-[var(--text-xl)] font-semibold">{t('form.title')}</h2>
@@ -230,6 +232,19 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
     </div>
   </div>
 
+  {/* ── Honeypot ──────────────────────────────────────────────────────────
+      Off-screen rather than display:none — some bots skip hidden inputs but
+      almost all fill anything with a plausible name. aria-hidden and
+      tabindex=-1 keep it away from screen readers and the tab order, so it
+      costs a real visitor nothing.
+
+      The server treats a filled honeypot as success and drops the message.
+      Telling a bot it failed only helps it iterate. */}
+  <div aria-hidden="true" style="position:absolute;inset-inline-start:-9999px;width:1px;height:1px;overflow:hidden">
+    <label for="f-company">Company</label>
+    <input type="text" id="f-company" name="company" tabindex="-1" autocomplete="off" />
+  </div>
+
   <!-- Consent: unticked, never bundled with the submit action. -->
   <div class="mt-7 border-t border-[var(--color-line)] pt-6">
     <label class="flex cursor-pointer items-start gap-3">
@@ -322,6 +337,10 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
     const summaryList = document.getElementById('error-summary-list')!;
     const success = document.getElementById('form-success')!;
     const genericError = document.getElementById('f-generic-error')!;
+    // When the form became interactive. A submit faster than a human could
+    // type is treated as a bot by the relay.
+    const startedAt = Date.now();
+
     const submitBtn = document.getElementById('f-submit') as HTMLButtonElement;
     const submitLabel = submitBtn.querySelector('[data-label]') as HTMLElement;
 
@@ -355,14 +374,17 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
       node.addEventListener(event, () => setFieldError(check.id, !check.valid()));
     }
 
-    /** Build the message the dentist actually receives. */
-    function composeMessage(): string {
-      const lines: string[] = [form!.dataset.heading ?? '', ''];
-
-      const add = (label: string | undefined, value: string) => {
-        if (label && value.trim()) lines.push(`${label}: ${value.trim()}`);
-      };
-
+    /**
+     * Everything the visitor entered, read once.
+     *
+     * Both delivery paths derive from this single read, so the email and the
+     * WhatsApp message can never disagree about what was submitted — which
+     * would be a genuinely nasty bug to diagnose from a complaint.
+     *
+     * Selects carry DISPLAY TEXT, not slugs: the dentist reads words, and a
+     * value of "root-canal" in an inbox is worse than useless.
+     */
+    function readEntry() {
       const name = el<HTMLInputElement>('f-name');
       const phone = el<HTMLInputElement>('f-phone');
       const treatment = el<HTMLSelectElement>('f-treatment');
@@ -370,18 +392,78 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
       const note = el<HTMLTextAreaElement>('f-message');
       const methodField = form!.querySelector('fieldset') as HTMLFieldSetElement;
       const method = form!.querySelector<HTMLInputElement>('input[name="contactMethod"]:checked');
-      const methodLabel = method?.closest('label')?.textContent?.trim() ?? '';
+      const honeypot = el<HTMLInputElement>('f-company');
 
+      return {
+        fields: [
+          { label: name.dataset.label, value: name.value, key: 'name' },
+          { label: phone.dataset.label, value: phone.value, key: 'phone' },
+          {
+            label: methodField.dataset.label,
+            value: method?.closest('label')?.textContent?.trim() ?? '',
+            key: 'contactMethod',
+          },
+          {
+            label: treatment.dataset.label,
+            value: treatment.value ? (treatment.selectedOptions[0]?.text ?? '') : '',
+            key: 'treatment',
+          },
+          { label: daypart.dataset.label, value: daypart.selectedOptions[0]?.text ?? '', key: 'daypart' },
+          { label: note.dataset.label, value: note.value, key: 'message' },
+        ],
+        company: honeypot?.value ?? '',
+      };
+    }
 
-      add(name.dataset.label, name.value);
-      add(phone.dataset.label, phone.value);
-      add(methodField.dataset.label, methodLabel);
-      // Selects carry display text, not slugs — the dentist reads words.
-      if (treatment.value) add(treatment.dataset.label, treatment.selectedOptions[0]?.text ?? '');
-      add(daypart.dataset.label, daypart.selectedOptions[0]?.text ?? '');
-      add(note.dataset.label, note.value);
-
+    /** The WhatsApp message — used as the primary path, and as the fallback. */
+    function composeMessage(): string {
+      const lines: string[] = [form!.dataset.heading ?? '', ''];
+      for (const f of readEntry().fields) {
+        if (f.label && f.value.trim()) lines.push(`${f.label}: ${f.value.trim()}`);
+      }
       return lines.join('\n');
+    }
+
+    /** The JSON the relay Worker receives. Same data, different shape. */
+    function composePayload(): Record<string, unknown> {
+      const entry = readEntry();
+      const payload: Record<string, unknown> = {
+        locale: form!.dataset.locale ?? '',
+        company: entry.company,
+        elapsedMs: Date.now() - startedAt,
+      };
+      for (const f of entry.fields) payload[f.key] = f.value.trim();
+      return payload;
+    }
+
+    /** Hand off to WhatsApp. The original behaviour, now also the fallback. */
+    function handOffToWhatsApp() {
+      const url = `https://wa.me/${form!.dataset.waNumber}?text=${encodeURIComponent(composeMessage())}`;
+
+      // Opening in a new tab keeps the site (and the success state) available.
+      // If a popup blocker intervenes, navigate in place instead — never leave
+      // the visitor with a dead button.
+      // noopener makes window.open return null even when the tab opens, so a
+      // blank same-origin tab is opened first to make popup detection
+      // meaningful, then its opener is severed before navigating.
+      const opened = window.open('', '_blank');
+      if (!opened) {
+        window.location.href = url;
+        return false;
+      }
+      opened.opener = null;
+      const referrer = opened.document.createElement('meta');
+      referrer.name = 'referrer';
+      referrer.content = 'no-referrer';
+      opened.document.head.appendChild(referrer);
+      opened.location.replace(url);
+      return true;
+    }
+
+    function showSuccess() {
+      form!.hidden = true;
+      success.hidden = false;
+      success.focus();
     }
 
     form.addEventListener('submit', (event) => {
@@ -416,31 +498,52 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
       const original = submitLabel.textContent;
       submitLabel.textContent = submitBtn.dataset.submitting ?? original;
 
-      const url = `https://wa.me/${form.dataset.waNumber}?text=${encodeURIComponent(composeMessage())}`;
+      const restore = () => {
+        submitBtn.disabled = false;
+        if (original) submitLabel.textContent = original;
+      };
 
-      // Opening in a new tab keeps the site (and the success state) available.
-      // If a popup blocker intervenes, navigate in place instead — never leave
-      // the visitor with a dead button.
-      // noopener makes window.open return null even when the tab opens.
-      // Open a blank same-origin tab first so popup detection is meaningful,
-      // then sever its opener before navigating to WhatsApp.
-      const opened = window.open('', '_blank');
-      if (!opened) {
-        window.location.href = url;
+      const endpoint = form.dataset.endpoint ?? '';
+
+      // ── No relay configured ───────────────────────────────────────────
+      // The original behaviour, unchanged. An unconfigured endpoint must
+      // mean "use WhatsApp", never "drop the request".
+      if (!endpoint) {
+        if (handOffToWhatsApp()) showSuccess();
+        restore();
         return;
       }
-      opened.opener = null;
-      const referrer = opened.document.createElement('meta');
-      referrer.name = 'referrer';
-      referrer.content = 'no-referrer';
-      opened.document.head.appendChild(referrer);
-      opened.location.replace(url);
 
-      form.hidden = true;
-      success.hidden = false;
-      success.focus();
-      submitBtn.disabled = false;
-      if (original) submitLabel.textContent = original;
+      // ── Relay configured: email first, WhatsApp on failure ────────────
+      // The site lost every enquiry once because a submit path failed
+      // silently in production (ADR 0007). So the failure branch is not an
+      // afterthought here: any non-success answer, including a network error
+      // or a timeout, falls through to the channel that is known to work.
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 8000);
+
+      fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(composePayload()),
+        signal: controller.signal,
+      })
+        .then((response) => (response.ok ? response.json() : Promise.reject(new Error(String(response.status)))))
+        .then((body) => {
+          if (!body || body.ok !== true) throw new Error('relay_rejected');
+          showSuccess();
+        })
+        .catch(() => {
+          // Deliberately quiet toward the visitor: they get a working path,
+          // not an explanation of our infrastructure. The request still
+          // reaches the dentist.
+          if (handOffToWhatsApp()) showSuccess();
+          else genericError.hidden = false;
+        })
+        .finally(() => {
+          clearTimeout(timeout);
+          restore();
+        });
     });
   }
 </script>
