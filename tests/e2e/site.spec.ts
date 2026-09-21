@@ -1,10 +1,17 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { clinic } from '../../src/data/clinic';
+import { treatmentWork } from '../../src/data/media';
+
+// Derived, never hard-coded: a count literal here silently rots every time an
+// image is added or removed, and the failure reads as a bug in the gallery
+// rather than a stale expectation.
+const WORK_TILE_COUNT = treatmentWork.length;
 
 const locales = ['he', 'ar', 'en'] as const;
 const routes = ['', 'about/', 'contact/', 'faq/', 'privacy/', 'accessibility/', 'treatments/',
-  ...['clear-aligners', 'dental-implants', 'emergency-dental', 'root-canal', 'teeth-whitening', 'veneers']
+  ...['clear-aligners', 'dental-implants', 'emergency-dental', 'root-canal', 'teeth-whitening', 'veneers',
+      'tooth-extraction', 'dental-fillings']
     .map((slug) => `treatments/${slug}/`)];
 
 for (const locale of locales) {
@@ -14,7 +21,7 @@ for (const locale of locales) {
     const gallery = page.locator('section[aria-labelledby="gallery-heading"]');
     const tiles = gallery.locator('[data-gallery-open]');
     await expect(gallery).toHaveAttribute('data-gallery-kind', 'work');
-    await expect(tiles).toHaveCount(3);
+    await expect(tiles).toHaveCount(WORK_TILE_COUNT);
     await expect(gallery.locator('li a')).toHaveCount(0);
     await expect(gallery.locator('[data-gallery-social] a[href="' + clinic.social.instagram + '"]')).toHaveText('Instagram');
     if (clinic.social.facebook) await expect(gallery.locator('[data-gallery-social] a[href="' + clinic.social.facebook + '"]')).toHaveText('Facebook');
@@ -28,13 +35,13 @@ for (const locale of locales) {
     const dialog = page.locator('#gallery-lightbox');
     await expect(dialog).toBeVisible();
     await expect(dialog.locator('a')).toHaveCount(0);
-    await expect(page.locator('#lightbox-position')).toHaveText('1 / 3');
+    await expect(page.locator('#lightbox-position')).toHaveText(`1 / ${WORK_TILE_COUNT}`);
     await expect.poll(() => page.locator('#lightbox-image').evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
     await page.locator('[data-gallery-next]').click();
-    await expect(page.locator('#lightbox-position')).toHaveText('2 / 3');
+    await expect(page.locator('#lightbox-position')).toHaveText(`2 / ${WORK_TILE_COUNT}`);
     await expect(page.locator('#lightbox-image')).toHaveAttribute('alt', await tiles.nth(1).getAttribute('aria-label') ?? '');
     await page.locator('[data-gallery-prev]').click();
-    await expect(page.locator('#lightbox-position')).toHaveText('1 / 3');
+    await expect(page.locator('#lightbox-position')).toHaveText(`1 / ${WORK_TILE_COUNT}`);
     expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()).violations).toEqual([]);
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
@@ -224,7 +231,7 @@ for (const locale of locales) {
     await page.goto(`http://127.0.0.1:4330/${locale}/`);
     for (const element of await page.locator('.reveal, .enter').all()) await expect(element).toHaveCSS('opacity', '1');
     await expect(page.locator('[data-hero-logo]')).toBeVisible();
-    await expect(page.locator('[data-gallery-open]')).toHaveCount(3);
+    await expect(page.locator('[data-gallery-open]')).toHaveCount(WORK_TILE_COUNT);
     await page.goto(`http://127.0.0.1:4330/${locale}/contact/`);
     await expect(page.locator('noscript a[href^="tel:"]')).toBeVisible();
     await expect(page.locator('noscript a[href^="https://wa.me/"]')).toBeVisible();

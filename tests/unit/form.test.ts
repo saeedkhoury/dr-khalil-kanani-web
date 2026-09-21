@@ -111,9 +111,14 @@ describe('form options', () => {
 });
 
 describe('media manifest', () => {
-  test('contains the three owner-directed treatment posts, with no invented portrait', () => {
-    assert.equal(treatmentWork.length, 3);
+  test('contains the twelve owner-approved treatment cases, with no invented portrait', () => {
+    // 13 source files, 12 unique — one is a byte-identical duplicate that was
+    // skipped rather than published twice.
+    assert.equal(treatmentWork.length, 12);
     assert.equal(hasTreatmentWork(), true);
+    // No duplicate filenames, which is how the skipped duplicate would resurface.
+    const files = treatmentWork.map((a) => a.file);
+    assert.equal(new Set(files).size, files.length, 'duplicate file registered');
     assert.equal(portrait, null);
     assert.equal(hasPortrait(), false);
   });
@@ -188,16 +193,44 @@ describe('media manifest', () => {
     }
   });
 
-  test('each treatment photo has its individually reviewed Instagram source', () => {
-    const reviewed = new Map([
+  test('every treatment photo records how it was approved', () => {
+    // Two approval routes with different evidence behind them. An Instagram
+    // match can be re-checked against a public post; an owner-supplied file
+    // cannot, so it is recorded as such rather than implied to be verified.
+    // NEITHER route establishes patient consent or legal review — see
+    // docs/decisions/0009-owner-directed-instagram-gallery.md.
+    const instagramSourced = new Map([
       ['work-veneers-01.jpg', 'https://www.instagram.com/p/DdJ042BMJUu/'],
       ['work-cleaning-01.jpg', 'https://www.instagram.com/p/DdWvC8csM-6/'],
       ['work-cleaning-02.jpg', 'https://www.instagram.com/p/Da8QjY7MiIP/'],
     ]);
     for (const asset of treatmentWork) {
       assert.equal(asset.category, 'treatment-work');
-      assert.ok(reviewed.has(asset.file), `${asset.file}: requires an explicit review`);
-      assert.equal(asset.sourcePostUrl, reviewed.get(asset.file));
+      assert.ok(
+        asset.provenance === 'instagram-post' || asset.provenance === 'owner-supplied',
+        `${asset.file}: must record its approval route`,
+      );
+      if (asset.provenance === 'instagram-post') {
+        assert.ok(instagramSourced.has(asset.file), `${asset.file}: claims an Instagram source but is not in the reviewed set`);
+        assert.equal(asset.sourcePostUrl, instagramSourced.get(asset.file));
+      } else {
+        // An owner-supplied file must NOT claim a source post it never had.
+        assert.equal(asset.sourcePostUrl, undefined, `${asset.file}: owner-supplied assets carry no source post`);
+      }
+    }
+  });
+
+  test('alt text describes the image without asserting a medical outcome', () => {
+    // The images carry Hebrew marketing text in their pixels, including
+    // outcome claims. Those must not be transcribed into alt text, where they
+    // would become site copy that the claims linter is meant to catch.
+    const OUTCOME = /ללא כאב|without pain|painless|guaranteed|מדהים|amazing|best|הטוב ביותר|بلا ألم|مذهل/i;
+    for (const asset of treatmentWork) {
+      for (const locale of ['he', 'ar', 'en'] as const) {
+        const text = asset.alt[locale];
+        assert.ok(text.trim().length > 10, `${asset.file} (${locale}): alt text too short to describe the image`);
+        assert.doesNotMatch(text, OUTCOME, `${asset.file} (${locale}): alt text asserts an outcome`);
+      }
     }
   });
 });

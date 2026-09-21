@@ -179,6 +179,100 @@ describe('relay behaviour', () => {
   });
 });
 
+describe('recipient and sender cannot be influenced by the browser', () => {
+  test('a client-supplied "to" is ignored — the env value is used', async () => {
+    // An open relay is the worst outcome here: the clinic's verified sending
+    // domain used to mail arbitrary strangers. The Worker reads ONLY env for
+    // the recipient, never the payload.
+    const { sent } = await withStubbedResend(true, () =>
+      worker.fetch(post({ ...validBody, to: 'attacker@evil.test', MAIL_TO: 'attacker@evil.test' } as any), env),
+    );
+    assert.deepEqual(sent.body.to, [env.MAIL_TO]);
+    assert.ok(!JSON.stringify(sent.body).includes('attacker@evil.test'));
+  });
+
+  test('a client-supplied "from" is ignored — the env value is used', async () => {
+    const { sent } = await withStubbedResend(true, () =>
+      worker.fetch(post({ ...validBody, from: 'spoof@evil.test', MAIL_FROM: 'spoof@evil.test' } as any), env),
+    );
+    assert.equal(sent.body.from, env.MAIL_FROM);
+    assert.ok(!JSON.stringify(sent.body).includes('spoof@evil.test'));
+  });
+
+  test('unknown payload keys never reach the provider', async () => {
+    const { sent } = await withStubbedResend(true, () =>
+      worker.fetch(post({ ...validBody, cc: 'x@evil.test', bcc: 'y@evil.test', reply_to: 'z@evil.test' } as any), env),
+    );
+    for (const key of ['cc', 'bcc', 'reply_to']) {
+      assert.ok(!(key in sent.body), `${key} must not be forwarded`);
+    }
+  });
+});
+
+describe('email content', () => {
+  test('renders both a plain-text and an HTML part', async () => {
+    const { sent } = await withStubbedResend(true, () => worker.fetch(post(validBody), env));
+    assert.ok(sent.body.text.length > 0, 'a text part is required for notification previews');
+    assert.ok(sent.body.html.includes('<html'), 'an HTML part is required');
+  });
+
+  test('HTML is escaped — a name cannot inject markup', () => {
+    const { html } = composeEmail({ ...validBody, name: 'Rami <script>alert(1)</script>' } as any);
+    assert.ok(html.includes('&lt;script&gt;'), 'markup must be escaped');
+    assert.ok(!html.includes('<script>alert'), 'raw script must not survive');
+  });
+
+  test('Hebrew, Arabic and English survive intact in both parts', () => {
+    for (const [locale, name, note] of [
+      ['he', 'ראמי', 'כואבת לי שן'],
+      ['ar', 'رامي', 'أشعر بألم في سن'],
+      ['en', 'Rami', 'I have a sore tooth'],
+    ] as const) {
+      const { text, html } = composeEmail({ ...validBody, locale, name, message: note } as any);
+      assert.ok(text.includes(name) && text.includes(note), `${locale}: lost in the text part`);
+      assert.ok(html.includes(name) && html.includes(note), `${locale}: lost in the HTML part`);
+    }
+  });
+
+  test('names the website language in words, not a code', () => {
+    assert.ok(composeEmail({ ...validBody, locale: 'ar' } as any).text.includes('Arabic'));
+    assert.ok(composeEmail({ ...validBody, locale: 'he' } as any).text.includes('Hebrew'));
+  });
+
+  test('records whether consent was ticked rather than assuming it', () => {
+    assert.match(composeEmail({ ...validBody, consent: true } as any).text, /Consent given:\s*\nYes/);
+    assert.match(composeEmail({ ...validBody, consent: false } as any).text, /Consent given:\s*\nNot recorded/);
+  });
+
+  test('carries a submission timestamp', () => {
+    assert.match(composeEmail(validBody as any).text, /Submitted:/);
+  });
+
+  test('invents no field the form does not collect', () => {
+    // The form has no e-mail or date input. A row for either would be an
+    // email that lies about what the patient supplied.
+    const { text } = composeEmail(validBody as any);
+    assert.ok(!/^Email:/m.test(text), 'the form collects no e-mail address');
+    assert.ok(!/^Preferred date:/m.test(text), 'the form collects no date');
+  });
+
+  test('the subject carries no clinical detail', () => {
+    // Subject lines surface on lock screens. Name and phone are necessary to
+    // act on; the treatment and the patient's message are not.
+    const { subject } = composeEmail(validBody as any);
+    assert.ok(!subject.includes(validBody.treatment), 'treatment must stay out of the subject');
+    assert.ok(!subject.includes(validBody.message), 'the message must stay out of the subject');
+  });
+
+  test('an oversized message is truncated, not forwarded whole', async () => {
+    const { response, sent } = await withStubbedResend(true, () =>
+      worker.fetch(post({ ...validBody, message: 'x'.repeat(50000) }), env),
+    );
+    assert.equal(response.status, 200);
+    assert.ok(sent.body.text.length < 12000, 'field length cap must apply');
+  });
+});
+
 describe('site wiring', () => {
   test('the endpoint is unset until the owner deploys the relay', () => {
     assert.equal(hasRequestEndpoint(), false);
@@ -193,6 +287,18 @@ describe('site wiring', () => {
       'utf8',
     );
     assert.match(src, /if \(!endpoint\) \{\s*\n\s*if \(handOffToWhatsApp\(\)\) showSuccess\(\);/);
+  });
+
+  test('a duplicate submission cannot be fired by a double click', async () => {
+    // Disabling the button alone is not enough: two submit events can dispatch
+    // before the first handler runs, and the dentist gets the request twice.
+    const src = await readFile(
+      new URL('../../src/components/islands/AppointmentForm.astro', import.meta.url),
+      'utf8',
+    );
+    assert.match(src, /let submitting = false/);
+    assert.match(src, /if \(submitting\) return;/);
+    assert.match(src, /submitting = true;/);
   });
 
   test('a relay failure falls back to WhatsApp', async () => {

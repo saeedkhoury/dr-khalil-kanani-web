@@ -43,6 +43,8 @@ interface RequestPayload {
   daypart: string;
   message: string;
   locale: string;
+  /** Whether the patient ticked the consent box. Recorded, never assumed. */
+  consent?: boolean;
   /** Honeypot — must be empty. Real people cannot see this field. */
   company?: string;
   /** Milliseconds the form was on screen before submit. */
@@ -88,29 +90,105 @@ function clean(value: unknown): string {
   return value.replace(CONTROL_CHARS, ' ').trim().slice(0, MAX_FIELD);
 }
 
-/** The email the dentist actually reads. Plain text: it renders everywhere. */
-export function composeEmail(p: RequestPayload): { subject: string; text: string } {
+/** Escapes text for the HTML part. Patient names are untrusted input. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/** Israel local time, so the dentist reads a timestamp that matches his day. */
+function submittedAt(): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Jerusalem',
+    dateStyle: 'full',
+    timeStyle: 'short',
+  }).format(new Date());
+}
+
+const LANGUAGE_NAME: Record<string, string> = { he: 'Hebrew', ar: 'Arabic', en: 'English' };
+
+/**
+ * The email the dentist actually reads.
+ *
+ * Sent as BOTH plain text and HTML. The text part is not a courtesy — it is
+ * what renders in a notification preview, in a watch, and in any client that
+ * blocks HTML, which is where a dentist between patients will actually see it.
+ *
+ * Only fields the form really collects appear. There is no e-mail address or
+ * preferred-date row because the form does not ask for either; inventing them
+ * would produce an email that quietly lies about what the patient supplied.
+ */
+export function composeEmail(p: RequestPayload): { subject: string; text: string; html: string } {
+  const when = submittedAt();
   const rows: Array<[string, string]> = [
     ['Name', p.name],
     ['Phone', p.phone],
     ['Preferred contact', p.contactMethod],
-    ['Treatment', p.treatment],
+    ['Requested treatment', p.treatment],
     ['Preferred time', p.daypart],
-    ['Site language', p.locale],
+    ['Website language', LANGUAGE_NAME[p.locale] ?? p.locale],
+    ['Consent given', p.consent ? 'Yes' : 'Not recorded'],
+    ['Submitted', when],
   ];
+  const present = rows.filter(([, value]) => value);
 
-  const body = rows
-    .filter(([, value]) => value)
-    .map(([label, value]) => `${label}: ${value}`)
-    .join('\n');
+  const text = [
+    'NEW APPOINTMENT REQUEST',
+    '',
+    ...present.map(([label, value]) => `${label}:\n${value}`),
+    ...(p.message ? ['', `Message / Notes:\n${p.message}`] : []),
+    '',
+    '—',
+    'Sent by drkhalilkanani.com. Reply by phone or WhatsApp; this address does not receive replies.',
+  ].join('\n');
 
-  const note = p.message ? `\n\nMessage from the patient:\n${p.message}` : '';
+  // Inline styles only: every mail client strips <style> blocks. dir="auto"
+  // lets each value render in its own script's direction, so a Hebrew name and
+  // a Latin phone number both read correctly in one table.
+  const html = `<!doctype html><html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:24px;background:#f1f6fa;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f2a3d">
+<table role="presentation" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid #dbe6ef;border-radius:12px">
+<tr><td style="padding:20px 24px;border-bottom:1px solid #dbe6ef">
+<h1 style="margin:0;font-size:18px;color:#0c5283">New appointment request</h1>
+</td></tr>
+<tr><td style="padding:8px 24px 20px">
+<table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+${present
+  .map(
+    ([label, value]) =>
+      `<tr><td style="padding:10px 0;border-bottom:1px solid #eef3f8;font-size:12px;color:#5b7186;text-transform:uppercase;letter-spacing:.04em;width:40%;vertical-align:top">${escapeHtml(
+        label,
+      )}</td><td style="padding:10px 0;border-bottom:1px solid #eef3f8;font-size:15px;color:#0f2a3d" dir="auto">${escapeHtml(value)}</td></tr>`,
+  )
+  .join('')}
+${
+  p.message
+    ? `<tr><td colspan="2" style="padding:16px 0 0;font-size:12px;color:#5b7186;text-transform:uppercase;letter-spacing:.04em">Message / Notes</td></tr>
+<tr><td colspan="2" style="padding:6px 0 0;font-size:15px;line-height:1.6;white-space:pre-wrap" dir="auto">${escapeHtml(
+        p.message,
+      )}</td></tr>`
+    : ''
+}
+</table>
+</td></tr>
+<tr><td style="padding:14px 24px;background:#f7fafc;border-top:1px solid #dbe6ef;font-size:12px;color:#5b7186;border-radius:0 0 12px 12px">
+Sent by drkhalilkanani.com. Reply by phone or WhatsApp; this address does not receive replies.
+</td></tr>
+</table>
+</body></html>`;
 
   return {
     // The phone number goes in the subject so the request is actionable
-    // straight from a phone notification, without opening the mail.
-    subject: `Appointment request — ${p.name} (${p.phone})`,
-    text: `${body}${note}\n\n— Sent by drkhalilkanani.com. Reply by phone or WhatsApp; this address does not receive replies.`,
+    // straight from a phone notification. Nothing clinical goes here — the
+    // treatment and the patient's message stay inside the body, because
+    // subject lines surface on lock screens.
+    subject: `New appointment request — ${p.name} (${p.phone})`,
+    text,
+    html,
   };
 }
 
@@ -158,6 +236,7 @@ export default {
       daypart: clean(payload.daypart),
       message: clean(payload.message),
       locale: clean(payload.locale),
+      consent: payload.consent === true,
     };
 
     if (cleaned.name.length < 2) {
@@ -167,7 +246,7 @@ export default {
       return json(env, { ok: false, error: 'invalid_phone' }, 400);
     }
 
-    const { subject, text } = composeEmail(cleaned);
+    const { subject, text, html } = composeEmail(cleaned);
 
     const sent = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -180,6 +259,7 @@ export default {
         to: [env.MAIL_TO],
         subject,
         text,
+        html,
       }),
     });
 

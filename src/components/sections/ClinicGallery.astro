@@ -67,14 +67,31 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
           </div>}
         </div>
 
+        {/* ── WHY COLUMNS, NOT A GRID, FOR TREATMENT WORK ──────────────────
+            These images are a mix of square (1254x1254) and tall 9:16 posts.
+            A uniform grid forces one shape on both: `object-cover` would crop
+            away the clinic's own branding and the before/after labels, which
+            ADR 0009 requires be shown whole, and `object-contain` letterboxes
+            the tall ones into roughly 44% empty space.
+
+            CSS multi-column lets every tile keep its true aspect ratio and
+            packs the uneven heights without gaps. It also respects `direction`,
+            so the first column is on the right in Hebrew and Arabic with no
+            extra work, and reading order still follows DOM order. */}
         <ul
-          class:list={['mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3', !workGallery && 'lg:auto-rows-[15rem]']}
+          class:list={[
+            'mt-10',
+            workGallery
+              ? 'columns-1 gap-5 sm:columns-2 lg:columns-3'
+              : 'grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:auto-rows-[15rem]',
+          ]}
           style="list-style:none;padding-inline-start:0;margin-block-end:0"
         >
           {items.map(({ asset, resolved }, i) => (
             <li
               class:list={[
                 'reveal',
+                workGallery ? 'mb-5 break-inside-avoid' : '',
                 !workGallery && asset.feature ? 'sm:col-span-2 lg:row-span-2' : '',
               ]}
               style={`--i:${i % 3}`}
@@ -90,10 +107,15 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
                   alt={asset.alt[locale]}
                   widths={[400, 800, 1200]}
                   sizes={asset.feature ? '(min-width: 1024px) 66vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'}
-                  loading={i < 2 ? 'eager' : 'lazy'}
+                  loading={i < 3 ? 'eager' : 'lazy'}
+                  decoding={i < 3 ? 'sync' : 'async'}
+                  style={workGallery ? `aspect-ratio:${asset.width} / ${asset.height}` : undefined}
                   class:list={[
                     'transition-opacity duration-[var(--dur-base)] group-hover:opacity-90',
-                    workGallery ? 'aspect-square w-full object-contain' : 'size-full object-cover',
+                    /* Its own shape, shown whole. `contain` stays as a safety
+                       net if a registered dimension is ever wrong — a wrong
+                       number should letterbox, never silently crop. */
+                    workGallery ? 'block w-full object-contain' : 'size-full object-cover',
                   ]}
                 />
                 {asset.caption && (

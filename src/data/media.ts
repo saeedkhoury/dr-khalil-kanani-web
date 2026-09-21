@@ -92,6 +92,12 @@ export interface MediaAsset<C extends MediaCategory = MediaCategory> {
   feature?: boolean;
   /** Original clinic post, visually matched before publication. */
   sourcePostUrl?: string;
+  /**
+   * How this asset was approved. Recorded because the two routes carry
+   * different evidence: an Instagram match can be re-checked against a public
+   * post, an owner-supplied file cannot. Neither establishes patient consent.
+   */
+  provenance?: 'instagram-post' | 'owner-supplied';
 }
 
 export type ClinicPhotograph = MediaAsset<ClinicPhotographyCategory>;
@@ -129,6 +135,7 @@ export const treatmentWork: TreatmentWorkPhotograph[] = [
       ar: 'منشور للعيادة يعرض صورتين للأسنان الأمامية مع علامتي قبل وبعد',
       en: 'Clinic post with two photographs of front teeth labelled before and after',
     },
+    provenance: 'instagram-post',
     caption: { he: 'ציפויי שיניים', ar: 'قشور الأسنان', en: 'Veneers' },
   },
   {
@@ -139,6 +146,7 @@ export const treatmentWork: TreatmentWorkPhotograph[] = [
       ar: 'منشور للعيادة يعرض صورتين للأسنان واللثة مع علامتي قبل التنظيف وبعده',
       en: 'Clinic post with two photographs of teeth and gums labelled before and after cleaning',
     },
+    provenance: 'instagram-post',
     caption: { he: 'ניקוי אבנית', ar: 'تنظيف الجير', en: 'Dental cleaning' },
   },
   {
@@ -149,7 +157,94 @@ export const treatmentWork: TreatmentWorkPhotograph[] = [
       ar: 'منشور للعيادة يعرض أربع صور للأسنان من زوايا مختلفة مع علامتي قبل وبعد',
       en: 'Clinic post with four photographs of teeth from different angles labelled before and after',
     },
+    provenance: 'instagram-post',
     caption: { he: 'ניקוי שיניים', ar: 'تنظيف الأسنان', en: 'Teeth cleaning' },
+  },
+  {
+    file: 'work-restoration-01.jpg', category: 'treatment-work', width: 1279, height: 1600,
+    provenance: 'owner-supplied',
+    alt: {
+      he: 'שתי תמונות של השיניים הקדמיות העליונות, מסומנות לפני ואחרי',
+      ar: 'صورتان للأسنان الأمامية العلوية، موسومتان بقبل وبعد',
+      en: 'Two photographs of the upper front teeth, labelled before and after',
+    },
+  },
+  {
+    file: 'work-restoration-02.jpg', category: 'treatment-work', width: 900, height: 1600,
+    provenance: 'owner-supplied',
+    alt: {
+      he: 'שלוש תמונות של שיניים טוחנות מזוויות שונות, מסומנות לפני ואחרי',
+      ar: 'ثلاث صور للأضراس من زوايا مختلفة، موسومة بقبل وبعد',
+      en: 'Three photographs of molar teeth from different angles, labelled before and after',
+    },
+  },
+  {
+    file: 'work-restoration-03.jpg', category: 'treatment-work', width: 1279, height: 1600,
+    provenance: 'owner-supplied',
+    alt: {
+      he: 'שתי תמונות של השיניים העליונות, מסומנות לפני ואחרי',
+      ar: 'صورتان للأسنان العلوية، موسومتان بقبل وبعد',
+      en: 'Two photographs of the upper teeth, labelled before and after',
+    },
+  },
+  {
+    file: 'work-restoration-04.jpg', category: 'treatment-work', width: 900, height: 1600,
+    provenance: 'owner-supplied',
+    alt: {
+      he: 'פרסום של המרפאה עם שתי תמונות של השיניים הקדמיות, מסומנות לפני ואחרי',
+      ar: 'منشور للعيادة يعرض صورتين للأسنان الأمامية، موسومتين بقبل وبعد',
+      en: 'Clinic post with two photographs of the front teeth, labelled before and after',
+    },
+  },
+  {
+    file: 'work-cleaning-03.jpg', category: 'treatment-work', width: 1254, height: 1254,
+    provenance: 'owner-supplied',
+    alt: {
+      he: 'פרסום של המרפאה עם שתי תמונות של השיניים והחניכיים, מסומנות לפני ואחרי',
+      ar: 'منشور للعيادة يعرض صورتين للأسنان واللثة، موسومتين بقبل وبعد',
+      en: 'Clinic post with two photographs of the teeth and gums, labelled before and after',
+    },
+    caption: { he: 'ניקוי אבנית', ar: 'تنظيف الجير', en: 'Dental cleaning' },
+  },
+  {
+    file: 'work-veneers-02.jpg', category: 'treatment-work', width: 1254, height: 1254,
+    provenance: 'owner-supplied',
+    alt: {
+      he: 'פרסום של המרפאה עם שתי תמונות של השיניים הקדמיות, מסומנות לפני ואחרי',
+      ar: 'منشور للعيادة يعرض صورتين للأسنان الأمامية، موسومتين بقبل وبعد',
+      en: 'Clinic post with two photographs of the front teeth, labelled before and after',
+    },
+    caption: { he: 'ציפויי שיניים', ar: 'قشور الأسنان', en: 'Veneers' },
+  },
+  {
+    file: 'work-whitening-01.jpg', category: 'treatment-work', width: 1254, height: 1254,
+    provenance: 'owner-supplied',
+    alt: {
+      he: 'פרסום של המרפאה בכותרת "הלבנת שיניים וניקוי אבנית", ובו שתי תמונות מסומנות לפני ואחרי',
+      ar: 'منشور للعيادة بعنوان "تبييض الأسنان وإزالة الجير"، يعرض صورتين موسومتين بقبل وبعد',
+      en: 'Clinic post headed "teeth whitening and tartar cleaning", with two photographs labelled before and after',
+    },
+    caption: { he: 'הלבנה וניקוי אבנית', ar: 'تبييض وتنظيف الجير', en: 'Whitening and tartar cleaning' },
+  },
+  {
+    file: 'work-extraction-01.jpg', category: 'treatment-work', width: 890, height: 1600,
+    provenance: 'owner-supplied',
+    alt: {
+      he: 'פרסום של המרפאה ובו תצלום של שן שנעקרה, מוחזקת בכפפה',
+      ar: 'منشور للعيادة يعرض صورة لسن مخلوع مُمسَك بقفاز',
+      en: 'Clinic post showing a photograph of an extracted tooth held in a gloved hand',
+    },
+    caption: { he: 'עקירת שן', ar: 'خلع سن', en: 'Tooth extraction' },
+  },
+  {
+    file: 'work-extraction-02.jpg', category: 'treatment-work', width: 900, height: 1600,
+    provenance: 'owner-supplied',
+    alt: {
+      he: 'פרסום של המרפאה ובו תצלום של שן שנעקרה, מונחת על פד גזה',
+      ar: 'منشور للعيادة يعرض صورة لسن مخلوع موضوع على شاش',
+      en: 'Clinic post showing a photograph of an extracted tooth resting on gauze',
+    },
+    caption: { he: 'עקירת שן', ar: 'خلع سن', en: 'Tooth extraction' },
   },
 ];
 

@@ -341,6 +341,15 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
     // type is treated as a bot by the relay.
     const startedAt = Date.now();
 
+    /**
+     * True while a submission is in flight.
+     *
+     * Disabling the button is not sufficient by itself: a fast double-click
+     * can dispatch two submit events before the first handler runs, and the
+     * dentist would get the same request twice with no way to tell.
+     */
+    let submitting = false;
+
     const submitBtn = document.getElementById('f-submit') as HTMLButtonElement;
     const submitLabel = submitBtn.querySelector('[data-label]') as HTMLElement;
 
@@ -431,6 +440,7 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
         locale: form!.dataset.locale ?? '',
         company: entry.company,
         elapsedMs: Date.now() - startedAt,
+        consent: !!(document.getElementById('f-consent') as HTMLInputElement | null)?.checked,
       };
       for (const f of entry.fields) payload[f.key] = f.value.trim();
       return payload;
@@ -468,6 +478,7 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
 
     form.addEventListener('submit', (event) => {
       event.preventDefault();
+      if (submitting) return;
       genericError.hidden = true;
 
       const failed = checks.filter((c) => !c.valid());
@@ -494,11 +505,13 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
       }
 
       summary.hidden = true;
+      submitting = true;
       submitBtn.disabled = true;
       const original = submitLabel.textContent;
       submitLabel.textContent = submitBtn.dataset.submitting ?? original;
 
       const restore = () => {
+        submitting = false;
         submitBtn.disabled = false;
         if (original) submitLabel.textContent = original;
       };
