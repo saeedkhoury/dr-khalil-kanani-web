@@ -42,13 +42,6 @@ const waMessage = {
   en: 'Hello, I would like to request an appointment.',
 }[locale];
 
-/** The three facts the clinic can state today without any owner input. */
-const facts = [
-  { icon: 'globe', label: t('trust.languages.title') },
-  { icon: 'map-pin', label: clinic.address.locality[locale] },
-  { icon: 'check', label: t('trust.explanation.title') },
-] as const;
-
 // Resolve to a real asset. A manifest entry whose file is missing falls back
 // to the typographic hero rather than rendering a broken image.
 const heroAsset = heroImage ? resolveImage(heroImage.file) : undefined;
@@ -145,27 +138,4 @@ const withImage = hasHeroImage() && heroAsset !== undefined;
     }
   </div>
 
-  {
-    /* Fact strip. Without photography this is what gives the hero a base and
-       stops it floating — and every item is a fact the clinic can state today
-       with no owner input required. */
-    !withImage && (
-      <div class="border-t border-[var(--color-line)] bg-[var(--color-mist)]/60">
-        <ul
-          class="shell flex flex-wrap items-center gap-x-8 gap-y-3 py-5"
-          style="list-style:none;padding-inline-start:0;margin:0"
-        >
-          {facts.map((f, i) => (
-            <li
-              class="enter flex items-center gap-2 text-[var(--text-sm)] text-[var(--color-muted)]"
-              style={`--i:${5 + i}`}
-            >
-              <Icon name={f.icon} size={16} class="text-[var(--color-signal)]" />
-              {f.label}
-            </li>
-          ))}
-        </ul>
-      </div>
-    )
-  }
 </section>

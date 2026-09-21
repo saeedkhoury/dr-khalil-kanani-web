@@ -119,6 +119,23 @@ for (const locale of locales) {
     await expect(page.locator('#f-phone')).not.toHaveAttribute('aria-describedby');
   });
 
+  test(`${locale}: owner-supplied destination and opt-in Google map`, async ({ page }) => {
+    await page.goto(`/${locale}/contact/`);
+    const location = page.locator('section[aria-labelledby="location-heading"]');
+    await expect(location).toContainText(clinic.address.street[locale]);
+    await expect(location.locator('a[href^="https://waze.com/"]')).toHaveAttribute('href', clinic.address.waze);
+    await expect(location.locator('a[href^="https://www.google.com/maps/"]')).toHaveAttribute(
+      'href', `https://www.google.com/maps/search/?api=1&query=${clinic.address.geo.lat},${clinic.address.geo.lng}`,
+    );
+    await expect(page.locator('#map-facade iframe')).toHaveCount(0);
+    await page.route('https://www.google.com/**', (route) => route.fulfill({ body: '<title>Intercepted Google map</title>' }));
+    await page.locator('#map-facade-load').click();
+    await expect(page.locator('#map-facade iframe')).toHaveAttribute(
+      'src', `https://www.google.com/maps?q=${clinic.address.geo.lat},${clinic.address.geo.lng}&z=16&hl=${locale}&output=embed`,
+    );
+    await expect(page.locator('#map-facade iframe')).toHaveClass(/is-loaded/);
+  });
+
   test(`${locale}: motion fails visible and no-JS contact fallback works`, async ({ browser }) => {
     const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 375, height: 812 } });
     const page = await context.newPage();
@@ -127,6 +144,8 @@ for (const locale of locales) {
     await page.goto(`http://127.0.0.1:4330/${locale}/contact/`);
     await expect(page.locator('noscript a[href^="tel:"]')).toBeVisible();
     await expect(page.locator('noscript a[href^="https://wa.me/"]')).toBeVisible();
+    await expect(page.locator('#map-facade-load')).toBeHidden();
+    await expect(page.locator('section[aria-labelledby="location-heading"] a[href^="https://waze.com/"]')).toBeVisible();
     await context.close();
     const animated = await browser.newPage();
     await animated.goto(`http://127.0.0.1:4330/${locale}/`);

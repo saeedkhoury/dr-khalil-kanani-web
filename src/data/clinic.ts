@@ -83,15 +83,13 @@ export const clinic = {
 
   address: {
     /**
-     * UNVERIFIED. Instagram lists "1003, Judaydah, Hazafon, Israel 2510500"
-     * and a post footer reads "ג'דיידה מכר". "1003" is a plot number, not a
-     * street. Owner must supply the exact address as it will appear on Google
-     * Business Profile, plus a verified map pin.
+     * Owner supplied Street 1003 and https://waze.com/ul/hsvbgrg6s4 on
+     * 2026-09-21. Waze resolves that link to 32.9336,35.148804.
      *
      * One canonical form per script. Transliteration drift across listings is
      * the single most common NAP failure in Israel.
      */
-    street: { he: '', ar: '', en: '' },
+    street: { he: 'רחוב 1003', ar: 'شارع 1003', en: 'Street 1003' },
     locality: {
       he: 'ג׳דיידה-מכר',
       ar: 'الجديدة-المكر',
@@ -100,8 +98,9 @@ export const clinic = {
     region: { he: 'מחוז הצפון', ar: 'لواء الشمال', en: 'Northern District' },
     postalCode: '2510500',
     country: 'IL',
-    /** UNVERIFIED — must come from a confirmed map pin, never geocoded blindly. */
-    geo: { lat: 0, lng: 0 },
+    /** Coordinates resolved from the owner's Waze link, not an address search. */
+    geo: { lat: 32.9336, lng: 35.148804 } as { readonly lat: number; readonly lng: number },
+    waze: 'https://waze.com/ul/hsvbgrg6s4',
   },
 
   /* ------------------------------------------------------------------------ */
@@ -220,9 +219,9 @@ export const VERIFICATION: Record<
     note: 'Flyer + IG bio + post footer. WhatsApp presence NOT yet confirmed.',
   },
   email: { tier: 'placeholder', blocking: false, note: 'No published address found.' },
-  'address.street': { tier: 'placeholder', blocking: true, published: false, note: 'Owner must supply. hasAddress() hides it.' },
+  'address.street': { tier: 'owner', blocking: true, note: 'Owner supplied Street 1003, Jadeidi-Makr on 2026-09-21.' },
   'address.locality': { tier: 'owner', blocking: false, note: 'IG address + post footer' },
-  'address.geo': { tier: 'placeholder', blocking: true, published: false, note: 'Needs confirmed map pin. hasGeo() hides Maps/Waze.' },
+  'address.geo': { tier: 'owner', blocking: true, note: 'Resolved from owner-supplied https://waze.com/ul/hsvbgrg6s4 on 2026-09-21.' },
   hours: { tier: 'placeholder', blocking: true, published: false, note: 'Owner must supply. hasHours() hides the block.' },
   siteUrl: {
     tier: 'placeholder',
@@ -295,11 +294,11 @@ export function mapsUrl(locale: Locale): string | null {
 }
 
 /**
- * Waze deep link. Coordinates only — Waze's address search is unreliable for
- * Israeli Arab localities where plot numbers are used instead of street names,
- * and sending a patient to the wrong place is the failure mode to avoid.
+ * Preserve the exact owner-supplied Waze destination. Never search a guessed
+ * address; use coordinates only when no shared destination link is available.
  */
 export function wazeUrl(): string | null {
+  if (clinic.address.waze) return clinic.address.waze;
   if (!hasGeo()) return null;
   return `https://waze.com/ul?ll=${clinic.address.geo.lat},${clinic.address.geo.lng}&navigate=yes`;
 }

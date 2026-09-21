@@ -52,35 +52,33 @@ const embedSrc = `https://www.google.com/maps?q=${lat},${lng}&z=16&hl=${locale}&
 
 {
   hasGeo() && (
-    <div class="mt-6">
+    <div class="min-w-0 bg-[var(--color-haze)]">
       <div
         id="map-facade"
-        class="relative overflow-hidden rounded-[var(--radius-media)] border border-[var(--color-line)] bg-[var(--color-haze)]"
-        style="aspect-ratio: 16 / 9"
+        class="group relative isolate flex h-full min-h-[27rem] items-center justify-center overflow-hidden p-6 sm:p-10"
       >
-        {/* Local placeholder: a tinted field with a pin. No tiles, no
-            requests — this is drawn with the same tokens as the rest of the
-            page rather than pretending to be a screenshot of a map. */}
+        {/* An abstract brand motif, not invented streets or map tiles. */}
         <div
           aria-hidden="true"
-          class="absolute inset-0"
-          style="background:
-            radial-gradient(28rem 18rem at 50% 42%, var(--color-mist) 0%, transparent 70%),
-            repeating-linear-gradient(45deg, transparent 0 22px, color-mix(in srgb, var(--color-line) 55%, transparent) 22px 23px);"
+          class="pointer-events-none absolute inset-8 -z-10 rounded-[50%] border border-[var(--color-line-strong)] opacity-60 sm:inset-12"
         />
-
-        <div class="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
-          <span class="flex size-12 items-center justify-center rounded-full bg-[var(--color-porcelain)] text-[var(--color-signal)] ring-1 ring-[var(--color-line)]">
-            <Icon name="map-pin" size={24} />
+        <div class="flex flex-col items-center gap-5 text-center">
+          <span class="flex size-20 items-center justify-center rounded-full bg-[var(--color-porcelain)] text-[var(--color-ink)] transition-transform duration-300 motion-safe:group-hover:-translate-y-1">
+            <Icon name="map-pin" size={36} />
           </span>
-
+          <p class="text-[length:var(--text-3xl)] font-semibold text-[var(--color-ink)]">
+            {clinic.address.street[locale]}
+            <span class="mt-2 block text-[length:var(--text-lg)] font-normal text-[var(--color-body)]">{clinic.address.locality[locale]}</span>
+          </p>
           <button
             type="button"
             id="map-facade-load"
+            hidden
             class="inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-[var(--color-ink)] px-6 text-[var(--text-sm)] font-semibold text-white transition-[background-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-[var(--color-ink-deep)] active:translate-y-px"
           >
             {t('map.load')}
           </button>
+          <noscript><p class="max-w-sm text-[var(--text-sm)]">{t('map.noJs')}</p></noscript>
 
           {/* Said before the press, not after. */}
           <p class="max-w-sm text-[var(--text-sm)] leading-relaxed text-[var(--color-muted)]">
@@ -94,6 +92,7 @@ const embedSrc = `https://www.google.com/maps?q=${lat},${lng}&z=16&hl=${locale}&
           const container = document.getElementById('map-facade');
           const button = document.getElementById('map-facade-load');
           if (!container || !button) return;
+          button.hidden = false;
 
           button.addEventListener(
             'click',

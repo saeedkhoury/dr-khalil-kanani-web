@@ -80,25 +80,29 @@ describe('whatsappUrl', () => {
 });
 
 describe('location guards — never publish a guessed location', () => {
-  test('no confirmed pin yet, so geo helpers report false', () => {
-    assert.equal(hasGeo(), false);
-    assert.deepEqual(clinic.address.geo, { lat: 0, lng: 0 });
+  test('the pin is the destination resolved from the owner-supplied Waze link', () => {
+    assert.equal(hasGeo(), true);
+    assert.deepEqual(clinic.address.geo, { lat: 32.9336, lng: 35.148804 });
+    assert.equal(VERIFICATION['address.geo'].tier, 'owner');
   });
 
-  test('wazeUrl returns null without coordinates rather than guessing', () => {
+  test('wazeUrl preserves the exact shared destination', () => {
     // A reference clinic links Waze to the wrong street on every page. This
     // is the test that stops us doing the same.
-    assert.equal(wazeUrl(), null);
+    assert.equal(wazeUrl(), 'https://waze.com/ul/hsvbgrg6s4');
   });
 
-  test('mapsUrl returns null while both pin and street are unknown', () => {
+  test('Google Maps uses the same destination in every language', () => {
     for (const locale of LOCALES) {
-      assert.equal(mapsUrl(locale), null, `${locale} must not produce a map link`);
+      assert.equal(mapsUrl(locale), 'https://www.google.com/maps/search/?api=1&query=32.9336,35.148804');
     }
   });
 
-  test('hasAddress is false in every locale', () => {
-    for (const locale of LOCALES) assert.equal(hasAddress(locale), false);
+  test('the supplied street is available in every locale', () => {
+    for (const locale of LOCALES) {
+      assert.equal(hasAddress(locale), true);
+      assert.match(clinic.address.street[locale], /1003/);
+    }
   });
 
   test('hours are not published while unset', () => {
@@ -145,8 +149,12 @@ describe('verification manifest', () => {
     };
     for (const [field, guard] of Object.entries(guarded)) {
       const entry = VERIFICATION[field];
-      assert.equal(entry?.published, false, `${field} should be marked published:false`);
-      assert.equal(guard(), false, `${field} guard should hide it while unverified`);
+      if (entry.tier === 'owner' || entry.tier === 'verified') {
+        assert.equal(guard(), true, `${field} should be available after confirmation`);
+      } else {
+        assert.equal(entry.published, false, `${field} should be marked published:false`);
+        assert.equal(guard(), false, `${field} guard should hide it while unverified`);
+      }
     }
   });
 
@@ -219,11 +227,10 @@ describe('google review aggregate', () => {
 });
 
 describe('map facade', () => {
-  test('no map can be built without a confirmed pin', () => {
-    // The facade renders on hasGeo(). A map centred on (0,0) is the Atlantic.
-    assert.equal(hasGeo(), false);
-    assert.equal(clinic.address.geo.lat, 0);
-    assert.equal(clinic.address.geo.lng, 0);
+  test('the supplied pin makes the map available', () => {
+    assert.equal(hasGeo(), true);
+    assert.notEqual(clinic.address.geo.lat, 0);
+    assert.notEqual(clinic.address.geo.lng, 0);
   });
 
   test('the embed URL carries coordinates and no API key', () => {

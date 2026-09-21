@@ -15,15 +15,9 @@
  * button that says so.
  *
  * ── WHY EVERYTHING IS GUARDED ─────────────────────────────────────────────
- * The street address and map pin are unverified placeholders. Rather than
- * hide this section until they arrive, it renders what IS known (locality,
- * phone, WhatsApp) and swaps the navigation buttons for an honest "call us
- * for the exact address" message. A wrong map link is worse than none: one
- * reference clinic sends patients to the wrong street on every page.
- *
- * Waze requires coordinates, not an address string — its address search is
- * unreliable for Israeli Arab localities that use plot numbers rather than
- * street names.
+ * The owner supplied Street 1003 and the Waze destination on 2026-09-21.
+ * Guards remain for any future removal of location data. Navigation links
+ * remain available even if the interactive Google map cannot load.
  */
 import { type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
@@ -71,17 +65,13 @@ const actionClass =
 <section class="section bg-[var(--color-mist)]" aria-labelledby="location-heading">
   <div class="shell">
     <div class="max-w-2xl">
-      <p class="eyebrow flex items-center gap-1.5">
-        <Icon name="map-pin" size={15} />
-        {clinic.address.locality[locale]}
-      </p>
-      <h2 id="location-heading" class="mt-2">{t('location.title')}</h2>
+      <h2 id="location-heading">{t('location.title')}</h2>
       <p class="mt-3 text-[var(--text-lg)] text-[var(--color-muted)]">{t('location.subtitle')}</p>
     </div>
 
-    <div class="reveal reveal-soft mt-10 grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10">
+    <div class="mt-10 grid overflow-hidden rounded-[var(--radius-media)] border border-[var(--color-line)] bg-[var(--color-porcelain)] lg:grid-cols-[0.85fr_1.15fr]">
       <!-- Details -->
-      <div class="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-6 sm:p-8">
+      <div class="p-6 sm:p-10">
         <dl class="grid gap-6 sm:grid-cols-2">
           <div>
             <dt class="eyebrow">{t('contact.addressLabel')}</dt>
@@ -134,10 +124,8 @@ const actionClass =
             )
           }
         </dl>
-      </div>
-
       <!-- Actions -->
-      <div class="flex flex-col justify-center rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-haze)] p-6 sm:p-8">
+      <div class="mt-8 border-t border-[var(--color-line)] pt-6">
         {
           canNavigate ? (
             <div class="flex flex-col gap-3">
@@ -159,7 +147,7 @@ const actionClass =
                   rel="noopener noreferrer"
                   class={`${actionClass} border border-[var(--color-line-strong)] bg-[var(--color-porcelain)] text-[var(--color-ink)] hover:border-[var(--color-ink)]`}
                 >
-                  <Icon name="chevron" size={18} />
+                  <Icon name="chevron" size={18} class="u-flip" />
                   {t('action.waze')}
                 </a>
               )}
@@ -195,8 +183,8 @@ const actionClass =
           </a>
         </div>
       </div>
+      </div>
+      <MapFacade locale={locale} />
     </div>
-
-    <MapFacade locale={locale} />
   </div>
 </section>

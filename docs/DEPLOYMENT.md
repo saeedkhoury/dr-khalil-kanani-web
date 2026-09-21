@@ -19,7 +19,8 @@ The workflow sets `ASTRO_SITE=https://www.drkhalilkanani.com`, `ASTRO_BASE=/`
 and the existing explicit `ACK_UNVERIFIED=doctor.ar,doctor.en,tagline.ar`
 allowlist. These three fields remain unconfirmed; acknowledgement does not
 promote them to verified. Any other unacknowledged published fact blocks the
-build. Unconfirmed address, coordinates and hours remain hidden.
+build. Unconfirmed hours remain hidden. Street 1003 and the map coordinates
+were supplied by the owner on 2026-09-21; directions and the map now render.
 
 `VERIFY_RELAX=1` is only for local/PR previews. It is never set in the
 production workflow. `npm run build` without the acknowledgement still

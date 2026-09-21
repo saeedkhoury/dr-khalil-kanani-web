@@ -23,6 +23,18 @@ checkbox during a click. Inline error space is now reserved, with three new
 locale regression tests bringing the browser suite to 22. Owner verification and manual checks below
 remain outstanding; merge authorization did not change fact verification.
 
+Location/design follow-up on 2026-09-21: the owner supplied Street 1003 and
+`https://waze.com/ul/hsvbgrg6s4`. Its resolved destination is
+`32.9336,35.148804`; only street and coordinates were changed to owner-supplied.
+Google Maps, the original Waze link and the opt-in map panel now render in all
+three locales. The location section is a unified directions/map layout; the
+narrow fact strip at the bottom of the hero was removed as requested.
+Three destination/embed tests bring the browser suite to 25. Clinic/doctor
+imagery is still pending a usable source: the repository has no approved
+photography, and quarantined patient images remain excluded.
+The real Google iframe was also loaded in Chromium and its rendered map/marker
+visually checked. This confirms rendering, not an on-site arrival check.
+
 The separate Cloudflare `Workers Builds: dr-khalil-kanani-web` failure was
 investigated after account sign-in. Its build had no environment variables, so
 the launch gate correctly refused the three unconfirmed published fields.
@@ -68,7 +80,7 @@ owner's decision, and probably a lawyer's.
 | Accessibility audit of built HTML | `npm run lint:a11y` | preview + deploy |
 | Unit tests (76) | `npm test` | CI |
 | Type/template check | `npm run check` | verify + CI |
-| Chromium + axe browser QA (22 tests) | `npm run test:e2e` | preview + deploy |
+| Chromium + axe browser QA (25 tests) | `npm run test:e2e` | preview + deploy |
 
 `VERIFY_RELAX=1` is **preview only**. Production uses `ACK_UNVERIFIED`, an
 explicit per-field allowlist; anything not on it fails the build.
@@ -104,21 +116,20 @@ reads staged registrations, fails on Git errors and disallows CI bypass.
 ## NOT verified
 
 VoiceOver, physical iPhone/Android app handoff, outdoor legibility, native
-language review and live clinic/map/rating confirmation remain unperformed.
+language review, on-site arrival at the supplied pin and live rating confirmation remain unperformed.
 Screenshot review is not a screen-reader or real-device pass. No approved
 visual regression baseline exists. See [docs/QA-CHECKLIST.md](docs/QA-CHECKLIST.md)
 for the remaining human checks.
 
 ## Outstanding owner verification
 
-Seven facts remain unverified. The bare production build blocks the three
-published fields; CI already explicitly acknowledges those three. The four
-hidden/overridden fields warn. No verification status was changed here.
+Five facts remain unverified. The bare production build blocks the three
+published fields; CI already explicitly acknowledges those three. The two
+hidden/overridden fields warn. The street and map pin were supplied by the
+owner on 2026-09-21 and are now marked `owner`.
 
 | Field | Needs |
 |---|---|
-| `address.street` | Exact street address |
-| `address.geo` | Confirmed map pin — **hides Maps, Waze and the map facade** |
 | `hours` | Opening hours, Sun–Thu / Fri / Sat |
 | `siteUrl` | Confirmed domain (CI overrides it, so it never ships) |
 | `doctor.ar` / `doctor.en` | Canonical Arabic spelling and Latin transliteration |

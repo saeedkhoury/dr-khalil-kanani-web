@@ -2,6 +2,16 @@
 
 ## 2026-09-21
 
+### Location and hero follow-up
+
+- Enabled the owner-supplied Street 1003 / Waze destination in all locales,
+  including Google Maps links and the click-to-load map. Grouped directions
+  and the map into one responsive section with a restrained pin transition.
+- Removed the narrow fact strip beneath the hero, as requested.
+- Added three browser checks for the shared destination and opt-in map;
+  25 browser tests now cover the site. Approved clinic photographs remain
+  pending; no patient images or invented clinic photography were introduced.
+
 ### Phase 3 — premium production upgrade
 
 Merged to `main` through PR #1 on 2026-09-21. Production deployment is tracked

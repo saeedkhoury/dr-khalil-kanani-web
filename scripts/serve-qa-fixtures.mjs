@@ -45,7 +45,7 @@ writeFileSync(mediaPath, readFileSync(mediaPath, 'utf8').replace(
 const clinicPath = join(fixture, 'src/data/clinic.ts');
 const clinicSource = readFileSync(clinicPath, 'utf8');
 writeFileSync(clinicPath, clinicSource
-  .replace('geo: { lat: 0, lng: 0 }', 'geo: { lat: 1, lng: 1 }')
+  .replace(/geo: \{ lat: [\d.-]+, lng: [\d.-]+ \}/, 'geo: { lat: 1, lng: 1 }')
   .replace("googleBusiness: ''", "googleBusiness: 'https://example.invalid/qa-profile'")
   .replace('value: null as number | null', 'value: 4.5 as number | null')
   .replace('count: null as number | null', 'count: 12 as number | null'));

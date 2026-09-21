@@ -158,6 +158,7 @@ export const ui = {
     'map.load': 'הצגת מפה',
     'map.privacy': 'המפה נטענת מ-Google. דבר אינו נשלח עד שתלחצו.',
     'map.frameTitle': 'מפה של מיקום המרפאה',
+    'map.noJs': 'לפתיחת המפה, השתמשו בקישורי הניווט ליד הכתובת.',
     'feedback.basedOn': 'מבוסס על {n} חוות דעת ב-Google',
     'feedback.ratingLabel': 'דירוג ממוצע ב-Google',
 
@@ -309,6 +310,7 @@ export const ui = {
     'map.load': 'عرض الخريطة',
     'map.privacy': 'يتم تحميل الخريطة من Google. لا يُرسَل أي شيء حتى تضغطوا.',
     'map.frameTitle': 'خريطة موقع العيادة',
+    'map.noJs': 'لفتح الخريطة، استخدموا روابط الاتجاهات بجانب العنوان.',
     'feedback.basedOn': 'استنادًا إلى {n} تقييمًا على Google',
     'feedback.ratingLabel': 'متوسط التقييم على Google',
 
@@ -461,6 +463,7 @@ export const ui = {
     'map.load': 'Show map',
     'map.privacy': 'The map is loaded from Google. Nothing is sent until you press.',
     'map.frameTitle': 'Map of the clinic location',
+    'map.noJs': 'To open the map, use the directions links beside the address.',
     'feedback.basedOn': 'Based on {n} Google reviews',
     'feedback.ratingLabel': 'Average rating on Google',
 
