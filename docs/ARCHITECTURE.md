@@ -36,7 +36,7 @@ src/
   i18n/        config.ts (routing, dir) · ui.ts (all UI strings)
   lib/         verify.ts (gates) · schema.ts (JSON-LD) · validation.ts (zod)
                phone.ts (ZERO-DEP — client-safe) · content.ts · delivery.ts
-               rate-limit.ts
+               rate-limit.ts · env.ts (Workers secrets/bindings)
   content/     treatments/{he,ar,en}/*.md
   components/  primitives/ · sections/ · islands/
   pages/       [locale]/... · api/ · 404
@@ -45,3 +45,7 @@ scripts/       lint-claims.mjs · lint-mixed-scripts.mjs
 
 `lib/phone.ts` exists solely so the client form script can validate a phone
 number without importing Zod — that import cost 85KB of browser JS.
+
+`lib/env.ts` exists because Cloudflare Workers secrets and bindings resolve
+through `cloudflare:workers`, not `process.env`. Reading them the wrong way
+failed silently in production while looking correct locally.

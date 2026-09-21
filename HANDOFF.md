@@ -29,7 +29,8 @@ Phase 1–5 built and verified. The site runs, builds, and passes its gates.
 | hreflang / canonical | language-only codes, x-default→he, self-referencing |
 | Language switcher | preserves location page-to-page |
 | Form validation + error summary | inline errors, focus moves, links to fields |
-| Endpoint defences | honeypot 200, too-fast 200, bad input 422, unconfigured 503 |
+| Endpoint defences | cross-origin 403, bad input 422, rate limit 429, unconfigured 503 |
+| Spam signals | flagged `spam_suspected` and stored — never silently dropped |
 | Sticky mobile bar | 35px clearance, never covers footer |
 | Client JS | ~2.9KB inline, **zero external JS files** |
 | Fonts per page | he 31.5KB · en 35KB · ar 162KB (was 393KB everywhere) |
@@ -56,6 +57,10 @@ Also blocking, but not build-enforced:
 - `ACCESSIBILITY_CONTACT` in `src/data/legal.ts` needs a real name/phone/email.
 - Delivery is unconfigured: `SUPABASE_URL` / `SUPABASE_SERVICE_KEY`. The endpoint
   returns 503 and logs loudly rather than silently discarding an enquiry.
+  On Cloudflare these must be set with `wrangler secret put` — they are read
+  via `cloudflare:workers`, not `process.env`. See docs/DEPLOYMENT.md.
+- `RATE_LIMIT_KV` is not bound. Without it the limiter falls back to a
+  per-isolate map and warns on every request.
 
 ## Known gaps (not blockers)
 
@@ -65,7 +70,9 @@ Also blocking, but not build-enforced:
 - The logo wordmark is Hebrew-only; no Arabic or English lockup exists. The UI
   works around this by using the mark plus localised HTML text.
 - No automated test suite yet (verification has been manual + axe in-browser).
-- Rate limiting falls back to in-memory without a KV binding.
+- Rate limiting falls back to in-memory without a KV binding (warns loudly).
+- The `appointment_requests` table needs `status` and `spam_signal` columns;
+  the clinic's lead view should filter `status = 'new'` and triage the rest.
 
 ## Recommended next action
 

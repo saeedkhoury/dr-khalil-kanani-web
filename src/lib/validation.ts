@@ -57,8 +57,13 @@ export const appointmentRequestSchema = z.object({
   locale: z.enum(['he', 'ar', 'en']),
   sourcePath: z.string().max(300).optional().default(''),
 
-  /** Anti-spam. Both must be absent/plausible or the submission is dropped. */
-  company: z.string().max(0).optional().default(''), // honeypot
+  /**
+   * Honeypot. Named non-semantically on purpose: a field called "company"
+   * is a prime target for password-manager autofill, which would flag real
+   * patients. Presence is a SIGNAL only — see the endpoint; it never drops
+   * the submission.
+   */
+  hp_check: z.string().optional().default(''),
   elapsedMs: z.coerce.number().int().nonnegative().optional().default(0),
 });
 

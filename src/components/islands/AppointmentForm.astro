@@ -191,10 +191,15 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
     </div>
   </div>
 
-  <!-- Honeypot: off-screen, not display:none, and aria-hidden from AT. -->
+  <!--
+    Honeypot. Off-screen rather than display:none (bots skip hidden fields),
+    aria-hidden from assistive tech, and deliberately NOT named "company" or
+    given a visible label — both attract password-manager autofill, which
+    would flag genuine patients. Presence is a signal only; the endpoint
+    never drops a submission because of it.
+  -->
   <div aria-hidden="true" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden">
-    <label for="f-company">Company</label>
-    <input id="f-company" name="company" type="text" tabindex="-1" autocomplete="off" />
+    <input id="f-hp" name="hp_check" type="text" tabindex="-1" autocomplete="off" />
   </div>
   <input type="hidden" name="locale" value={locale} />
   <input type="hidden" name="sourcePath" value={Astro.url.pathname} />

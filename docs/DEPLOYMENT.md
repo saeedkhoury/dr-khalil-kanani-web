@@ -17,11 +17,41 @@ See `.env.example`. Nothing is committed.
 | `SUPABASE_SERVICE_KEY` | Server-only insert key. **Never client-visible** | Yes |
 | `VERIFY_RELAX` | Bypasses the launch gate. **Local preview only** | Never in CI |
 
-## Bindings
+## Bindings and secrets — read this before deploying
 
-- **KV namespace `RATE_LIMIT_KV`** — required. Without it rate limiting falls
-  back to an in-memory map, which is per-isolate and therefore not a real
-  limit across workers.
+On Cloudflare Workers, secrets and bindings are **not** on `process.env`, not
+on `globalThis`, and not in `import.meta.env` at runtime. They come from
+`import { env } from 'cloudflare:workers'`, which is what `src/lib/env.ts`
+does. Reading them any other way fails silently and in the worst direction:
+the rate limiter decides KV is unavailable, and delivery decides it is
+unconfigured and 503s every genuine patient enquiry.
+
+Required in `wrangler.jsonc`:
+
+```jsonc
+"kv_namespaces": [
+  { "binding": "RATE_LIMIT_KV", "id": "<create with: wrangler kv namespace create RATE_LIMIT_KV>" }
+]
+```
+
+Secrets, set once per environment:
+
+```bash
+wrangler secret put SUPABASE_URL
+wrangler secret put SUPABASE_SERVICE_KEY
+```
+
+After changing `wrangler.jsonc`, regenerate types so `npm run check` stays
+accurate:
+
+```bash
+npx wrangler types
+```
+
+Without the KV binding the rate limiter falls back to a per-isolate in-memory
+map — not a durable limit — and logs a loud warning on every request. It fails
+**open** deliberately: blocking real patients is worse than letting spam
+through, which validation and the spam flag still catch.
 
 ## Before first deploy
 
@@ -29,8 +59,10 @@ See `.env.example`. Nothing is committed.
 2. Israeli legal review of the advertising posture, accessibility statement
    and privacy policy.
 3. Create the `appointment_requests` table with RLS denying public reads;
-   the endpoint is insert-only.
-4. Bind `RATE_LIMIT_KV`.
+   the endpoint is insert-only. Columns include `status`
+   (`new` | `spam_suspected`) and `spam_signal` — filter the clinic's lead
+   view on `status = 'new'` and triage the rest rather than discarding them.
+4. Bind `RATE_LIMIT_KV` and set both secrets (above), then `npx wrangler types`.
 5. Enable a strict CSP via Astro's CSP API — there are no third-party scripts,
    fonts or pixels, so the policy can be tight.
 6. Verify `siteUrl` in `src/data/clinic.ts` matches the real domain; sitemap

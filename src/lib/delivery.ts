@@ -11,31 +11,39 @@
  * The Supabase table doubles as the clinic's lead inbox via Supabase Studio,
  * which is why no custom admin dashboard is built.
  *
+ * ── PREVIOUS BUG (fixed) ──────────────────────────────────────────────────
+ * Secrets were read from `import.meta.env` / `globalThis` / `process.env`.
+ * None of those carry Cloudflare Workers secrets at runtime, so
+ * `isDeliveryConfigured()` would have returned false in production even when
+ * the secrets were set — every genuine patient enquiry would have received a
+ * 503. Secrets now resolve through src/lib/env.ts.
+ *
  * `consentNoticeVersion` is stored deliberately: the Privacy Protection
  * Authority expects a controller to be able to show WHAT a person was shown
  * at the moment they consented.
  */
 
 import type { AppointmentRequest } from './validation';
+import { getSecret } from './env';
 
 /** Bump whenever the wording of the inline privacy notice changes. */
 export const CONSENT_NOTICE_VERSION = '2026-09-20.1';
 
-function env(key: string): string | undefined {
-  return (
-    (import.meta.env as Record<string, string | undefined>)[key] ??
-    (globalThis as Record<string, unknown>)[key] as string | undefined ??
-    (typeof process !== 'undefined' ? process.env?.[key] : undefined)
-  );
+/** Set when an anti-spam signal fired. The row is still stored — see the
+ *  endpoint for why a suspected-spam submission is never silently dropped. */
+export type SubmissionStatus = 'new' | 'spam_suspected';
+
+export async function isDeliveryConfigured(): Promise<boolean> {
+  const [url, key] = await Promise.all([getSecret('SUPABASE_URL'), getSecret('SUPABASE_SERVICE_KEY')]);
+  return Boolean(url && key);
 }
 
-export function isDeliveryConfigured(): boolean {
-  return Boolean(env('SUPABASE_URL') && env('SUPABASE_SERVICE_KEY'));
-}
-
-export async function deliver(data: AppointmentRequest): Promise<void> {
-  const url = env('SUPABASE_URL');
-  const key = env('SUPABASE_SERVICE_KEY');
+export async function deliver(
+  data: AppointmentRequest,
+  status: SubmissionStatus = 'new',
+  spamSignal?: string,
+): Promise<void> {
+  const [url, key] = await Promise.all([getSecret('SUPABASE_URL'), getSecret('SUPABASE_SERVICE_KEY')]);
   if (!url || !key) throw new Error('delivery not configured');
 
   const row = {
@@ -53,7 +61,8 @@ export async function deliver(data: AppointmentRequest): Promise<void> {
     consent_at: new Date().toISOString(),
     consent_notice_version: CONSENT_NOTICE_VERSION,
     marketing_opt_in: data.marketingOptIn,
-    status: 'new',
+    status,
+    spam_signal: spamSignal ?? null,
   };
 
   const response = await fetch(`${url}/rest/v1/appointment_requests`, {

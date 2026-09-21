@@ -9,3 +9,4 @@ node_modules/
 .wrangler/
 test-results/
 playwright-report/
+worker-configuration.d.ts

@@ -10,11 +10,12 @@
     "build": "astro build",
     "build:preview": "VERIFY_RELAX=1 astro build",
     "preview": "astro preview",
-    "check": "astro check",
+    "check": "wrangler types && astro check",
     "lint:claims": "node scripts/lint-claims.mjs",
     "lint:scripts": "node scripts/lint-mixed-scripts.mjs",
     "verify": "npm run lint:claims && npm run lint:scripts && npm run check",
-    "astro": "astro"
+    "astro": "astro",
+    "types": "wrangler types"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.2",

@@ -14,6 +14,22 @@
 - Four build gates: launch verification, locale parity, claims linter,
   mixed-script linter
 
+### Security fixes (post-review)
+- **Cloudflare secrets and bindings were read from `process.env` / `globalThis`.**
+  Neither carries them at runtime on Workers, so in production the rate limiter
+  would have silently used a per-isolate map (no real limit) and delivery would
+  have 503'd every genuine patient enquiry. Both now resolve through
+  `src/lib/env.ts` using `cloudflare:workers`.
+- **Anti-spam signals silently faked success.** A filled honeypot or a fast
+  submit returned `{ok:true}` while discarding the request — so a password
+  manager autofilling the hidden field, or a returning patient submitting
+  quickly, would see "request sent" and never be contacted. Signals now flag
+  the record `spam_suspected` and it is still stored.
+- Honeypot renamed `company` -> `hp_check` and stripped of its label; the old
+  name is a prime password-manager autofill target.
+- Rate-limit key is now a hashed IP; the in-memory fallback is bounded and
+  logs loudly instead of degrading silently.
+
 ### Notable decisions
 - No reviews section and no before/after gallery — both prohibited for Israeli
   dentists (ADR 0005, 0006)
