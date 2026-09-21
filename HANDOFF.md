@@ -47,6 +47,15 @@ reduced-motion and no-JS visitors receive the static mark. Six new browser
 checks bring the suite to 31; all 76 unit tests, production build, verify,
 41-page HTML audit and 31 browser checks pass locally.
 
+The owner subsequently requested removal of the empty doctor portrait card.
+DoctorIntro now omits the entire image column until a reviewed portrait is
+registered, retaining the useful introduction without an empty panel. The 13
+newly supplied/replaced image files were individually opened: they contain
+patient treatment, before/after or extracted-tooth imagery, not doctor portraits.
+They were preserved under the gitignored `.private-assets/reviewed-2026-09-21-upload/`
+and were not committed or deployed. The original aligner illustration was
+restored after preserving the patient image that had replaced it locally.
+
 The separate Cloudflare `Workers Builds: dr-khalil-kanani-web` failure was
 investigated after account sign-in. Its build had no environment variables, so
 the launch gate correctly refused the three unconfirmed published fields.

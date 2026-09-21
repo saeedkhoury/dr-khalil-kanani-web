@@ -2,6 +2,14 @@
 
 ## 2026-09-21
 
+### Remove empty doctor portrait card
+
+- Removed the empty name/portrait panel from the homepage and About pages.
+  The introduction uses one column until an actual reviewed portrait exists.
+- Individually reviewed the newly supplied media; all 13 files contain patient
+  treatment imagery. Preserved them privately under the existing media rules;
+  no new patient images were committed or deployed.
+
 ### Visible picture gallery and interactive hero logo
 
 - Added three reviewed original dental illustrations, with explicit AI-art
