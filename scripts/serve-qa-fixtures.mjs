@@ -33,22 +33,50 @@ import type { ImageMetadata } from 'astro';
 export function resolveImage(_file: string): ImageMetadata { return mark; }
 export function availableImages(): string[] { return ['qa-mark.svg']; }
 `);
+/**
+ * Replace exactly once, or abort.
+ *
+ * These substitutions used to fail silently: a rename in src/ left the regex
+ * unmatched, the fixture served the REAL manifest, and the only symptom was a
+ * confusing count assertion in a browser test. A fixture that quietly serves
+ * production data is worse than one that crashes.
+ */
+function substitute(source, pattern, replacement, what) {
+  const matches = source.match(pattern);
+  if (!matches) {
+    throw new Error(
+      `[qa-fixtures] ${what}: pattern did not match.\n` +
+      `  ${pattern}\n` +
+      `  The source it targets has probably been renamed. Update this script ` +
+      `rather than letting the fixture serve real data.`,
+    );
+  }
+  return source.replace(pattern, replacement);
+}
+
 const mediaPath = join(fixture, 'src/data/media.ts');
+// The homepage renders the 'work' gallery, so the fixtures must live in
+// treatmentWork. Under the split manifest a clinic-photography category would
+// type-check but never render, which is exactly the silent mismatch the
+// explicit `kind` prop exists to prevent.
 const assets = [1, 2].map((number) => ({
-  file: 'qa-mark.svg', category: 'atmosphere', width: 288, height: 285,
+  file: 'qa-mark.svg', category: 'treatment-work', width: 288, height: 285,
   alt: { he: `סמל בדיקה ${number}`, ar: `رمز اختبار ${number}`, en: `Test mark ${number}` },
   caption: { he: `סמל בדיקה ${number}`, ar: `رمز اختبار ${number}`, en: `Test mark ${number}` },
 }));
-writeFileSync(mediaPath, readFileSync(mediaPath, 'utf8').replace(
-  /export const gallery: MediaAsset\[\] = \[[\s\S]*?\];/, `export const gallery: MediaAsset[] = ${JSON.stringify(assets)};`,
+writeFileSync(mediaPath, substitute(
+  readFileSync(mediaPath, 'utf8'),
+  /export const treatmentWork: TreatmentWorkPhotograph\[\] = \[[\s\S]*?\n\];/,
+  `export const treatmentWork: TreatmentWorkPhotograph[] = ${JSON.stringify(assets)};`,
+  'treatmentWork collection',
 ));
 const clinicPath = join(fixture, 'src/data/clinic.ts');
 const clinicSource = readFileSync(clinicPath, 'utf8');
-writeFileSync(clinicPath, clinicSource
-  .replace(/geo: \{ lat: [\d.-]+, lng: [\d.-]+ \}/, 'geo: { lat: 1, lng: 1 }')
-  .replace("googleBusiness: ''", "googleBusiness: 'https://example.invalid/qa-profile'")
-  .replace('value: null as number | null', 'value: 4.5 as number | null')
-  .replace('count: null as number | null', 'count: 12 as number | null'));
+let clinicFixture = substitute(clinicSource, /geo: \{ lat: [\d.-]+, lng: [\d.-]+ \}/, 'geo: { lat: 1, lng: 1 }', 'map pin');
+clinicFixture = substitute(clinicFixture, /googleBusiness: ''/, "googleBusiness: 'https://example.invalid/qa-profile'", 'Google profile URL');
+clinicFixture = substitute(clinicFixture, /value: null as number \| null/, 'value: 4.5 as number | null', 'rating value');
+clinicFixture = substitute(clinicFixture, /count: null as number \| null/, 'count: 12 as number | null', 'review count');
+writeFileSync(clinicPath, clinicFixture);
 
 const astro = join(root, 'node_modules/astro/bin/astro.mjs');
 execFileSync(process.execPath, [astro, 'build'], {
