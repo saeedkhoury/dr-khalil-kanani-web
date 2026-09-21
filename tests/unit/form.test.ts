@@ -11,7 +11,18 @@ import assert from 'node:assert/strict';
 
 import { IL_PHONE, normalisePhone, isValidIsraeliPhone } from '../../src/lib/phone.ts';
 import { CONTACT_METHODS, DAYPARTS } from '../../src/lib/form-options.ts';
-import { gallery, portrait, hasGallery, hasPortrait } from '../../src/data/media.ts';
+import {
+  treatmentWork,
+  clinicPhotography,
+  illustrations,
+  portrait,
+  heroImage,
+  galleryFor,
+  hasTreatmentWork,
+  hasClinicPhotography,
+  hasPortrait,
+  hasHeroImage,
+} from '../../src/data/media.ts';
 
 describe('normalisePhone', () => {
   test('strips the separators people actually type', () => {
@@ -100,15 +111,73 @@ describe('form options', () => {
 });
 
 describe('media manifest', () => {
-  test('contains the three owner-directed clinic posts, with no invented portrait', () => {
-    assert.equal(gallery.length, 3);
-    assert.equal(hasGallery(), true);
+  test('contains the three owner-directed treatment posts, with no invented portrait', () => {
+    assert.equal(treatmentWork.length, 3);
+    assert.equal(hasTreatmentWork(), true);
     assert.equal(portrait, null);
     assert.equal(hasPortrait(), false);
   });
 
+  test('clinic photography is empty and hero is unset — nothing is invented', () => {
+    // Treatment-result images must never be borrowed to fill these. They
+    // stay empty until real clinic photographs exist.
+    assert.equal(clinicPhotography.length, 0);
+    assert.equal(hasClinicPhotography(), false);
+    assert.equal(heroImage, null);
+    assert.equal(hasHeroImage(), false);
+  });
+
+  test('the collections are disjoint by category', () => {
+    // The type system prevents the mistake at compile time; this catches a
+    // cast or a JSON import that slips past it at runtime.
+    const CLINIC = new Set([
+      'exterior', 'reception', 'treatment-room', 'equipment',
+      'doctor-working', 'team', 'atmosphere',
+    ]);
+    for (const asset of treatmentWork) {
+      assert.equal(asset.category, 'treatment-work', `${asset.file} is not a treatment case`);
+      assert.ok(!CLINIC.has(asset.category), `${asset.file} leaked into clinic categories`);
+    }
+    for (const asset of clinicPhotography) {
+      assert.ok(CLINIC.has(asset.category), `${asset.file} is not a clinic category`);
+    }
+    for (const asset of illustrations) {
+      assert.equal(asset.category, 'illustration');
+    }
+  });
+
+  test('galleryFor returns the named collection and nothing else', () => {
+    // The whole point of the explicit API: asking for the clinic gallery can
+    // never hand back treatment-result photographs.
+    assert.deepEqual(galleryFor('work'), treatmentWork);
+    assert.deepEqual(galleryFor('clinic'), clinicPhotography);
+    assert.deepEqual(galleryFor('illustrations'), illustrations);
+
+    const clinic = galleryFor('clinic');
+    assert.ok(
+      !clinic.some((a) => a.category === 'treatment-work'),
+      'a treatment case reached the clinic gallery',
+    );
+  });
+
+  test('the gallery component cannot infer its kind from contents', async () => {
+    // Regression guard for the design decision itself. If someone reinstates
+    // inference, treatment images silently become clinic photography again.
+    const { readFile } = await import('node:fs/promises');
+    const src = await readFile(
+      new URL('../../src/components/sections/ClinicGallery.astro', import.meta.url),
+      'utf8',
+    );
+    assert.match(src, /kind: GalleryKind/, 'kind must be a required prop');
+    assert.match(src, /const assets = galleryFor\(kind\)/);
+    assert.ok(
+      !/\.some\(\s*\(?\s*asset\s*\)?\s*=>\s*asset\.category/.test(src),
+      'gallery kind must not be inferred from asset categories',
+    );
+  });
+
   test('every registered asset would carry alt text in all three locales', () => {
-    for (const asset of gallery) {
+    for (const asset of [...treatmentWork, ...clinicPhotography, ...illustrations]) {
       for (const locale of ['he', 'ar', 'en'] as const) {
         assert.ok(
           asset.alt?.[locale]?.trim().length > 0,
@@ -125,7 +194,7 @@ describe('media manifest', () => {
       ['work-cleaning-01.jpg', 'https://www.instagram.com/p/DdWvC8csM-6/'],
       ['work-cleaning-02.jpg', 'https://www.instagram.com/p/Da8QjY7MiIP/'],
     ]);
-    for (const asset of gallery) {
+    for (const asset of treatmentWork) {
       assert.equal(asset.category, 'treatment-work');
       assert.ok(reviewed.has(asset.file), `${asset.file}: requires an explicit review`);
       assert.equal(asset.sourcePostUrl, reviewed.get(asset.file));

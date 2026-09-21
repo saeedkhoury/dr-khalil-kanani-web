@@ -15,3 +15,7 @@ playwright-report/
 
 # macOS
 .DS_Store
+
+# Staging for assets awaiting inspection. Never committed; contents are
+# reviewed here, then moved into src/assets/images/ only once approved.
+.incoming-assets/

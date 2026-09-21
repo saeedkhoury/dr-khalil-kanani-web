@@ -2,7 +2,10 @@
 /**
  * Clinic gallery — editorial grid + accessible lightbox.
  *
- * Owner-selected clinic posts take precedence over original illustrations.
+ * WHICH collection this renders is passed in by the caller as `kind`. It is
+ * never inferred from the contents of an array. Inference is what would let a
+ * treatment-result photograph silently become the clinic gallery the first
+ * time somebody registered one — the separation has to be structural.
  * Work posts retain their full composition; social buttons link to clinic profiles.
  *
  * ── LAYOUT ────────────────────────────────────────────────────────────────
@@ -21,7 +24,7 @@
 import { Image, getImage } from 'astro:assets';
 import { type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
-import { gallery, illustrations } from '../../data/media';
+import { galleryFor, type GalleryKind } from '../../data/media';
 import { clinic } from '../../data/clinic';
 import { resolveImage } from '../../lib/images';
 import Icon from '../primitives/Icon.astro';
@@ -29,17 +32,19 @@ import Button from '../primitives/Button.astro';
 
 interface Props {
   locale: Locale;
+  /** Which collection to render. Required: there is no sensible default. */
+  kind: GalleryKind;
 }
-const { locale } = Astro.props;
+const { locale, kind } = Astro.props;
 const t = useTranslations(locale);
 
 // Drop entries whose file is missing rather than rendering a broken image.
-const illustrative = gallery.length === 0;
-const assets = illustrative ? illustrations : gallery;
-const workGallery = assets.some((asset) => asset.category === 'treatment-work');
+const assets = galleryFor(kind);
+const workGallery = kind === 'work';
+const illustrative = kind === 'illustrations';
 const resolvedItems = assets
   .map((asset) => ({ asset, resolved: resolveImage(asset.file) }))
-  .filter((i): i is { asset: (typeof gallery)[number]; resolved: NonNullable<ReturnType<typeof resolveImage>> } =>
+  .filter((i): i is { asset: (typeof assets)[number]; resolved: NonNullable<ReturnType<typeof resolveImage>> } =>
     i.resolved !== undefined,
   );
 const items = await Promise.all(resolvedItems.map(async (item) => ({

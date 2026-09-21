@@ -45,7 +45,7 @@ const faq = generalFaq.slice(0, 5).map((f) => ({ q: f.q[locale], a: f.a[locale] 
   <TrustStrip locale={locale} />
   <TreatmentsGrid locale={locale} treatments={treatments} limit={6} />
   <DoctorIntro locale={locale} />
-  <ClinicGallery locale={locale} />
+  <ClinicGallery locale={locale} kind="work" />
   <PatientFeedback locale={locale} />
   <FaqAccordion locale={locale} items={faq} id="home-faq" />
   <FindTheClinic locale={locale} />

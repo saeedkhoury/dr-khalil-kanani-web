@@ -22,25 +22,62 @@
  * explicit instruction on 2026-09-21. This is a scoped publishing direction,
  * not a statement that patient consent or legal review has been verified.
  * See docs/decisions/0009-owner-directed-instagram-gallery.md.
+ *
+ * Treatment-result imagery lives in its own collection and is not a substitute
+ * for clinic photography. See THE CONTENT MODEL below.
  */
 
 import type { Locale } from '../i18n/config';
 
-export type MediaCategory =
+/**
+ * ── THE CONTENT MODEL ─────────────────────────────────────────────────────
+ * Five slots, five vocabularies. They are deliberately DISJOINT so a mix-up
+ * is a type error rather than a review failure:
+ *
+ *   heroImage          one landscape frame, the homepage hero
+ *   portrait           one photograph of Dr. Kanani
+ *   clinicPhotography  the building, rooms, equipment, team, atmosphere
+ *   treatmentWork      treatment and result cases
+ *   illustrations      original artwork, never presented as photography
+ *
+ * Treatment-result imagery is NOT clinic photography and must never stand in
+ * for it. A result photograph answers "what can this clinic do"; a clinic
+ * photograph answers "what is this place, and who will treat me". Using one
+ * for the other is how a dental site ends up looking like a before/after ad.
+ * The category unions below make that substitution impossible to express.
+ */
+export type ClinicPhotographyCategory =
   | 'exterior'
   | 'reception'
   | 'treatment-room'
   | 'equipment'
-  | 'doctor'
+  | 'doctor-working'
   | 'team'
-  | 'atmosphere'
-  | 'illustration'
-  | 'treatment-work';
+  | 'atmosphere';
 
-export interface MediaAsset {
+export type TreatmentWorkCategory = 'treatment-work';
+export type IllustrationCategory = 'illustration';
+export type HeroCategory = 'hero';
+export type PortraitCategory = 'portrait';
+
+/** Every category the site knows. Prefer the specific unions above. */
+export type MediaCategory =
+  | ClinicPhotographyCategory
+  | TreatmentWorkCategory
+  | IllustrationCategory
+  | HeroCategory
+  | PortraitCategory;
+
+/**
+ * Generic over its category, which is what enforces the separation: a
+ * TreatmentWorkPhotograph is not assignable to ClinicPhotograph, so it cannot
+ * be pushed into `clinicPhotography` or passed where clinic photography is
+ * expected. The guarantee is the type system's, not a reviewer's memory.
+ */
+export interface MediaAsset<C extends MediaCategory = MediaCategory> {
   /** Filename inside src/assets/images/. See docs/ASSETS.md for the convention. */
   file: string;
-  category: MediaCategory;
+  category: C;
   /**
    * Required, per locale. Describes what is actually shown — these are
    * meaningful images, never decorative, so an empty alt is never correct.
@@ -57,11 +94,33 @@ export interface MediaAsset {
   sourcePostUrl?: string;
 }
 
+export type ClinicPhotograph = MediaAsset<ClinicPhotographyCategory>;
+export type TreatmentWorkPhotograph = MediaAsset<TreatmentWorkCategory>;
+export type Illustration = MediaAsset<IllustrationCategory>;
+export type HeroPhotograph = MediaAsset<HeroCategory>;
+export type DoctorPortrait = MediaAsset<PortraitCategory>;
+
 /**
- * Owner-directed treatment gallery. The original local files were opened and
- * matched visually to the clinic's Instagram posts on 2026-09-21.
+ * Which collection a gallery renders. Passed EXPLICITLY by the caller — the
+ * component must never infer it from what happens to be in an array, because
+ * that is how treatment-result photographs would silently become the clinic
+ * gallery the first time someone added one.
  */
-export const gallery: MediaAsset[] = [
+export type GalleryKind = 'clinic' | 'work' | 'illustrations';
+
+/**
+ * TREATMENT AND RESULT CASES — a category of its own.
+ *
+ * Owner-directed. The original local files were opened and matched visually
+ * to the clinic's Instagram posts on 2026-09-21. Each entry is individually
+ * approved; see docs/decisions/0009-owner-directed-instagram-gallery.md.
+ *
+ * These are NOT clinic photography and must never be used as the hero, the
+ * doctor portrait, or the clinic gallery. The type prevents it.
+ *
+ * Adding an entry here requires the owner's explicit, per-image instruction.
+ */
+export const treatmentWork: TreatmentWorkPhotograph[] = [
   {
     file: 'work-veneers-01.jpg', category: 'treatment-work', width: 1254, height: 1254,
     sourcePostUrl: 'https://www.instagram.com/p/DdJ042BMJUu/',
@@ -98,7 +157,7 @@ export const gallery: MediaAsset[] = [
  * Inanimate objects only; never presented as clinic or patient photography.
  * Generation prompts and review record: docs/ILLUSTRATIONS.md.
  */
-export const illustrations: MediaAsset[] = [
+export const illustrations: Illustration[] = [
   {
     file: 'illustration-tooth-01.png',
     category: 'illustration',
@@ -135,6 +194,18 @@ export const illustrations: MediaAsset[] = [
 ];
 
 /**
+ * CLINIC PHOTOGRAPHY — the building, the rooms, the equipment, the people.
+ *
+ * Empty until real photographs exist. The gallery renders nothing while it is,
+ * rather than borrowing treatment-result images to fill the space: a result
+ * photograph cannot tell a patient what the waiting room looks like.
+ *
+ * What is needed, and at what resolution, is in docs/ASSETS.md.
+ * OWNER ACTION REQUIRED.
+ */
+export const clinicPhotography: ClinicPhotograph[] = [];
+
+/**
  * Hero image. One landscape photograph — the clinic, or the dentist at work.
  * Carries the most weight of any asset on the site.
  *
@@ -142,17 +213,37 @@ export const illustrations: MediaAsset[] = [
  * deliberate design, not a placeholder: see Hero.astro.
  * OWNER ACTION REQUIRED.
  */
-export const heroImage: MediaAsset | null = null;
+export const heroImage: HeroPhotograph | null = null;
 
 /**
- * Doctor portrait. Separate from the gallery because it has one specific
- * home in DoctorIntro and a different aspect ratio.
+ * Doctor portrait. Its own slot, not a member of any collection: it has one
+ * specific home in DoctorIntro, a different aspect ratio to everything else,
+ * and it is the image search engines may surface for the practice.
  * OWNER ACTION REQUIRED.
  */
-export const portrait: MediaAsset | null = null;
+export const portrait: DoctorPortrait | null = null;
 
-export function hasGallery(): boolean {
-  return gallery.length > 0;
+/** The collection behind each gallery kind. */
+const COLLECTIONS = {
+  clinic: clinicPhotography,
+  work: treatmentWork,
+  illustrations,
+} as const satisfies Record<GalleryKind, readonly MediaAsset[]>;
+
+/**
+ * The ONLY way a component obtains gallery contents. Callers name the kind;
+ * they never reach into a collection directly and never infer one.
+ */
+export function galleryFor(kind: GalleryKind): readonly MediaAsset[] {
+  return COLLECTIONS[kind];
+}
+
+export function hasClinicPhotography(): boolean {
+  return clinicPhotography.length > 0;
+}
+
+export function hasTreatmentWork(): boolean {
+  return treatmentWork.length > 0;
 }
 
 export function hasPortrait(): boolean {
@@ -163,7 +254,9 @@ export function hasHeroImage(): boolean {
   return heroImage !== null;
 }
 
-/** Gallery entries for one category, preserving manifest order. */
-export function galleryByCategory(category: MediaCategory): MediaAsset[] {
-  return gallery.filter((a) => a.category === category);
+/** Clinic photographs of one category, preserving manifest order. */
+export function clinicPhotographyByCategory(
+  category: ClinicPhotographyCategory,
+): ClinicPhotograph[] {
+  return clinicPhotography.filter((asset) => asset.category === category);
 }

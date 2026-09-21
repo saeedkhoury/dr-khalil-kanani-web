@@ -36,6 +36,39 @@ See [ADR 0006](./decisions/0006-no-before-after-gallery.md).
 If you receive such an image: move it to `.private-assets/` (gitignored) and
 tell the owner why it cannot be used.
 
+## Two separate content categories
+
+`src/data/media.ts` holds five slots. They are deliberately disjoint, and the
+TypeScript types enforce it — an asset from one cannot be assigned to another.
+
+| Slot | Holds | Renders in |
+|---|---|---|
+| `heroImage` | One landscape frame | Homepage hero |
+| `portrait` | One photograph of Dr. Kanani | Doctor section, `schema.org` image |
+| `clinicPhotography` | exterior · reception · treatment-room · equipment · doctor-working · team · atmosphere | Clinic gallery |
+| `treatmentWork` | Treatment and result cases only | Treatment gallery |
+| `illustrations` | Original artwork | Illustration gallery |
+
+**Treatment-result images are never clinic photography.** A result photograph
+answers "what can this clinic do". A clinic photograph answers "what is this
+place, and who will be treating me". Substituting one for the other is how a
+dental site ends up looking like a before/after advertisement, which is also
+the form Israeli advertising regulations most directly target.
+
+A gallery is told which collection to render:
+
+```astro
+<ClinicGallery locale={locale} kind="clinic" />
+<ClinicGallery locale={locale} kind="work" />
+```
+
+`kind` is required and the component never infers it from what is in an array.
+Inference is what would let a treatment photograph silently become the clinic
+gallery the first time one was registered.
+
+Adding to `treatmentWork` requires the owner's explicit, per-image instruction
+(ADR 0009). It is not covered by any blanket approval.
+
 ## What the site needs
 
 | Category | What it shows | Suggested count |
