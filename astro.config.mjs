@@ -5,8 +5,6 @@ import sitemap from '@astrojs/sitemap';
 
 import { clinic } from './src/data/clinic.ts';
 
-import cloudflare from '@astrojs/cloudflare';
-
 import { assertLaunchReady, launchBlockers } from './src/lib/verify.ts';
 
 /**
@@ -35,6 +33,15 @@ function launchGate() {
 
 /**
  * Astro 7 configuration.
+ *
+ * FULLY STATIC — no adapter. The site deploys to GitHub Pages, which serves
+ * static files only. An adapter was previously configured, which split the
+ * build into `dist/client` + `dist/server`; the workflow uploaded only
+ * `dist/client`, so the appointment endpoint in `dist/server` was never
+ * deployed and every request submitted on the live site was lost (405).
+ *
+ * The form now hands off to WhatsApp (ADR 0007), so no server is needed at
+ * all. Output goes to `dist/` and what is built is exactly what is served.
  *
  * Fonts are declared here rather than linked from Google so Astro downloads,
  * subsets and self-hosts them. Discovery found a competitor loading all 18
@@ -104,5 +111,4 @@ export default defineConfig({
     plugins: [tailwindcss()],
   },
 
-  adapter: cloudflare(),
 });

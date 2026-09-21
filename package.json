@@ -10,21 +10,18 @@
     "build": "astro build",
     "build:preview": "VERIFY_RELAX=1 astro build",
     "preview": "astro preview",
-    "check": "wrangler types && astro check",
+    "check": "astro check",
     "lint:claims": "node scripts/lint-claims.mjs",
     "lint:scripts": "node scripts/lint-mixed-scripts.mjs",
     "verify": "npm run lint:claims && npm run lint:scripts && npm run check",
-    "astro": "astro",
-    "types": "wrangler types"
+    "astro": "astro"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^14.3.2",
     "@astrojs/sitemap": "^3.7.4",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.3.3",
     "motion": "^13.4.0",
-    "tailwindcss": "^4.3.3",
-    "wrangler": "^4.135.0"
+    "tailwindcss": "^4.3.3"
   },
   "allowScripts": {
     "esbuild": true

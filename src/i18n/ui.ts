@@ -85,7 +85,7 @@ export const ui = {
     'contact.emailLabel': 'דוא״ל',
 
     'form.title': 'בקשת תור',
-    'form.intro': 'מלאו את הפרטים ונחזור אליכם. אין צורך בפרטים רפואיים.',
+    'form.intro': 'מלאו את הפרטים והבקשה תישלח ישירות לרופא בוואטסאפ. אין צורך בפרטים רפואיים.',
     'form.name': 'שם מלא',
     'form.phone': 'טלפון',
     'form.contactMethod': 'איך תעדיפו שנחזור אליכם?',
@@ -105,8 +105,17 @@ export const ui = {
     'form.consent':
       'אני מאשר/ת שתיצרו איתי קשר בנוגע לפנייה זו. הפרטים ישמשו למטרה זו בלבד.',
     'form.marketingOptIn': 'אשמח לקבל עדכונים מהמרפאה (לא חובה)',
-    'form.submit': 'שליחת בקשה',
-    'form.submitting': 'שולח…',
+    'form.submit': 'שליחה בוואטסאפ',
+    'form.submitting': 'פותח וואטסאפ…',
+    'form.handoffNote': 'הפרטים אינם נשמרים באתר. לחיצה על שליחה תפתח וואטסאפ עם הודעה מוכנה — תוכלו לקרוא אותה ולשלוח בעצמכם.',
+    'form.noJs': 'כדי לשלוח בקשה דרך הטופס יש להפעיל JavaScript. אפשר גם פשוט להתקשר או לכתוב בוואטסאפ:',
+    'form.messageHeading': 'בקשת תור מהאתר',
+    'msg.name': 'שם',
+    'msg.phone': 'טלפון',
+    'msg.contact': 'העדפת יצירת קשר',
+    'msg.treatment': 'טיפול',
+    'msg.daypart': 'זמן מועדף',
+    'msg.note': 'הערה',
 
     'form.error.name': 'נא להזין שם מלא.',
     'form.error.phone': 'נא להזין מספר טלפון תקין בישראל.',
@@ -114,12 +123,12 @@ export const ui = {
     'form.error.generic': 'השליחה נכשלה. נסו שוב, או חייגו אלינו.',
     'form.error.summaryTitle': 'יש לתקן את הפרטים הבאים',
 
-    'form.success.title': 'הבקשה נשלחה',
-    'form.success.body': 'נחזור אליכם בהקדם. אם זה דחוף — עדיף להתקשר.',
+    'form.success.title': 'וואטסאפ נפתח',
+    'form.success.body': 'ההודעה מוכנה בוואטסאפ — בדקו אותה ולחצו שליחה. אם לא נפתח, אפשר להתקשר אלינו.',
 
     'privacy.notice.title': 'מה קורה עם הפרטים שלכם',
     'privacy.notice.body':
-      'מסירת הפרטים היא בהתנדבות ואינה חובה חוקית; בלעדיהם לא נוכל לחזור אליכם. הפרטים ישמשו אך ורק למענה לפנייה ולתיאום תור, ולא יועברו לגורם שלישי למטרות שיווק. לפי חוק הגנת הפרטיות, התשמ״א-1981, עומדת לכם הזכות לעיין בפרטים ולתקנם.',
+      'מסירת הפרטים היא בהתנדבות ואינה חובה חוקית; בלעדיהם לא נוכל לחזור אליכם. האתר אינו שומר את הפרטים ואינו שולח אותם לשרת — הם מוכנסים להודעת וואטסאפ שאתם שולחים בעצמכם למרפאה. מרגע השליחה ההודעה מנוהלת בחשבון הוואטסאפ שלכם ובמרפאה, ובכפוף למדיניות של וואטסאפ. הפרטים ישמשו אך ורק למענה לפנייה ולתיאום תור.',
     'privacy.readPolicy': 'מדיניות הפרטיות',
 
     'legal.accessibility': 'הצהרת נגישות',
@@ -205,7 +214,7 @@ export const ui = {
     'contact.emailLabel': 'البريد الإلكتروني',
 
     'form.title': 'طلب موعد',
-    'form.intro': 'املأوا التفاصيل وسنعاود الاتصال بكم. لا حاجة لأي تفاصيل طبية.',
+    'form.intro': 'املأوا التفاصيل وسيصل الطلب مباشرة إلى الطبيب عبر واتساب. لا حاجة لأي تفاصيل طبية.',
     'form.name': 'الاسم الكامل',
     'form.phone': 'رقم الهاتف',
     'form.contactMethod': 'كيف تفضّلون أن نتواصل معكم؟',
@@ -224,8 +233,17 @@ export const ui = {
     'form.required': 'حقل إلزامي',
     'form.consent': 'أوافق على أن تتواصلوا معي بخصوص هذا الطلب. ستُستخدم التفاصيل لهذا الغرض فقط.',
     'form.marketingOptIn': 'أرغب في تلقّي تحديثات من العيادة (اختياري)',
-    'form.submit': 'إرسال الطلب',
-    'form.submitting': 'جارٍ الإرسال…',
+    'form.submit': 'إرسال عبر واتساب',
+    'form.submitting': 'جارٍ فتح واتساب…',
+    'form.handoffNote': 'لا يحفظ الموقع تفاصيلكم. الضغط على إرسال يفتح واتساب برسالة جاهزة — يمكنكم قراءتها وإرسالها بأنفسكم.',
+    'form.noJs': 'لإرسال طلب عبر النموذج يلزم تفعيل JavaScript. يمكنكم ببساطة الاتصال أو المراسلة عبر واتساب:',
+    'form.messageHeading': 'طلب موعد من الموقع',
+    'msg.name': 'الاسم',
+    'msg.phone': 'الهاتف',
+    'msg.contact': 'طريقة التواصل المفضّلة',
+    'msg.treatment': 'العلاج',
+    'msg.daypart': 'الوقت المفضّل',
+    'msg.note': 'ملاحظة',
 
     'form.error.name': 'يُرجى إدخال الاسم الكامل.',
     'form.error.phone': 'يُرجى إدخال رقم هاتف إسرائيلي صحيح.',
@@ -233,12 +251,12 @@ export const ui = {
     'form.error.generic': 'فشل الإرسال. حاولوا مجددًا أو اتصلوا بنا.',
     'form.error.summaryTitle': 'يُرجى تصحيح التفاصيل التالية',
 
-    'form.success.title': 'تم إرسال الطلب',
-    'form.success.body': 'سنعاود الاتصال بكم قريبًا. إذا كان الأمر عاجلًا — يُفضّل الاتصال.',
+    'form.success.title': 'تم فتح واتساب',
+    'form.success.body': 'الرسالة جاهزة في واتساب — راجعوها واضغطوا إرسال. إذا لم يُفتح، يمكنكم الاتصال بنا.',
 
     'privacy.notice.title': 'ماذا يحدث لتفاصيلكم',
     'privacy.notice.body':
-      'تقديم التفاصيل طوعي وليس إلزامًا قانونيًا؛ بدونها لن نتمكن من معاودة الاتصال بكم. ستُستخدم التفاصيل فقط للردّ على الطلب وتنسيق الموعد، ولن تُنقل إلى طرف ثالث لأغراض تسويقية. وفقًا لقانون حماية الخصوصية 1981، يحق لكم الاطّلاع على تفاصيلكم وتصحيحها.',
+      'تقديم التفاصيل طوعي وليس إلزامًا قانونيًا؛ بدونها لن نتمكن من معاودة الاتصال بكم. لا يحفظ الموقع التفاصيل ولا يرسلها إلى خادم — تُدرَج في رسالة واتساب ترسلونها بأنفسكم إلى العيادة. ومنذ لحظة الإرسال تُدار الرسالة في حسابكم على واتساب وفي العيادة، ووفقًا لسياسة واتساب. ستُستخدم التفاصيل فقط للردّ على الطلب وتنسيق الموعد.',
     'privacy.readPolicy': 'سياسة الخصوصية',
 
     'legal.accessibility': 'بيان إمكانية الوصول',
@@ -324,7 +342,7 @@ export const ui = {
     'contact.emailLabel': 'Email',
 
     'form.title': 'Request an appointment',
-    'form.intro': 'Fill in your details and we will get back to you. No medical details needed.',
+    'form.intro': 'Fill in your details and the request goes straight to the dentist on WhatsApp. No medical details needed.',
     'form.name': 'Full name',
     'form.phone': 'Phone number',
     'form.contactMethod': 'How would you prefer we reply?',
@@ -344,8 +362,17 @@ export const ui = {
     'form.consent':
       'I agree to be contacted about this enquiry. My details will be used for that purpose only.',
     'form.marketingOptIn': 'I would like updates from the clinic (optional)',
-    'form.submit': 'Send request',
-    'form.submitting': 'Sending…',
+    'form.submit': 'Send on WhatsApp',
+    'form.submitting': 'Opening WhatsApp…',
+    'form.handoffNote': 'This site does not store your details. Pressing send opens WhatsApp with a ready-written message — you can read it and send it yourself.',
+    'form.noJs': 'Sending through the form needs JavaScript. You can simply call or message us on WhatsApp instead:',
+    'form.messageHeading': 'Appointment request from the website',
+    'msg.name': 'Name',
+    'msg.phone': 'Phone',
+    'msg.contact': 'Preferred contact',
+    'msg.treatment': 'Treatment',
+    'msg.daypart': 'Preferred time',
+    'msg.note': 'Note',
 
     'form.error.name': 'Please enter your full name.',
     'form.error.phone': 'Please enter a valid Israeli phone number.',
@@ -353,12 +380,12 @@ export const ui = {
     'form.error.generic': 'Sending failed. Please try again, or call us.',
     'form.error.summaryTitle': 'There is a problem',
 
-    'form.success.title': 'Request sent',
-    'form.success.body': 'We will get back to you shortly. If it is urgent, please call instead.',
+    'form.success.title': 'WhatsApp opened',
+    'form.success.body': 'Your message is ready in WhatsApp — review it and press send. If it did not open, please call us.',
 
     'privacy.notice.title': 'What happens to your details',
     'privacy.notice.body':
-      'Providing these details is voluntary and not a legal obligation; without them we cannot reply. They will be used solely to answer your enquiry and arrange an appointment, and will not be passed to third parties for marketing. Under the Protection of Privacy Law, 1981 you have the right to access and correct your details.',
+      'Providing these details is voluntary and not a legal obligation; without them we cannot reply. This site does not store your details and does not send them to a server — they are placed into a WhatsApp message that you send to the clinic yourself. From the moment you send it, the message lives in your WhatsApp account and the clinic\u2019s, subject to WhatsApp\u2019s own policies. The details will be used solely to answer your enquiry and arrange an appointment.',
     'privacy.readPolicy': 'Privacy policy',
 
     'legal.accessibility': 'Accessibility statement',
