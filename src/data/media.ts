@@ -33,7 +33,8 @@ export type MediaCategory =
   | 'equipment'
   | 'doctor'
   | 'team'
-  | 'atmosphere';
+  | 'atmosphere'
+  | 'illustration';
 
 export interface MediaAsset {
   /** Filename inside src/assets/images/. See docs/ASSETS.md for the convention. */
@@ -56,14 +57,53 @@ export interface MediaAsset {
 /**
  * OWNER ACTION REQUIRED — this is empty on purpose.
  *
- * No clinic photography exists yet. The gallery reads this array and hides
- * itself entirely while it is empty, rather than rendering placeholders that
- * could be mistaken for the real clinic.
+ * No clinic photography exists yet. While this is empty, the picture section
+ * uses the explicitly labelled illustrations below.
  *
  * To populate: drop files into src/assets/images/ following docs/ASSETS.md,
  * then add one entry each below. No component needs to change.
  */
 export const gallery: MediaAsset[] = [];
+
+/** Original AI-generated artwork, visually reviewed on 2026-09-21.
+ * Inanimate objects only; never presented as clinic or patient photography.
+ * Generation prompts and review record: docs/ILLUSTRATIONS.md.
+ */
+export const illustrations: MediaAsset[] = [
+  {
+    file: 'illustration-tooth-01.png',
+    category: 'illustration',
+    width: 1536, height: 1024, feature: true,
+    alt: {
+      he: 'איור של פסל שן מחרסינה ומראה דנטלית על במה כחולה',
+      ar: 'رسم توضيحي لمجسّم سن خزفي ومرآة أسنان على قاعدة زرقاء',
+      en: 'Illustration of a porcelain tooth sculpture and dental mirror on a blue plinth',
+    },
+    caption: { he: 'שן ומראה — איור', ar: 'سن ومرآة — رسم توضيحي', en: 'Tooth & mirror — illustration' },
+  },
+  {
+    file: 'illustration-aligner-01.png',
+    category: 'illustration',
+    width: 1536, height: 1024,
+    alt: {
+      he: 'איור של דגם קשתית שקופה בגוון כחול מעל בסיס לבן',
+      ar: 'رسم توضيحي لنموذج قالب تقويم شفاف باللون الأزرق فوق قاعدة بيضاء',
+      en: 'Illustration of a transparent blue aligner model above a white plinth',
+    },
+    caption: { he: 'קשתית שקופה — איור', ar: 'قالب تقويم شفاف — رسم توضيحي', en: 'Clear aligner — illustration' },
+  },
+  {
+    file: 'illustration-care-01.png',
+    category: 'illustration',
+    width: 1536, height: 1024,
+    alt: {
+      he: 'איור של מברשת שיניים כחולה וחוט דנטלי על משטחי חרסינה',
+      ar: 'رسم توضيحي لفرشاة أسنان زرقاء وخيط أسنان على أسطح خزفية',
+      en: 'Illustration of a blue toothbrush and dental floss on porcelain surfaces',
+    },
+    caption: { he: 'מברשת וחוט — איור', ar: 'فرشاة وخيط — رسم توضيحي', en: 'Brush & floss — illustration' },
+  },
+];
 
 /**
  * Hero image. One landscape photograph — the clinic, or the dentist at work.

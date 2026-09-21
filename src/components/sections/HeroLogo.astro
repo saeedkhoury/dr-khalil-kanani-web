@@ -1,0 +1,87 @@
+---
+import Logo from '../primitives/Logo.astro';
+---
+
+<!-- The original mark, layered in depth. Decorative: the adjacent heading
+     already identifies the clinic. No extra tab stop or mouse-only content. -->
+<div class="hero-logo" aria-hidden="true" data-hero-logo>
+  <div class="hero-logo-object" data-logo-object>
+    {Array.from({ length: 12 }, (_, index) => (
+      <span class="hero-logo-layer" style={`--depth:${-18 + index * 1.5}px`}>
+        <Logo size={264} mono />
+      </span>
+    ))}
+    <span class="hero-logo-face"><Logo size={264} /></span>
+  </div>
+</div>
+
+<style>
+  .hero-logo {
+    inline-size: clamp(9rem, 22vw, 16.5rem);
+    aspect-ratio: 1;
+    perspective: 850px;
+    pointer-events: none;
+    direction: ltr;
+    margin-block-start: 0.5rem;
+  }
+  .hero-logo-object {
+    position: relative;
+    inline-size: 100%;
+    block-size: 100%;
+    transform-style: preserve-3d;
+    transform: rotateX(calc(8deg + var(--logo-rx, 0deg))) rotateY(calc(-16deg + var(--logo-ry, 0deg)));
+    transition: transform 240ms cubic-bezier(0.2, 0.65, 0.3, 1);
+  }
+  .hero-logo-layer, .hero-logo-face {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    transform: translateZ(var(--depth, 0px));
+    color: #083d63;
+  }
+  .hero-logo-layer :global(svg), .hero-logo-face :global(svg) {
+    inline-size: 100%;
+    block-size: 100%;
+    overflow: visible;
+  }
+  .hero-logo-face { filter: drop-shadow(0 1px 0 #d3efff); }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-logo-object { transition: none; }
+  }
+</style>
+
+<script>
+  const logo = document.querySelector<HTMLElement>('[data-hero-logo]');
+  const object = logo?.querySelector<HTMLElement>('[data-logo-object]');
+  const hero = logo?.closest('section');
+  if (hero && object) {
+    const motion = window.matchMedia('(prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine)');
+    let frame = 0;
+    let x = 0;
+    let y = 0;
+    const reset = (): void => {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      object.style.removeProperty('--logo-rx');
+      object.style.removeProperty('--logo-ry');
+    };
+    hero.addEventListener('pointermove', (event: PointerEvent) => {
+      if (!motion.matches || event.pointerType !== 'mouse') return;
+      const bounds = hero.getBoundingClientRect();
+      x = Math.max(-1, Math.min(1, (event.clientX - bounds.x) / bounds.width * 2 - 1));
+      y = Math.max(-1, Math.min(1, (event.clientY - bounds.y) / bounds.height * 2 - 1));
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        object.style.setProperty('--logo-rx', `${-y * 10}deg`);
+        object.style.setProperty('--logo-ry', `${x * 14}deg`);
+        frame = 0;
+      });
+    }, { passive: true });
+    hero.addEventListener('pointerleave', reset);
+    hero.addEventListener('pointercancel', reset);
+    motion.addEventListener('change', reset);
+    window.addEventListener('blur', reset);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) reset(); });
+  }
+</script>

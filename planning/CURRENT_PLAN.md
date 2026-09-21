@@ -13,13 +13,17 @@ the premium upgrade in `CHANGELOG.md`, merged through PR #1.
 - Asset, content, locale, claims and built-HTML accessibility gates.
 - Follow-up fixes for gallery initialization, tablet layout, WhatsApp handoff,
   Western Arabic numerals, Hebrew tracking, safe-area clearance and reveals.
-- 76 unit tests and 25 Chromium/axe tests, enforced in preview/production CI.
+- 76 unit tests and 31 Chromium/axe tests, enforced in preview/production CI.
 - Phase 3 merge deployed successfully; unused Cloudflare Git connection
   disconnected after diagnosis and explicit owner approval.
 - Desktop consent-click regression fixed by preserving inline error space.
 - Owner-supplied Street 1003 and Waze destination enabled across languages.
   Redesigned directions/map section and removed the narrow hero fact strip.
 - Homepage/contact screenshot samples reviewed at 375/768/1440px in he/ar/en.
+- Visible gallery of reviewed, explicitly labelled dental illustrations with
+  full-size viewing; actual clinic photographs can replace these when supplied.
+- Original tooth mark at the hero's top-left with 3D mouse tracking, static on
+  touch/reduced-motion/no-JS; hero screenshots reviewed across the same matrix.
 
 ## Remaining launch follow-up
 

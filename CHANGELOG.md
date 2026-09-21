@@ -2,6 +2,19 @@
 
 ## 2026-09-21
 
+### Visible picture gallery and interactive hero logo
+
+- Added three reviewed original dental illustrations, with explicit AI-art
+  disclosure, localized captions and accessible full-size viewing. Real clinic
+  photography remains a separate manifest source and takes precedence later.
+- Added the exact vector tooth logo to the physical top-left of the hero in
+  every locale. Layered depth responds to mouse movement within the hero;
+  touch, no-JS and reduced-motion visitors get the static version.
+- Optimized gallery/full-size images to WebP and corrected tile alt text.
+  Six new browser tests cover actual image loading, lightbox navigation,
+  focus return, logo placement, tracking and reduced motion in all locales.
+  All 76 unit tests, 31 browser tests and the 41-page HTML audit pass.
+
 ### Location and hero follow-up
 
 - Enabled the owner-supplied Street 1003 / Waze destination in all locales,

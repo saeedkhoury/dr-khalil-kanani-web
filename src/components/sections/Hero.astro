@@ -6,20 +6,8 @@
  * WHAT NEXT (actions). It does not open with a biography — one reference site
  * does, and its H1 is a 450-character paragraph as a result.
  *
- * ── TWO STATES, BOTH DELIBERATE ───────────────────────────────────────────
- * WITH a photograph: split composition, image bleeding to the inline edge.
- * WITHOUT one: a TYPOGRAPHIC hero — the display type becomes the subject,
- * over a layered tinted field, with the clinic's real facts as the supporting
- * structure.
- *
- * The previous version put the logo mark in concentric boxes, which read as
- * "assets pending". A typographic hero is a choice a designer makes on
- * purpose; an empty image frame is one they were forced into. Since no
- * approved clinic photography exists, and inventing some is prohibited, the
- * honest move is to make type carry the screen.
- *
- * Dropping in the real photo later is a one-line change in src/data/media.ts.
- * Nothing here needs redesigning.
+ * The owner's tooth mark occupies the physical top-left in every locale.
+ * Pointer tilt is decorative; heading and contact actions remain static.
  */
 import { Image } from 'astro:assets';
 import { localizePath, type Locale } from '../../i18n/config';
@@ -29,6 +17,7 @@ import { heroImage, hasHeroImage } from '../../data/media';
 import { resolveImage } from '../../lib/images';
 import Button from '../primitives/Button.astro';
 import Icon from '../primitives/Icon.astro';
+import HeroLogo from './HeroLogo.astro';
 
 interface Props {
   locale: Locale;
@@ -62,13 +51,9 @@ const withImage = hasHeroImage() && heroAsset !== undefined;
   >
   </div>
 
-  <div
-    class:list={[
-      'shell grid items-center gap-10 py-16 md:py-24',
-      withImage ? 'lg:grid-cols-[1fr_0.92fr] lg:gap-16' : 'lg:gap-14',
-    ]}
-  >
-    <div class={withImage ? '' : 'max-w-4xl'}>
+  <div class="shell hero-layout py-12 md:py-20">
+    <HeroLogo />
+    <div class="hero-copy">
       <p class="eyebrow enter flex items-center gap-1.5" style="--i:0">
         <Icon name="map-pin" size={15} />
         {t('hero.eyebrow')}
@@ -78,7 +63,7 @@ const withImage = hasHeroImage() && heroAsset !== undefined;
       <h1
         id="hero-heading"
         class="enter mt-4"
-        style={`--i:1; font-size:${withImage ? 'var(--text-3xl)' : 'var(--text-display)'}`}
+        style="--i:1; font-size:var(--text-display)"
       >
         {t('hero.title')}
       </h1>
@@ -121,14 +106,14 @@ const withImage = hasHeroImage() && heroAsset !== undefined;
 
     {
       withImage && heroImage && heroAsset ? (
-        <div class="enter relative" style="--i:2">
+        <div class="enter relative hero-photo" style="--i:2">
           <Image
             src={heroAsset}
             alt={heroImage.alt[locale]}
             width={heroImage.width}
             height={heroImage.height}
             widths={[640, 960, 1280]}
-            sizes="(min-width: 1024px) 46vw, 100vw"
+            sizes="(min-width: 1200px) 1132px, 100vw"
             loading="eager"
             fetchpriority="high"
             class="media aspect-[4/3] w-full"
@@ -139,3 +124,19 @@ const withImage = hasHeroImage() && heroAsset !== undefined;
   </div>
 
 </section>
+
+<style>
+  .hero-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2.25rem;
+    direction: ltr;
+    align-items: start;
+  }
+  .hero-copy { min-inline-size: 0; }
+  :global(html[dir='rtl']) .hero-copy { direction: rtl; }
+  .hero-photo { grid-column: 1 / -1; }
+  @media (min-width: 768px) {
+    .hero-layout { grid-template-columns: minmax(10rem, 0.65fr) minmax(0, 1.35fr); gap: 3rem; }
+  }
+</style>

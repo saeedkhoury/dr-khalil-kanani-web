@@ -8,6 +8,59 @@ const routes = ['', 'about/', 'contact/', 'faq/', 'privacy/', 'accessibility/', 
     .map((slug) => `treatments/${slug}/`)];
 
 for (const locale of locales) {
+  test(`${locale}: visible illustration gallery and full-size navigation`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(`/${locale}/`);
+    const gallery = page.locator('section[aria-labelledby="gallery-heading"]');
+    const tiles = gallery.locator('[data-gallery-open]');
+    await expect(tiles).toHaveCount(3);
+    await gallery.scrollIntoViewIfNeeded();
+    for (const image of await tiles.locator('img').all()) {
+      await expect(image).toBeVisible();
+      await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+    }
+    await tiles.first().click();
+    const dialog = page.locator('#gallery-lightbox');
+    await expect(dialog).toBeVisible();
+    await expect(page.locator('#lightbox-position')).toHaveText('1 / 3');
+    await expect.poll(() => page.locator('#lightbox-image').evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+    await page.locator('[data-gallery-next]').click();
+    await expect(page.locator('#lightbox-position')).toHaveText('2 / 3');
+    await expect(page.locator('#lightbox-image')).toHaveAttribute('alt', await tiles.nth(1).getAttribute('aria-label') ?? '');
+    await page.locator('[data-gallery-prev]').click();
+    await expect(page.locator('#lightbox-position')).toHaveText('1 / 3');
+    expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()).violations).toEqual([]);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await expect(tiles.first()).toBeFocused();
+  });
+
+  test(`${locale}: hero logo stays top-left and follows mouse only when motion is allowed`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.goto(`/${locale}/`);
+    const logo = page.locator('[data-hero-logo]');
+    const object = page.locator('[data-logo-object]');
+    const box = await logo.boundingBox();
+    const heading = await page.locator('#hero-heading').boundingBox();
+    expect(box).not.toBeNull();
+    expect(heading).not.toBeNull();
+    expect(box!.x + box!.width).toBeLessThan(heading!.x);
+    expect(box!.y).toBeLessThan(heading!.y);
+    await page.mouse.move(300, 250);
+    await expect(object).toHaveAttribute('style', /--logo-ry:/);
+    const first = await object.getAttribute('style');
+    await page.mouse.move(1000, 400);
+    await expect.poll(() => object.getAttribute('style')).not.toBe(first);
+    await page.mouse.move(0, 0);
+    await expect.poll(() => object.evaluate((element) => element.style.getPropertyValue('--logo-ry'))).toBe('');
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.mouse.move(300, 250);
+    await page.mouse.move(1000, 400);
+    await expect.poll(() => object.evaluate((element) => element.style.getPropertyValue('--logo-ry'))).toBe('');
+    await expect(logo).toBeVisible();
+  });
+
   for (const width of [375, 768, 1440]) {
     test(`${locale} at ${width}px: every page, axe, overflow and local resources`, async ({ page }, testInfo) => {
       test.setTimeout(120_000);
@@ -141,6 +194,8 @@ for (const locale of locales) {
     const page = await context.newPage();
     await page.goto(`http://127.0.0.1:4330/${locale}/`);
     for (const element of await page.locator('.reveal, .enter').all()) await expect(element).toHaveCSS('opacity', '1');
+    await expect(page.locator('[data-hero-logo]')).toBeVisible();
+    await expect(page.locator('[data-gallery-open]')).toHaveCount(3);
     await page.goto(`http://127.0.0.1:4330/${locale}/contact/`);
     await expect(page.locator('noscript a[href^="tel:"]')).toBeVisible();
     await expect(page.locator('noscript a[href^="https://wa.me/"]')).toBeVisible();

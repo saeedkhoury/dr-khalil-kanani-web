@@ -2,15 +2,9 @@
 /**
  * Clinic gallery — editorial grid + accessible lightbox.
  *
- * Data-driven: everything comes from `gallery` in src/data/media.ts. Adding,
- * removing or reordering images is an edit to that array. This component
- * never changes.
- *
- * ── HIDES ITSELF WHEN EMPTY ───────────────────────────────────────────────
- * No approved clinic photography exists yet. Rather than render placeholder
- * boxes that could be mistaken for the real clinic — or worse, stock imagery
- * implying a clinic that does not look like this — the whole section returns
- * nothing. An absent section is honest; a fake one is not.
+ * Approved clinic photography takes precedence over original illustrations.
+ * Illustration mode is explicitly labelled in the heading, introduction and
+ * each image caption. Neither mode uses patient photography.
  *
  * ── LAYOUT ────────────────────────────────────────────────────────────────
  * Desktop: asymmetric editorial grid. Entries marked `feature` span two
@@ -24,10 +18,10 @@
  * restore are all browser behaviour, so the only hand-written parts are
  * arrow-key navigation and swipe. Roughly 1.5KB of JS for the whole thing.
  */
-import { Image } from 'astro:assets';
+import { Image, getImage } from 'astro:assets';
 import { type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
-import { gallery } from '../../data/media';
+import { gallery, illustrations } from '../../data/media';
 import { resolveImage } from '../../lib/images';
 import Icon from '../primitives/Icon.astro';
 
@@ -38,11 +32,17 @@ const { locale } = Astro.props;
 const t = useTranslations(locale);
 
 // Drop entries whose file is missing rather than rendering a broken image.
-const items = gallery
+const illustrative = gallery.length === 0;
+const assets = illustrative ? illustrations : gallery;
+const resolvedItems = assets
   .map((asset) => ({ asset, resolved: resolveImage(asset.file) }))
   .filter((i): i is { asset: (typeof gallery)[number]; resolved: NonNullable<ReturnType<typeof resolveImage>> } =>
     i.resolved !== undefined,
   );
+const items = await Promise.all(resolvedItems.map(async (item) => ({
+  ...item,
+  fullSize: await getImage({ src: item.resolved, width: 1536, format: item.resolved.format === 'svg' ? 'svg' : 'webp', quality: 85 }),
+})));
 ---
 
 {
@@ -50,9 +50,9 @@ const items = gallery
     <section class="section-lg bg-[var(--color-mist)]" aria-labelledby="gallery-heading">
       <div class="shell">
         <div class="max-w-2xl">
-          <p class="eyebrow">{t('gallery.eyebrow')}</p>
-          <h2 id="gallery-heading" class="mt-2">{t('gallery.title')}</h2>
-          <p class="mt-3 text-[var(--text-lg)] text-[var(--color-muted)]">{t('gallery.intro')}</p>
+          <p class="eyebrow">{t(illustrative ? 'gallery.artEyebrow' : 'gallery.eyebrow')}</p>
+          <h2 id="gallery-heading" class="mt-2">{t(illustrative ? 'gallery.artTitle' : 'gallery.title')}</h2>
+          <p class="mt-3 text-[var(--text-lg)] text-[var(--color-muted)]">{t(illustrative ? 'gallery.artIntro' : 'gallery.intro')}</p>
         </div>
 
         <ul
@@ -63,7 +63,7 @@ const items = gallery
             <li
               class:list={[
                 'reveal',
-                asset.feature ? 'lg:col-span-2 lg:row-span-2' : '',
+                asset.feature ? 'sm:col-span-2 lg:row-span-2' : '',
               ]}
               style={`--i:${i % 3}`}
             >
@@ -75,9 +75,9 @@ const items = gallery
               >
                 <Image
                   src={resolved}
-                  alt=""
+                  alt={asset.alt[locale]}
                   widths={[400, 800, 1200]}
-                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                  sizes={asset.feature ? '(min-width: 1024px) 66vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'}
                   loading={i < 2 ? 'eager' : 'lazy'}
                   class="size-full object-cover transition-transform duration-[var(--dur-slow)] ease-[var(--ease-out)] group-hover:scale-[1.03]"
                 />
@@ -147,8 +147,8 @@ const items = gallery
         type="application/json"
         id="gallery-data"
         set:html={JSON.stringify(
-          items.map(({ asset, resolved }) => ({
-            src: resolved.src,
+          items.map(({ asset, fullSize }) => ({
+            src: fullSize.src,
             alt: asset.alt[locale],
             caption: asset.caption?.[locale] ?? '',
           })),

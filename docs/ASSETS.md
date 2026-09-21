@@ -42,6 +42,13 @@ tell the owner why it cannot be used.
 | `doctor` | Dr. Kanani working, or portrait | 2 |
 | `team` | Staff, if any | 0–2 |
 | `atmosphere` | Detail shots, texture, light | 1–2 |
+| `illustration` | Clearly labelled artwork of inanimate dental objects | 3 currently |
+
+`illustrations` is separate from the clinic-photo `gallery` array. When there
+are no clinic photographs, the component shows the illustrations with explicit
+AI-art disclosure in all languages. Never use generated art to imply a real
+clinic interior, real patient or treatment result. Current originals and exact
+generation prompts are recorded in [ILLUSTRATIONS.md](./ILLUSTRATIONS.md).
 
 ## Filenames
 
@@ -68,7 +75,10 @@ they carry no meaning and the spaces break URLs.
 | Gallery standard | 3:2 or 4:5 | 1600px |
 | Doctor portrait | 4:5 portrait | 1400px |
 
-Commit the **source JPEG**. Astro's `astro:assets` generates AVIF/WebP and the
+Commit the **source JPEG**, or original PNG for generated illustrations.
+The current illustrations are 1536 × 1024 originals; retain their native
+resolution rather than upscaling to the photographic recommendations above.
+Astro's `astro:assets` generates WebP and the
 responsive sizes at build time — do not pre-optimise or commit derivatives.
 
 Record the intrinsic `width` and `height` in the manifest. They are required so

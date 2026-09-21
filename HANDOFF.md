@@ -35,6 +35,18 @@ photography, and quarantined patient images remain excluded.
 The real Google iframe was also loaded in Chromium and its rendered map/marker
 visually checked. This confirms rendering, not an on-site arrival check.
 
+Picture/logo follow-up on 2026-09-21: the homepage now shows three original,
+visually reviewed dental illustrations, explicitly labelled as AI-generated
+illustrations in all locales and in each image caption. They are inanimate
+objects, not clinic or patient photographs. The manifest keeps clinic photos
+separate; approved photos take precedence when supplied. See
+[docs/ILLUSTRATIONS.md](docs/ILLUSTRATIONS.md) for assets and exact prompts.
+The original vector tooth mark sits at the physical top-left of the hero in
+all locales, with layered 3D depth and hero-scoped mouse tracking. Touch,
+reduced-motion and no-JS visitors receive the static mark. Six new browser
+checks bring the suite to 31; all 76 unit tests, production build, verify,
+41-page HTML audit and 31 browser checks pass locally.
+
 The separate Cloudflare `Workers Builds: dr-khalil-kanani-web` failure was
 investigated after account sign-in. Its build had no environment variables, so
 the launch gate correctly refused the three unconfirmed published fields.
@@ -63,8 +75,9 @@ owner's decision, and probably a lawyer's.
 - Three locales (he / ar / en), full RTL, 41 built pages
 - 6 treatments × 3 locales, authored to the medical-claims discipline
 - Appointment requests hand off to WhatsApp (ADR 0007) — nothing is stored
-- Clinic gallery, editorial grid + `<dialog>` lightbox, data-driven from
-  `src/data/media.ts`, renders nothing while that array is empty
+- Picture gallery, editorial grid + `<dialog>` lightbox, data-driven from
+  `src/data/media.ts`; labelled illustrations while clinic photography is absent
+- Original tooth logo with layered 3D depth and optional mouse tracking
 - Google review aggregate + link-out, renders nothing until figures are supplied
 - Click-to-load map facade (ADR 0008), renders nothing without a confirmed pin
 - Accessibility statement and privacy policy (drafts, need legal review)
@@ -80,7 +93,7 @@ owner's decision, and probably a lawyer's.
 | Accessibility audit of built HTML | `npm run lint:a11y` | preview + deploy |
 | Unit tests (76) | `npm test` | CI |
 | Type/template check | `npm run check` | verify + CI |
-| Chromium + axe browser QA (25 tests) | `npm run test:e2e` | preview + deploy |
+| Chromium + axe browser QA (31 tests) | `npm run test:e2e` | preview + deploy |
 
 `VERIFY_RELAX=1` is **preview only**. Production uses `ACK_UNVERIFIED`, an
 explicit per-field allowlist; anything not on it fails the build.
@@ -101,6 +114,7 @@ explicit per-field allowlist; anything not on it fails the build.
 | Motion | Normal/reduced-motion, no JS, and failed observer initialization checked |
 | Populated Phase 3 components | Gallery opens/navigates/closes/restores focus; Arabic Western digits; map loads only after press (request intercepted) |
 | Visual review | Homepage/contact screenshots sampled at top, middle and footer in all three locales × three widths; synthetic lightbox inspected |
+| Picture/logo follow-up | Hero screenshots inspected in all locales at 375/768/1440px; loaded gallery and lightbox checked; desktop pointer tracking/reset, reduced-motion and emulated coarse-pointer fallback pass |
 
 Browser fixtures build in an OS temporary copy using the existing vector mark
 and synthetic rating/coordinates. They never modify `src/data/` or production
@@ -154,8 +168,8 @@ Also blocking, but not build-enforced:
 - 4 Tier-2 treatments unwritten: crowns, fillings, extractions, cleaning.
 - The logo wordmark is Hebrew-only; no Arabic or English lockup exists. The UI
   works around this with the mark plus localised HTML text.
-- The hero, doctor portrait and gallery all render deliberate typographic empty
-  states. They are designed, not broken — but they are waiting on photography.
+- Actual clinic and doctor photography is still pending. The hero uses the
+  original mark and the picture gallery uses explicitly labelled illustrations.
 
 ## Recommended next action
 
