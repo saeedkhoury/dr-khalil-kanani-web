@@ -1,0 +1,100 @@
+---
+/**
+ * Doctor introduction.
+ *
+ * Renders only verified facts. The credentials block appears only once
+ * src/data/doctor.ts has owner-supplied entries — an empty list renders
+ * nothing rather than a hollow "Credentials" heading.
+ *
+ * A reference site buries genuinely strong credentials (hospital faculty,
+ * four society memberships) as unstyled bullets on a secondary page. When
+ * this clinic's credentials arrive they belong here, high and scannable.
+ */
+import { localizePath, type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { doctor, hasCredentials } from '../../data/doctor';
+import { clinic } from '../../data/clinic';
+import Icon from '../primitives/Icon.astro';
+import Button from '../primitives/Button.astro';
+import Logo from '../primitives/Logo.astro';
+
+interface Props {
+  locale: Locale;
+  /** On the About page the intro is the main content, so drop the CTA. */
+  standalone?: boolean;
+}
+const { locale, standalone = false } = Astro.props;
+const t = useTranslations(locale);
+---
+
+<section class="section" aria-labelledby="doctor-heading">
+  <div class="shell grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-14">
+    <div>
+      <div
+        class="flex aspect-[4/5] max-w-xs items-center justify-center rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-mist)]"
+      >
+        {
+          doctor.portrait ? (
+            <img
+              src={doctor.portrait}
+              alt={clinic.doctor[locale]}
+              width="320"
+              height="400"
+              class="size-full rounded-[var(--radius-card)] object-cover"
+            />
+          ) : (
+            <Logo size={96} />
+          )
+        }
+      </div>
+    </div>
+
+    <div>
+      <p class="eyebrow">{t('nav.about')}</p>
+      <h2 id="doctor-heading" class="mt-2">{t('doctor.title')}</h2>
+
+      <p class="mt-5 max-w-2xl text-[var(--text-lg)] leading-relaxed text-[var(--color-muted)]">
+        {doctor.intro[locale]}
+      </p>
+
+      <ul class="mt-7 space-y-3" style="list-style:none;padding-inline-start:0;margin-block-end:0">
+        {
+          doctor.approach[locale].map((line) => (
+            <li class="flex items-start gap-3">
+              <span class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-haze)] text-[var(--color-ink)]">
+                <Icon name="check" size={14} stroke={2.2} />
+              </span>
+              <span class="text-[var(--text-base)] leading-relaxed">{line}</span>
+            </li>
+          ))
+        }
+      </ul>
+
+      {
+        hasCredentials() && (
+          <ul
+            class="mt-8 grid gap-2 border-t border-[var(--color-line)] pt-6 sm:grid-cols-2"
+            style="list-style:none;padding-inline-start:0"
+          >
+            {doctor.credentials.map((c) => (
+              <li class="text-[var(--text-sm)] text-[var(--color-muted)]">
+                {c.label[locale]}
+                {c.year && <span class="u-ltr"> · {c.year}</span>}
+              </li>
+            ))}
+          </ul>
+        )
+      }
+
+      {
+        !standalone && (
+          <p class="mt-8">
+            <Button href={localizePath(locale, 'about')} variant="outline" iconEnd="chevron">
+              {t('doctor.cta')}
+            </Button>
+          </p>
+        )
+      }
+    </div>
+  </div>
+</section>

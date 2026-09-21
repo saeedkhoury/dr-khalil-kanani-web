@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import DoctorIntro from '../../components/sections/DoctorIntro.astro';
+import ContactCta from '../../components/sections/ContactCta.astro';
+import { LOCALES, localizePath, type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { doctor } from '../../data/doctor';
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const locale = Astro.params.locale as Locale;
+const t = useTranslations(locale);
+
+const breadcrumbs = [
+  { name: t('nav.home'), path: localizePath(locale, '') },
+  { name: t('nav.about'), path: localizePath(locale, 'about') },
+];
+---
+
+<BaseLayout
+  locale={locale}
+  title={t('doctor.title')}
+  description={doctor.intro[locale]}
+  breadcrumbs={breadcrumbs}
+>
+  <div class="shell pt-10">
+    <h1>{t('doctor.title')}</h1>
+  </div>
+  <DoctorIntro locale={locale} standalone />
+  <ContactCta locale={locale} />
+</BaseLayout>

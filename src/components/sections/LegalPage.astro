@@ -1,0 +1,38 @@
+---
+import { type Locale } from '../../i18n/config';
+import type { LegalSection } from '../../data/legal';
+import { LAST_UPDATED } from '../../data/legal';
+
+interface Props {
+  locale: Locale;
+  title: string;
+  sections: LegalSection[];
+}
+const { locale, title, sections } = Astro.props;
+
+const updatedLabel = { he: 'עודכן לאחרונה', ar: 'آخر تحديث', en: 'Last updated' }[locale];
+---
+
+<div class="shell section max-w-3xl">
+  <h1>{title}</h1>
+  <p class="mt-3 text-[var(--text-sm)] text-[var(--color-muted)]">
+    {updatedLabel}: <span class="u-ltr">{LAST_UPDATED}</span>
+  </p>
+
+  {sections.map((section) => (
+    <section class="mt-10">
+      <h2 class="text-[var(--text-xl)]">{section.heading[locale]}</h2>
+      {section.body[locale].length > 1 ? (
+        <ul class="mt-4 space-y-2.5" style="padding-inline-start:1.15rem">
+          {section.body[locale].map((line) => (
+            <li class="leading-relaxed text-[var(--color-muted)]">{line}</li>
+          ))}
+        </ul>
+      ) : (
+        <p class="mt-4 leading-relaxed text-[var(--color-muted)]">{section.body[locale][0]}</p>
+      )}
+    </section>
+  ))}
+
+  <slot />
+</div>

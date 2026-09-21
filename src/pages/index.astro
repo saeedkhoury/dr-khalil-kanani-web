@@ -1,0 +1,14 @@
+---
+/**
+ * Root entry.
+ *
+ * `/` redirects to the default locale (/he/). Astro's i18n routing generates
+ * the redirect from this file.
+ *
+ * Deliberately NOT an IP or Accept-Language redirect: Google warns against
+ * both, Googlebot sends no Accept-Language header and crawls mostly from the
+ * US, so language detection here would hide the Arabic and English sites from
+ * indexing entirely. Language preference is offered, never imposed.
+ */
+export const prerender = true;
+---

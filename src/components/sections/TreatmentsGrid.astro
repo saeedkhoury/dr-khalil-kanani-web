@@ -1,0 +1,85 @@
+---
+/**
+ * Treatment cards.
+ *
+ * Placed HIGH on the homepage — above the doctor introduction — because
+ * visitors arrive with a need ("I need an implant"), not with curiosity
+ * about the dentist. The doctor converts after they have confirmed the
+ * clinic does the thing they came for. One reference site inverts this and
+ * leads with a biography, which is also why its H1 is a bio paragraph.
+ *
+ * Depth here comes from a tinted surface and a border, never a drop shadow.
+ */
+import { localizePath, type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import type { Treatment } from '../../lib/content';
+import Icon from '../primitives/Icon.astro';
+
+interface Props {
+  locale: Locale;
+  treatments: Treatment[];
+  headingLevel?: 'h1' | 'h2';
+  showIntro?: boolean;
+  limit?: number;
+}
+
+const { locale, treatments, headingLevel = 'h2', showIntro = true, limit } = Astro.props;
+const t = useTranslations(locale);
+const Heading = headingLevel;
+const items = limit ? treatments.slice(0, limit) : treatments;
+---
+
+<section class="section bg-[var(--color-mist)]" aria-labelledby="treatments-heading">
+  <div class="shell">
+    <div class="max-w-2xl">
+      <p class="eyebrow">{t('nav.treatments')}</p>
+      <Heading id="treatments-heading" class="mt-2">{t('treatments.title')}</Heading>
+      {showIntro && <p class="mt-3 text-[var(--text-lg)] text-[var(--color-muted)]">{t('treatments.intro')}</p>}
+    </div>
+
+    <ul
+      class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      style="list-style:none;padding-inline-start:0;margin-block-end:0"
+    >
+      {
+        items.map((item) => (
+          <li class="reveal">
+            <a
+              href={localizePath(locale, `treatments/${item.data.slug}`)}
+              class="group flex h-full flex-col rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-6 no-underline transition-[border-color,background-color] duration-[var(--dur-base)] ease-[var(--ease-out)] hover:border-[var(--color-signal)] hover:bg-white"
+            >
+              <span class="flex size-12 items-center justify-center rounded-[var(--radius-btn)] bg-[var(--color-haze)] text-[var(--color-ink)] transition-colors duration-[var(--dur-base)] group-hover:bg-[var(--color-tide)]">
+                <Icon name={item.data.icon} size={26} />
+              </span>
+
+              <h3 class="mt-5 text-[var(--text-lg)] font-semibold">{item.data.cardTitle}</h3>
+
+              <p class="mt-2 grow text-[var(--text-sm)] leading-relaxed text-[var(--color-muted)]">
+                {item.data.summary}
+              </p>
+
+              <span class="mt-5 inline-flex items-center gap-1.5 text-[var(--text-sm)] font-semibold text-[var(--color-ink)]">
+                {t('action.readMore')}
+                <Icon name="chevron" size={16} />
+              </span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    {
+      limit && treatments.length > limit && (
+        <p class="mt-8">
+          <a
+            href={localizePath(locale, 'treatments')}
+            class="inline-flex min-h-[44px] items-center gap-1.5 rounded-[var(--radius-btn)] border border-[var(--color-line-strong)] px-5 font-semibold text-[var(--color-ink)] no-underline hover:bg-[var(--color-porcelain)]"
+          >
+            {t('action.allTreatments')}
+            <Icon name="chevron" size={16} />
+          </a>
+        </p>
+      )
+    }
+  </div>
+</section>

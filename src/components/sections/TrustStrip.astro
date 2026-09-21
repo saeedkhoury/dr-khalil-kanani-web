@@ -1,0 +1,55 @@
+---
+/**
+ * Trust indicators.
+ *
+ * The clinic's own flyer carries four promises: "precise aesthetic results",
+ * "treatment with a warranty", "high availability", and "a white smile, high
+ * self-confidence". Three of those are outcome or guarantee claims, which
+ * Israeli dental advertising regulations prohibit.
+ *
+ * They are replaced here with OPERATIONAL FACTS — things the clinic does,
+ * not results it promises. The languages point is also the clinic's single
+ * genuine differentiator: neither reference site offers anything but Hebrew.
+ */
+import { type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import Icon from '../primitives/Icon.astro';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const items = [
+  { icon: 'check', title: 'trust.explanation.title', body: 'trust.explanation.body' },
+  { icon: 'globe', title: 'trust.languages.title', body: 'trust.languages.body' },
+  { icon: 'clock', title: 'trust.availability.title', body: 'trust.availability.body' },
+  { icon: 'phone', title: 'trust.personal.title', body: 'trust.personal.body' },
+] as const;
+---
+
+<section class="section" aria-labelledby="trust-heading">
+  <div class="shell">
+    <h2 id="trust-heading" class="sr-only">{t('site.shortName')}</h2>
+
+    <ul
+      class="grid gap-x-8 gap-y-9 sm:grid-cols-2 lg:grid-cols-4"
+      style="list-style:none;padding-inline-start:0;margin:0"
+    >
+      {
+        items.map((item) => (
+          <li class="reveal">
+            <span class="flex size-11 items-center justify-center rounded-[var(--radius-btn)] bg-[var(--color-haze)] text-[var(--color-ink)]">
+              <Icon name={item.icon} size={22} />
+            </span>
+            <h3 class="mt-4 text-[var(--text-base)] font-semibold">{t(item.title)}</h3>
+            <p class="mt-1.5 text-[var(--text-sm)] leading-relaxed text-[var(--color-muted)]">
+              {t(item.body)}
+            </p>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</section>

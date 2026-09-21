@@ -1,0 +1,371 @@
+---
+/**
+ * Appointment request form.
+ *
+ * Progressive enhancement: it is a real <form method="post"> that works with
+ * JavaScript disabled. The script adds inline validation and an async submit
+ * on top; it never becomes a prerequisite.
+ *
+ * Accessibility (the highest-risk surface on the site):
+ *  · Every input has a real <label> — never a placeholder standing in for one.
+ *  · Each error is inline, tied to its field via aria-describedby.
+ *  · A focusable error summary appears at the top on failed submit, links to
+ *    each invalid field, and receives focus. Inline errors are retained.
+ *  · Errors are announced (role="alert") and identified in text, not colour.
+ *  · phone uses type="tel" + inputmode + autocomplete. Both reference sites
+ *    ship a phone field as type="text" with no autocomplete, which opens a
+ *    QWERTY keyboard on mobile.
+ *
+ * Privacy: the s.11 notice is rendered INLINE next to the submit button, not
+ * hidden behind a policy link, and states that providing details is
+ * voluntary, the purpose, the recipient and the right to access and correct.
+ */
+import { type Locale, localizePath } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { CONTACT_METHODS, DAYPARTS } from '../../lib/validation';
+import type { Treatment } from '../../lib/content';
+import Icon from '../primitives/Icon.astro';
+
+interface Props {
+  locale: Locale;
+  treatments: Treatment[];
+  /** Preselect when the form is embedded on a treatment page. */
+  preselect?: string;
+}
+
+const { locale, treatments, preselect = '' } = Astro.props;
+const t = useTranslations(locale);
+
+/**
+ * Trailing slash is REQUIRED: astro.config sets trailingSlash:'always', so
+ * posting to the unslashed path 404s. Kept as a constant so it cannot drift
+ * out of sync with the route again.
+ */
+const ENDPOINT = '/api/appointment-request/';
+
+const fieldBase =
+  'mt-1.5 block w-full min-h-[44px] rounded-[var(--radius-field)] border border-[var(--color-line-strong)] ' +
+  'bg-[var(--color-porcelain)] px-3.5 py-2.5 text-[var(--text-base)] text-[var(--color-body)] ' +
+  'transition-[border-color] duration-[var(--dur-fast)] focus:border-[var(--color-ink)]';
+
+const labelBase = 'block text-[var(--text-sm)] font-semibold text-[var(--color-ink)]';
+const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[var(--color-danger)]';
+---
+
+<form
+  id="appointment-form"
+  method="post"
+  action={ENDPOINT}
+  novalidate
+  class="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-6 sm:p-8"
+>
+  <h2 class="text-[var(--text-xl)] font-semibold">{t('form.title')}</h2>
+  <p class="mt-2 text-[var(--text-sm)] text-[var(--color-muted)]">{t('form.intro')}</p>
+
+  <!-- Error summary: hidden until a failed submit, then focused. -->
+  <div
+    id="error-summary"
+    role="alert"
+    tabindex="-1"
+    hidden
+    class="mt-6 rounded-[var(--radius-field)] border border-[var(--color-danger)] bg-white p-4"
+  >
+    <h3 id="error-summary-title" class="text-[var(--text-base)] font-semibold text-[var(--color-danger)]">
+      {t('form.error.summaryTitle')}
+    </h3>
+    <ul id="error-summary-list" class="mt-2 space-y-1" style="padding-inline-start:1.1rem"></ul>
+  </div>
+
+  <div class="mt-6 grid gap-5 sm:grid-cols-2">
+    <!-- Name -->
+    <div class="sm:col-span-1">
+      <label class={labelBase} for="f-name">
+        {t('form.name')} <span aria-hidden="true">*</span>
+        <span class="sr-only">({t('form.required')})</span>
+      </label>
+      <input
+        id="f-name"
+        name="name"
+        type="text"
+        required
+        autocomplete="name"
+        maxlength="80"
+        class={fieldBase}
+        aria-describedby="f-name-error"
+      />
+      <p id="f-name-error" class={errorBase} hidden>
+        <Icon name="alert" size={16} />
+        <span>{t('form.error.name')}</span>
+      </p>
+    </div>
+
+    <!-- Phone -->
+    <div class="sm:col-span-1">
+      <label class={labelBase} for="f-phone">
+        {t('form.phone')} <span aria-hidden="true">*</span>
+        <span class="sr-only">({t('form.required')})</span>
+      </label>
+      <input
+        id="f-phone"
+        name="phone"
+        type="tel"
+        required
+        inputmode="tel"
+        autocomplete="tel"
+        dir="ltr"
+        maxlength="20"
+        class={`${fieldBase} u-ltr`}
+        aria-describedby="f-phone-error"
+      />
+      <p id="f-phone-error" class={errorBase} hidden>
+        <Icon name="alert" size={16} />
+        <span>{t('form.error.phone')}</span>
+      </p>
+    </div>
+
+    <!-- Contact method -->
+    <fieldset class="sm:col-span-2" style="border:0;padding:0;margin:0">
+      <legend class={labelBase}>{t('form.contactMethod')}</legend>
+      <div class="mt-2 flex flex-wrap gap-2">
+        {
+          CONTACT_METHODS.map((m, i) => (
+            <label class="inline-flex min-h-[44px] cursor-pointer items-center gap-2 rounded-[var(--radius-btn)] border border-[var(--color-line-strong)] px-4 has-[:checked]:border-[var(--color-ink)] has-[:checked]:bg-[var(--color-mist)]">
+              <input type="radio" name="contactMethod" value={m} checked={i === 0} class="accent-[var(--color-ink)]" />
+              <span class="text-[var(--text-sm)]">{t(`form.contactMethod.${m}` as never)}</span>
+            </label>
+          ))
+        }
+      </div>
+    </fieldset>
+
+    <!-- Treatment -->
+    <div class="sm:col-span-1">
+      <label class={labelBase} for="f-treatment">
+        {t('form.treatment')}
+        <span class="font-normal text-[var(--color-muted)]">({t('form.optional')})</span>
+      </label>
+      <select id="f-treatment" name="treatment" class={fieldBase}>
+        <option value="">{t('form.treatment.none')}</option>
+        {
+          treatments.map((item) => (
+            <option value={item.data.slug} selected={item.data.slug === preselect}>
+              {item.data.cardTitle}
+            </option>
+          ))
+        }
+      </select>
+    </div>
+
+    <!-- Daypart -->
+    <div class="sm:col-span-1">
+      <label class={labelBase} for="f-daypart">
+        {t('form.daypart')}
+        <span class="font-normal text-[var(--color-muted)]">({t('form.optional')})</span>
+      </label>
+      <select id="f-daypart" name="daypart" class={fieldBase}>
+        {
+          DAYPARTS.map((d) => (
+            <option value={d} selected={d === 'any'}>
+              {t(`form.daypart.${d}` as never)}
+            </option>
+          ))
+        }
+      </select>
+    </div>
+
+    <!-- Message -->
+    <div class="sm:col-span-2">
+      <label class={labelBase} for="f-message">
+        {t('form.message')}
+      </label>
+      <textarea
+        id="f-message"
+        name="message"
+        rows="3"
+        maxlength="500"
+        class={fieldBase}
+        aria-describedby="f-message-hint"></textarea>
+      <p id="f-message-hint" class="mt-1.5 text-[var(--text-sm)] text-[var(--color-muted)]">
+        {t('form.messageHint')}
+      </p>
+    </div>
+  </div>
+
+  <!-- Honeypot: off-screen, not display:none, and aria-hidden from AT. -->
+  <div aria-hidden="true" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden">
+    <label for="f-company">Company</label>
+    <input id="f-company" name="company" type="text" tabindex="-1" autocomplete="off" />
+  </div>
+  <input type="hidden" name="locale" value={locale} />
+  <input type="hidden" name="sourcePath" value={Astro.url.pathname} />
+  <input type="hidden" name="elapsedMs" id="f-elapsed" value="0" />
+
+  <!-- Consent: unticked, never bundled with the submit action. -->
+  <div class="mt-7 space-y-3 border-t border-[var(--color-line)] pt-6">
+    <label class="flex cursor-pointer items-start gap-3">
+      <input
+        type="checkbox"
+        name="consent"
+        id="f-consent"
+        required
+        value="true"
+        class="mt-1 size-5 shrink-0 accent-[var(--color-ink)]"
+        aria-describedby="f-consent-error"
+      />
+      <span class="text-[var(--text-sm)] leading-relaxed">
+        {t('form.consent')} <span aria-hidden="true">*</span>
+      </span>
+    </label>
+    <p id="f-consent-error" class={errorBase} hidden>
+      <Icon name="alert" size={16} />
+      <span>{t('form.error.consent')}</span>
+    </p>
+
+    <label class="flex cursor-pointer items-start gap-3">
+      <input type="checkbox" name="marketingOptIn" value="true" class="mt-1 size-5 shrink-0 accent-[var(--color-ink)]" />
+      <span class="text-[var(--text-sm)] leading-relaxed text-[var(--color-muted)]">
+        {t('form.marketingOptIn')}
+      </span>
+    </label>
+  </div>
+
+  <!-- s.11 notice, inline at the point of collection. -->
+  <details class="mt-5 rounded-[var(--radius-field)] bg-[var(--color-mist)] p-4">
+    <summary class="cursor-pointer text-[var(--text-sm)] font-semibold text-[var(--color-ink)]">
+      {t('privacy.notice.title')}
+    </summary>
+    <p class="mt-2 text-[var(--text-sm)] leading-relaxed text-[var(--color-muted)]">
+      {t('privacy.notice.body')}
+    </p>
+    <p class="mt-2">
+      <a href={localizePath(locale, 'privacy')} class="text-[var(--text-sm)] font-semibold">
+        {t('privacy.readPolicy')}
+      </a>
+    </p>
+  </details>
+
+  <button
+    type="submit"
+    id="f-submit"
+    class="mt-6 inline-flex min-h-[48px] w-full cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-[var(--color-ink)] px-7 font-semibold text-white transition-colors duration-[var(--dur-fast)] hover:bg-[var(--color-ink-deep)] sm:w-auto"
+  >
+    {t('form.submit')}
+  </button>
+
+  <p id="f-generic-error" class={`${errorBase} mt-4`} hidden>
+    <Icon name="alert" size={16} />
+    <span>{t('form.error.generic')}</span>
+  </p>
+</form>
+
+<!-- Success state replaces the form on completion. -->
+<div
+  id="form-success"
+  role="status"
+  tabindex="-1"
+  hidden
+  class="rounded-[var(--radius-card)] border border-[var(--color-ok)] bg-[var(--color-mist)] p-8"
+>
+  <span class="flex size-11 items-center justify-center rounded-full bg-[var(--color-ok)] text-white">
+    <Icon name="check" size={22} stroke={2.4} />
+  </span>
+  <h2 class="mt-4 text-[var(--text-xl)] font-semibold">{t('form.success.title')}</h2>
+  <p class="mt-2 text-[var(--color-muted)]">{t('form.success.body')}</p>
+</div>
+
+<script>
+  // Import from the zero-dependency module: importing from lib/validation
+  // would bundle zod into the browser (measured: +85KB).
+  import { IL_PHONE, normalisePhone } from '../../lib/phone';
+
+  const form = document.getElementById('appointment-form') as HTMLFormElement | null;
+  if (form) {
+    const started = Date.now();
+    const elapsed = document.getElementById('f-elapsed') as HTMLInputElement;
+    const summary = document.getElementById('error-summary')!;
+    const summaryList = document.getElementById('error-summary-list')!;
+    const success = document.getElementById('form-success')!;
+    const genericError = document.getElementById('f-generic-error')!;
+    const submitBtn = document.getElementById('f-submit') as HTMLButtonElement;
+
+    type Check = { id: string; valid: () => boolean };
+    const checks: Check[] = [
+      {
+        id: 'f-name',
+        valid: () => (document.getElementById('f-name') as HTMLInputElement).value.trim().length >= 2,
+      },
+      {
+        id: 'f-phone',
+        valid: () => IL_PHONE.test(normalisePhone((document.getElementById('f-phone') as HTMLInputElement).value)),
+      },
+      {
+        id: 'f-consent',
+        valid: () => (document.getElementById('f-consent') as HTMLInputElement).checked,
+      },
+    ];
+
+    function setFieldError(id: string, invalid: boolean) {
+      const field = document.getElementById(id)!;
+      const error = document.getElementById(`${id}-error`);
+      field.setAttribute('aria-invalid', invalid ? 'true' : 'false');
+      if (error) error.hidden = !invalid;
+    }
+
+    // Validate on blur, not on every keystroke.
+    for (const check of checks) {
+      const el = document.getElementById(check.id)!;
+      const event = el.getAttribute('type') === 'checkbox' ? 'change' : 'blur';
+      el.addEventListener(event, () => setFieldError(check.id, !check.valid()));
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      genericError.hidden = true;
+      elapsed.value = String(Date.now() - started);
+
+      const failed = checks.filter((c) => !c.valid());
+      checks.forEach((c) => setFieldError(c.id, !c.valid()));
+
+      if (failed.length > 0) {
+        summaryList.innerHTML = '';
+        for (const f of failed) {
+          const msg = document.getElementById(`${f.id}-error`)?.textContent?.trim() ?? '';
+          const li = document.createElement('li');
+          const a = document.createElement('a');
+          a.href = `#${f.id}`;
+          a.textContent = msg;
+          a.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById(f.id)?.focus();
+          });
+          li.appendChild(a);
+          summaryList.appendChild(li);
+        }
+        summary.hidden = false;
+        summary.focus();
+        return;
+      }
+
+      summary.hidden = true;
+      submitBtn.disabled = true;
+      const original = submitBtn.textContent;
+      submitBtn.textContent = submitBtn.dataset.submitting ?? original;
+
+      try {
+        const response = await fetch(form.action, {
+          method: 'POST',
+          headers: { Accept: 'application/json' },
+          body: new FormData(form),
+        });
+        if (!response.ok) throw new Error(String(response.status));
+        form.hidden = true;
+        success.hidden = false;
+        success.focus();
+      } catch {
+        genericError.hidden = false;
+        submitBtn.disabled = false;
+        if (original) submitBtn.textContent = original;
+      }
+    });
+  }
+</script>

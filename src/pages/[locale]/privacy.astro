@@ -1,0 +1,24 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import LegalPage from '../../components/sections/LegalPage.astro';
+import { LOCALES, type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { privacyPolicy } from '../../data/legal';
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const locale = Astro.params.locale as Locale;
+const t = useTranslations(locale);
+
+const description = {
+  he: 'מדיניות הפרטיות של המרפאה: איזה מידע נאסף בטופס, למה הוא משמש, כמה זמן הוא נשמר ומה הזכויות שלכם.',
+  ar: 'سياسة الخصوصية للعيادة: ما هي المعلومات التي تُجمع في النموذج، وفيمَ تُستخدم، وكم تُحفظ، وما هي حقوقكم.',
+  en: 'Clinic privacy policy: what the form collects, what it is used for, how long it is kept and what your rights are.',
+}[locale];
+---
+
+<BaseLayout locale={locale} title={t('legal.privacy')} description={description}>
+  <LegalPage locale={locale} title={t('legal.privacy')} sections={privacyPolicy} />
+</BaseLayout>

@@ -1,0 +1,102 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AppointmentForm from '../../components/islands/AppointmentForm.astro';
+import Icon from '../../components/primitives/Icon.astro';
+import Button from '../../components/primitives/Button.astro';
+import { LOCALES, localizePath, type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { getTreatments } from '../../lib/content';
+import { clinic, telUrl, whatsappUrl, hasAddress, hasHours } from '../../data/clinic';
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const locale = Astro.params.locale as Locale;
+const t = useTranslations(locale);
+const treatments = await getTreatments(locale);
+
+const waMessage = {
+  he: 'שלום, אשמח לקבוע תור במרפאה.',
+  ar: 'مرحبًا، أودّ حجز موعد في العيادة.',
+  en: 'Hello, I would like to request an appointment.',
+}[locale];
+
+const description = {
+  he: 'יצירת קשר עם המרפאה בג׳דיידה-מכר — טלפון, וואטסאפ ובקשת תור מקוונת.',
+  ar: 'التواصل مع العيادة في الجديدة-المكر — هاتف، واتساب وطلب موعد عبر الإنترنت.',
+  en: 'Contact the clinic in Jadeidi-Makr — phone, WhatsApp and an online appointment request.',
+}[locale];
+
+const breadcrumbs = [
+  { name: t('nav.home'), path: localizePath(locale, '') },
+  { name: t('nav.contact'), path: localizePath(locale, 'contact') },
+];
+
+const dayNames: Record<Locale, Record<string, string>> = {
+  he: { Sunday: 'ראשון', Monday: 'שני', Tuesday: 'שלישי', Wednesday: 'רביעי', Thursday: 'חמישי', Friday: 'שישי', Saturday: 'שבת' },
+  ar: { Sunday: 'الأحد', Monday: 'الإثنين', Tuesday: 'الثلاثاء', Wednesday: 'الأربعاء', Thursday: 'الخميس', Friday: 'الجمعة', Saturday: 'السبت' },
+  en: { Sunday: 'Sunday', Monday: 'Monday', Tuesday: 'Tuesday', Wednesday: 'Wednesday', Thursday: 'Thursday', Friday: 'Friday', Saturday: 'Saturday' },
+};
+---
+
+<BaseLayout locale={locale} title={t('contact.title')} description={description} breadcrumbs={breadcrumbs} hideActionBar>
+  <div class="shell section grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
+    <!-- Direct channels first: for a local clinic these convert far better
+         than a form, and they are the fastest path for someone in pain. -->
+    <div>
+      <p class="eyebrow">{t('nav.contact')}</p>
+      <h1 class="mt-2">{t('contact.title')}</h1>
+      <p class="mt-4 text-[var(--text-lg)] text-[var(--color-muted)]">{t('contact.subtitle')}</p>
+
+      <div class="mt-8 flex flex-col gap-3">
+        <Button href={telUrl('landline')} variant="primary" size="lg" icon="phone" full>
+          <span class="u-ltr">{clinic.phone.landline.display}</span>
+        </Button>
+        <Button href={whatsappUrl(waMessage)} variant="whatsapp" size="lg" icon="whatsapp" target="_blank" rel="noopener noreferrer" full>
+          {t('action.whatsapp')}
+        </Button>
+      </div>
+
+      <dl class="mt-10 space-y-6">
+        <div>
+          <dt class="eyebrow">{t('contact.mobileLabel')}</dt>
+          <dd class="mt-1.5" style="margin-inline-start:0">
+            <a href={telUrl('mobile')} class="u-ltr no-underline hover:underline">{clinic.phone.mobile.display}</a>
+          </dd>
+        </div>
+
+        <div>
+          <dt class="eyebrow">{t('contact.addressLabel')}</dt>
+          <dd class="mt-1.5 flex items-start gap-2" style="margin-inline-start:0">
+            <Icon name="map-pin" size={17} class="mt-1 shrink-0 text-[var(--color-signal)]" />
+            <span>
+              {hasAddress(locale) && <>{clinic.address.street[locale]}<br /></>}
+              {clinic.address.locality[locale]}
+            </span>
+          </dd>
+        </div>
+
+        {hasHours() && (
+          <div>
+            <dt class="eyebrow">{t('contact.hoursLabel')}</dt>
+            <dd class="mt-1.5" style="margin-inline-start:0">
+              <ul class="space-y-1" style="list-style:none;padding-inline-start:0;margin:0">
+                {clinic.hours.map((h) => (
+                  <li class="flex justify-between gap-6 text-[var(--text-sm)]">
+                    <span class="text-[var(--color-muted)]">{dayNames[locale][h.day]}</span>
+                    <span class="u-ltr">{h.closed ? '—' : `${h.opens}–${h.closes}`}</span>
+                  </li>
+                ))}
+              </ul>
+            </dd>
+          </div>
+        )}
+      </dl>
+    </div>
+
+    <div>
+      <AppointmentForm locale={locale} treatments={treatments} />
+    </div>
+  </div>
+</BaseLayout>

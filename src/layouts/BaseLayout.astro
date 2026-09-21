@@ -1,0 +1,157 @@
+---
+/**
+ * Root layout.
+ *
+ * Responsibilities: document language/direction, canonical + hreflang,
+ * self-hosted fonts, JSON-LD, skip link, and the shared chrome.
+ *
+ * Deliberate choices:
+ *  • <html lang dir> is set at the document root, not patched per element.
+ *    A reference site served lang="en" dir="ltr" on an entirely Hebrew page,
+ *    which makes screen readers read Hebrew with an English voice.
+ *  • hreflang uses language-only codes and includes a self-reference; every
+ *    version links to every version or Google ignores the whole cluster.
+ *  • canonical is ALWAYS self-referencing. A cross-language canonical would
+ *    deindex the Arabic site entirely — the most destructive error available.
+ *  • Phone numbers never appear in <title>: they burn truncation budget and
+ *    are a bidi reordering hazard in RTL SERPs.
+ */
+import { Font } from 'astro:assets';
+import '../styles/global.css';
+
+import { LOCALE_META, DEFAULT_LOCALE, alternatesFor, type Locale } from '../i18n/config';
+import { useTranslations } from '../i18n/ui';
+import { clinic } from '../data/clinic';
+import { buildGraph } from '../lib/schema';
+
+import Header from '../components/sections/Header.astro';
+import Footer from '../components/sections/Footer.astro';
+import StickyActionBar from '../components/sections/StickyActionBar.astro';
+
+interface Props {
+  locale: Locale;
+  title: string;
+  description: string;
+  /** Omit the sticky mobile bar on pages that already lead with the actions. */
+  hideActionBar?: boolean;
+  breadcrumbs?: Array<{ name: string; path: string }>;
+  noindex?: boolean;
+}
+
+const { locale, title, description, hideActionBar = false, breadcrumbs, noindex = false } = Astro.props;
+
+const meta = LOCALE_META[locale];
+const t = useTranslations(locale);
+
+const pathname = Astro.url.pathname;
+const canonical = new URL(pathname, Astro.site ?? clinic.siteUrl).toString();
+const alternates = alternatesFor(pathname);
+
+// x-default points at the default locale — the correct fallback for a visitor
+// whose browser language matches none of the three.
+const xDefault = new URL(
+  alternates.find((a) => a.locale === DEFAULT_LOCALE)!.href,
+  Astro.site ?? clinic.siteUrl,
+).toString();
+
+const fullTitle = title === t('site.title') ? title : `${title} | ${t('site.shortName')}`;
+
+const graph = buildGraph({ locale, pathname, title: fullTitle, description, breadcrumbs });
+---
+
+<!doctype html>
+<html lang={meta.lang} dir={meta.dir} class="no-js">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+
+    {noindex && <meta name="robots" content="noindex, follow" />}
+
+    {
+      alternates.map((alt) => (
+        <link
+          rel="alternate"
+          hreflang={alt.locale}
+          href={new URL(alt.href, Astro.site ?? clinic.siteUrl).toString()}
+        />
+      ))
+    }
+    <link rel="alternate" hreflang="x-default" href={xDefault} />
+
+    {/*
+      Only the fonts this locale actually needs.
+
+      Loading all three on every page cost 393KB per visit — a Hebrew reader
+      was downloading the Arabic face for nothing. Scoping to the locale gives
+      he 31.5KB, en 35KB, ar 162KB.
+
+      Arabic pages deliberately do NOT ship a second Latin face. The only
+      Latin on them is digits and a few brand words, which the system fallback
+      stack renders acceptably; shipping Noto Sans for that cost 197KB.
+    */}
+    {locale === 'he' && <Font cssVariable="--font-he" preload />}
+    {locale === 'ar' && <Font cssVariable="--font-ar" preload />}
+    {locale === 'en' && <Font cssVariable="--font-en" preload />}
+
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:locale" content={locale} />
+    <meta property="og:site_name" content={t('site.shortName')} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <meta name="theme-color" content="#0C5283" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    <script is:inline>
+      // Flip the no-js flag before paint so JS-dependent reveal states never
+      // leave content invisible if scripts fail.
+      document.documentElement.classList.remove('no-js');
+    </script>
+
+    <script type="application/ld+json" set:html={JSON.stringify(graph)} />
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">{t('a11y.skipToContent')}</a>
+
+    <Header locale={locale} />
+
+    <main id="main" tabindex="-1">
+      <slot />
+    </main>
+
+    <Footer locale={locale} />
+
+    {!hideActionBar && <StickyActionBar locale={locale} />}
+
+    <script>
+      // Scroll reveal — subtle tier only. Motion is 2.3kb for this API and the
+      // page renders fully without it, so this is pure progressive enhancement.
+      import { inView } from 'motion';
+
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const targets = document.querySelectorAll<HTMLElement>('.reveal');
+
+      if (reduced) {
+        targets.forEach((el) => el.classList.add('is-in'));
+      } else {
+        targets.forEach((el) => {
+          inView(
+            el,
+            () => {
+              el.classList.add('is-in');
+              el.style.transition =
+                'opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out)';
+            },
+            { amount: 0.15 },
+          );
+        });
+      }
+    </script>
+  </body>
+</html>

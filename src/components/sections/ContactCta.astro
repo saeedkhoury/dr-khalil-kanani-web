@@ -1,0 +1,66 @@
+---
+/**
+ * Closing call to action.
+ *
+ * Offers the two channels that actually convert for a local Israeli clinic —
+ * phone and WhatsApp — plus the form as the after-hours path. WhatsApp is
+ * given first-class placement rather than being buried in the header, which
+ * is where one reference site hides its single WhatsApp link.
+ */
+import { localizePath, type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { clinic, telUrl, whatsappUrl } from '../../data/clinic';
+import Button from '../primitives/Button.astro';
+import Icon from '../primitives/Icon.astro';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const waMessage = {
+  he: 'שלום, אשמח לקבוע תור במרפאה.',
+  ar: 'مرحبًا، أودّ حجز موعد في العيادة.',
+  en: 'Hello, I would like to request an appointment.',
+}[locale];
+---
+
+<section class="section" aria-labelledby="cta-heading">
+  <div class="shell">
+    <div
+      class="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-haze)] px-6 py-12 text-center sm:px-12"
+    >
+      <h2 id="cta-heading">{t('contact.title')}</h2>
+      <p class="mx-auto mt-3 max-w-xl text-[var(--text-lg)] text-[var(--color-muted)]">
+        {t('contact.subtitle')}
+      </p>
+
+      <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap">
+        <Button href={telUrl('landline')} variant="primary" size="lg" icon="phone">
+          <span class="u-ltr">{clinic.phone.landline.display}</span>
+        </Button>
+
+        <Button
+          href={whatsappUrl(waMessage)}
+          variant="whatsapp"
+          size="lg"
+          icon="whatsapp"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {t('action.whatsapp')}
+        </Button>
+
+        <Button href={localizePath(locale, 'contact')} variant="outline" size="lg" iconEnd="chevron">
+          {t('form.title')}
+        </Button>
+      </div>
+
+      <p class="mt-6 flex items-center justify-center gap-1.5 text-[var(--text-sm)] text-[var(--color-muted)]">
+        <Icon name="map-pin" size={15} />
+        {clinic.address.locality[locale]}
+      </p>
+    </div>
+  </div>
+</section>

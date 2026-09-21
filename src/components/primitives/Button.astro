@@ -1,0 +1,78 @@
+---
+/**
+ * Button / action link.
+ *
+ * Renders <a> when `href` is given, otherwise <button>. Minimum block size is
+ * 44px — above both the WCAG 2.2 target-size minimum (24px) and the practical
+ * touch target, because the primary actions here are phone and WhatsApp on
+ * mobile.
+ *
+ * Fill variants use only colours verified to carry white text at >= 4.5:1.
+ * `signal` (the bright logo blue) is deliberately NOT available as a fill —
+ * it measures 3.34:1 with a white label and would fail AA.
+ */
+import Icon from './Icon.astro';
+
+interface Props {
+  href?: string;
+  type?: 'button' | 'submit';
+  variant?: 'primary' | 'outline' | 'whatsapp' | 'ghost';
+  size?: 'md' | 'lg';
+  icon?: string;
+  iconEnd?: string;
+  full?: boolean;
+  class?: string;
+  rel?: string;
+  target?: string;
+  'data-analytics'?: string;
+  [key: string]: unknown;
+}
+
+const {
+  href,
+  type = 'button',
+  variant = 'primary',
+  size = 'md',
+  icon,
+  iconEnd,
+  full = false,
+  class: className = '',
+  ...rest
+} = Astro.props;
+
+const base =
+  'inline-flex items-center justify-center gap-2 font-semibold no-underline ' +
+  'min-h-[44px] rounded-[var(--radius-btn)] cursor-pointer ' +
+  'transition-[background-color,border-color,color,transform] duration-[var(--dur-fast)] ' +
+  'ease-[var(--ease-out)] active:translate-y-px';
+
+const variants: Record<string, string> = {
+  primary: 'bg-[var(--color-ink)] text-white hover:bg-[var(--color-ink-deep)] border border-transparent',
+  outline:
+    'bg-transparent text-[var(--color-ink)] border border-[var(--color-line-strong)] hover:bg-[var(--color-mist)] hover:border-[var(--color-ink)]',
+  whatsapp: 'bg-[var(--color-wa)] text-white hover:brightness-90 border border-transparent',
+  ghost: 'bg-transparent text-[var(--color-ink)] border border-transparent hover:bg-[var(--color-mist)]',
+};
+
+const sizes: Record<string, string> = {
+  md: 'px-5 py-2.5 text-[var(--text-sm)]',
+  lg: 'px-7 py-3.5 text-[var(--text-base)]',
+};
+
+const cls = [base, variants[variant], sizes[size], full ? 'w-full' : '', className]
+  .filter(Boolean)
+  .join(' ');
+
+const Tag = href ? 'a' : 'button';
+---
+
+<Tag
+  class={cls}
+  href={href}
+  type={href ? undefined : type}
+  {...rest}
+>
+  {icon && <Icon name={icon} size={19} />}
+  <span><slot /></span>
+  {iconEnd && <Icon name={iconEnd} size={18} />}
+</Tag>

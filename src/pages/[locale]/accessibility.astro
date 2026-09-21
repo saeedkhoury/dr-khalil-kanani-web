@@ -1,0 +1,46 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import LegalPage from '../../components/sections/LegalPage.astro';
+import { LOCALES, type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { accessibilityStatement, ACCESSIBILITY_CONTACT } from '../../data/legal';
+import { clinic, telUrl } from '../../data/clinic';
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const locale = Astro.params.locale as Locale;
+const t = useTranslations(locale);
+
+const description = {
+  he: 'הצהרת הנגישות של אתר המרפאה: התאמות שבוצעו, מגבלות ידועות ודרך לפנות בנושא נגישות.',
+  ar: 'بيان إمكانية الوصول لموقع العيادة: التعديلات المطبّقة، القيود المعروفة وطريقة التواصل بهذا الشأن.',
+  en: 'Accessibility statement for the clinic website: measures implemented, known limitations and how to report an issue.',
+}[locale];
+
+const contactLabel = { he: 'פרטי קשר', ar: 'تفاصيل الاتصال', en: 'Contact details' }[locale];
+---
+
+<BaseLayout locale={locale} title={t('legal.accessibility')} description={description}>
+  <LegalPage locale={locale} title={t('legal.accessibility')} sections={accessibilityStatement}>
+    <section class="mt-10 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-mist)] p-6">
+      <h2 class="text-[var(--text-lg)]">{contactLabel}</h2>
+      <ul class="mt-3 space-y-1.5" style="list-style:none;padding-inline-start:0">
+        {ACCESSIBILITY_CONTACT.name && <li>{ACCESSIBILITY_CONTACT.name}</li>}
+        <li>
+          <a href={telUrl('landline')} class="u-ltr no-underline hover:underline">
+            {clinic.phone.landline.display}
+          </a>
+        </li>
+        {ACCESSIBILITY_CONTACT.email && (
+          <li>
+            <a href={`mailto:${ACCESSIBILITY_CONTACT.email}`} class="u-ltr no-underline hover:underline">
+              {ACCESSIBILITY_CONTACT.email}
+            </a>
+          </li>
+        )}
+      </ul>
+    </section>
+  </LegalPage>
+</BaseLayout>

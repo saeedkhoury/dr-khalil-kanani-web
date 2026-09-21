@@ -1,0 +1,32 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import FaqAccordion from '../../components/sections/FaqAccordion.astro';
+import ContactCta from '../../components/sections/ContactCta.astro';
+import { LOCALES, localizePath, type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { generalFaq } from '../../data/faq';
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const locale = Astro.params.locale as Locale;
+const t = useTranslations(locale);
+const items = generalFaq.map((f) => ({ q: f.q[locale], a: f.a[locale] }));
+
+const description = {
+  he: 'שאלות נפוצות על קביעת תור, שפות הטיפול, הפגישה הראשונה ומה עושים במקרה של כאב.',
+  ar: 'أسئلة شائعة حول حجز موعد، لغات العلاج، الزيارة الأولى وماذا نفعل في حالة الألم.',
+  en: 'Common questions about booking, languages, the first visit and what to do in case of pain.',
+}[locale];
+
+const breadcrumbs = [
+  { name: t('nav.home'), path: localizePath(locale, '') },
+  { name: t('nav.faq'), path: localizePath(locale, 'faq') },
+];
+---
+
+<BaseLayout locale={locale} title={t('faq.title')} description={description} breadcrumbs={breadcrumbs}>
+  <FaqAccordion locale={locale} items={items} headingLevel="h1" id="faq" />
+  <ContactCta locale={locale} />
+</BaseLayout>

@@ -1,0 +1,80 @@
+---
+/**
+ * Sticky mobile action bar — Call · WhatsApp · Directions.
+ *
+ * Present from first paint, not after a delay. Neither reference clinic
+ * studied during discovery had one: on one, the first contact affordance sat
+ * at 93% scroll depth on a 3,200px page, and a floating back-to-top button
+ * physically covered the phone number.
+ *
+ * `body { padding-block-end: var(--actionbar-h) }` in global.css reserves
+ * space so this bar can never obscure the footer.
+ *
+ * Directions is rendered only once a verified address exists — a wrong map
+ * link is worse than none, and one reference site sends patients to the
+ * wrong street on every page.
+ */
+import { type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { clinic, telUrl, whatsappUrl, hasAddress } from '../../data/clinic';
+import Icon from '../primitives/Icon.astro';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const waMessage = {
+  he: 'שלום, אשמח לקבוע תור במרפאה.',
+  ar: 'مرحبًا، أودّ حجز موعد في العيادة.',
+  en: 'Hello, I would like to request an appointment.',
+}[locale];
+
+const showDirections = hasAddress(locale);
+const mapsQuery = encodeURIComponent(
+  `${clinic.address.street[locale]} ${clinic.address.locality[locale]}`.trim(),
+);
+
+const itemClass =
+  'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 no-underline ' +
+  'text-[var(--text-xs)] font-semibold transition-colors duration-[var(--dur-fast)]';
+---
+
+<div
+  class="fixed inset-x-0 bottom-0 z-50 border-t border-[var(--color-line)] bg-[var(--color-porcelain)]/97 backdrop-blur-sm md:hidden"
+  style="padding-block-end: env(safe-area-inset-bottom)"
+>
+  <nav class="flex items-stretch" aria-label={t('action.bookAppointment')}>
+    <a href={telUrl('landline')} class={`${itemClass} text-[var(--color-ink)] hover:bg-[var(--color-mist)]`}>
+      <Icon name="phone" size={21} />
+      <span>{t('action.call')}</span>
+    </a>
+
+    <a
+      href={whatsappUrl(waMessage)}
+      target="_blank"
+      rel="noopener noreferrer"
+      class={`${itemClass} border-inline-start border-[var(--color-line)] text-[var(--color-wa)] hover:bg-[var(--color-mist)]`}
+      style="border-inline-start:1px solid var(--color-line)"
+    >
+      <Icon name="whatsapp" size={21} />
+      <span>{t('action.whatsapp')}</span>
+    </a>
+
+    {
+      showDirections && (
+        <a
+          href={`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class={`${itemClass} text-[var(--color-ink)] hover:bg-[var(--color-mist)]`}
+          style="border-inline-start:1px solid var(--color-line)"
+        >
+          <Icon name="map-pin" size={21} />
+          <span>{t('action.directions')}</span>
+        </a>
+      )
+    }
+  </nav>
+</div>

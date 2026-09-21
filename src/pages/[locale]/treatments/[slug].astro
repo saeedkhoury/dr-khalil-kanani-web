@@ -1,0 +1,180 @@
+---
+/**
+ * Treatment detail page — the site's main SEO surface.
+ *
+ * Structure: what it is -> who it is considered for -> how it works ->
+ * what to expect -> treatment-specific FAQ -> related -> CTA.
+ *
+ * The page ends with a clinical review stamp. That serves as an E-E-A-T
+ * signal and, more importantly, as a forcing function: medical copy carries
+ * a visible date and must be re-reviewed by the dentist.
+ *
+ * Every string comes from content files written to the claims discipline —
+ * no durations, no pain claims, no success rates, no prices.
+ */
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import FaqAccordion from '../../../components/sections/FaqAccordion.astro';
+import Icon from '../../../components/primitives/Icon.astro';
+import Button from '../../../components/primitives/Button.astro';
+import { LOCALES, localizePath, type Locale } from '../../../i18n/config';
+import { useTranslations } from '../../../i18n/ui';
+import { getTreatment, getRelated, getTreatmentSlugs } from '../../../lib/content';
+import { clinic, whatsappUrl } from '../../../data/clinic';
+
+export async function getStaticPaths() {
+  const slugs = await getTreatmentSlugs();
+  return LOCALES.flatMap((locale) => slugs.map((slug) => ({ params: { locale, slug } })));
+}
+
+const locale = Astro.params.locale as Locale;
+const slug = Astro.params.slug as string;
+const t = useTranslations(locale);
+
+const entry = await getTreatment(locale, slug);
+if (!entry) return Astro.rewrite('/404');
+
+const d = entry.data;
+const related = await getRelated(locale, slug, 3);
+const faq = d.faq.map((f) => ({ q: f.q, a: f.a }));
+
+const waMessage = {
+  he: `שלום, אשמח לקבוע תור בנושא: ${d.title}`,
+  ar: `مرحبًا، أودّ حجز موعد بخصوص: ${d.title}`,
+  en: `Hello, I would like to ask about: ${d.title}`,
+}[locale];
+
+const breadcrumbs = [
+  { name: t('nav.home'), path: localizePath(locale, '') },
+  { name: t('nav.treatments'), path: localizePath(locale, 'treatments') },
+  { name: d.title, path: localizePath(locale, `treatments/${slug}`) },
+];
+
+const reviewed = d.reviewedOn
+  ? new Intl.DateTimeFormat(locale === 'he' ? 'he-IL' : locale === 'ar' ? 'ar-EG' : 'en-GB', {
+      year: 'numeric',
+      month: 'long',
+    }).format(d.reviewedOn)
+  : null;
+---
+
+<BaseLayout
+  locale={locale}
+  title={d.seoTitle ?? d.title}
+  description={d.seoDescription}
+  breadcrumbs={breadcrumbs}
+>
+  <!-- Breadcrumb -->
+  <nav class="shell pt-8" aria-label="Breadcrumb">
+    <ol class="flex flex-wrap items-center gap-1.5 text-[var(--text-sm)] text-[var(--color-muted)]" style="list-style:none;padding-inline-start:0;margin:0">
+      {breadcrumbs.slice(0, -1).map((b) => (
+        <li class="flex items-center gap-1.5">
+          <a href={b.path} class="no-underline hover:underline">{b.name}</a>
+          <Icon name="chevron" size={13} />
+        </li>
+      ))}
+      <li aria-current="page" class="text-[var(--color-body)]">{d.title}</li>
+    </ol>
+  </nav>
+
+  <article>
+    <!-- Lede -->
+    <header class="shell pt-6 pb-10">
+      <div class="flex items-center gap-3">
+        <span class="flex size-12 items-center justify-center rounded-[var(--radius-btn)] bg-[var(--color-haze)] text-[var(--color-ink)]">
+          <Icon name={d.icon} size={26} />
+        </span>
+        <p class="eyebrow">{t('nav.treatments')}</p>
+      </div>
+      <h1 class="mt-4">{d.title}</h1>
+      <p class="mt-4 max-w-2xl text-[var(--text-lg)] leading-relaxed text-[var(--color-muted)]">{d.summary}</p>
+
+      <div class="mt-7 flex flex-col gap-3 sm:flex-row">
+        <Button href={localizePath(locale, 'contact')} variant="primary" icon="plus">{t('action.bookAppointment')}</Button>
+        <Button href={whatsappUrl(waMessage)} variant="whatsapp" icon="whatsapp" target="_blank" rel="noopener noreferrer">{t('action.whatsapp')}</Button>
+      </div>
+    </header>
+
+    <!-- Candidacy -->
+    <section class="section bg-[var(--color-mist)]" aria-labelledby="candidacy-heading">
+      <div class="shell max-w-3xl">
+        <h2 id="candidacy-heading">{t('treatments.candidacyTitle')}</h2>
+        <ul class="mt-6 space-y-3" style="list-style:none;padding-inline-start:0;margin-block-end:0">
+          {d.candidacy.map((item) => (
+            <li class="flex items-start gap-3">
+              <span class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-tide)] text-[var(--color-ink)]">
+                <Icon name="check" size={14} stroke={2.2} />
+              </span>
+              <span class="leading-relaxed">{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <!-- Process -->
+    <section class="section" aria-labelledby="process-heading">
+      <div class="shell max-w-3xl">
+        <h2 id="process-heading">{t('treatments.processTitle')}</h2>
+        <ol class="mt-8 space-y-6" style="list-style:none;padding-inline-start:0;margin-block-end:0">
+          {d.process.map((step, i) => (
+            <li class="flex gap-4">
+              <span class="flex size-9 shrink-0 items-center justify-center rounded-full border border-[var(--color-line-strong)] text-[var(--text-sm)] font-semibold text-[var(--color-ink)]">
+                <span class="u-ltr">{i + 1}</span>
+              </span>
+              <div>
+                <h3 class="text-[var(--text-base)] font-semibold">{step.step}</h3>
+                <p class="mt-1 leading-relaxed text-[var(--color-muted)]">{step.detail}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <!-- Expect -->
+    <section class="section bg-[var(--color-mist)]" aria-labelledby="expect-heading">
+      <div class="shell max-w-3xl">
+        <h2 id="expect-heading">{t('treatments.expectTitle')}</h2>
+        <ul class="mt-6 space-y-3" style="list-style:none;padding-inline-start:0;margin-block-end:0">
+          {d.expect.map((item) => (
+            <li class="flex items-start gap-3">
+              <span class="mt-2 size-1.5 shrink-0 rounded-full bg-[var(--color-signal)]"></span>
+              <span class="leading-relaxed">{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    {faq.length > 0 && <FaqAccordion locale={locale} items={faq} title={t('treatments.faqTitle')} id="treatment-faq" />}
+
+    <!-- Review stamp + disclaimer -->
+    <div class="shell max-w-3xl">
+      <p class="border-t border-[var(--color-line)] pt-6 text-[var(--text-sm)] text-[var(--color-muted)]">
+        {reviewed && <>{t('legal.reviewedBy')} {clinic.doctor[locale]} · <span class="u-ltr">{reviewed}</span><br /></>}
+        {t('legal.disclaimer')}
+      </p>
+    </div>
+
+    <!-- Related -->
+    {related.length > 0 && (
+      <section class="section" aria-labelledby="related-heading">
+        <div class="shell">
+          <h2 id="related-heading" class="text-[var(--text-xl)]">{t('treatments.relatedTitle')}</h2>
+          <ul class="mt-6 grid gap-4 sm:grid-cols-3" style="list-style:none;padding-inline-start:0;margin-block-end:0">
+            {related.map((r) => (
+              <li>
+                <a href={localizePath(locale, `treatments/${r.data.slug}`)} class="flex h-full items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-4 no-underline hover:border-[var(--color-signal)]">
+                  <span class="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-btn)] bg-[var(--color-haze)] text-[var(--color-ink)]">
+                    <Icon name={r.data.icon} size={20} />
+                  </span>
+                  <span class="font-semibold text-[var(--color-ink)]">{r.data.cardTitle}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    )}
+  </article>
+</BaseLayout>

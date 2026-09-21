@@ -1,0 +1,106 @@
+---
+/**
+ * Hero.
+ *
+ * Answers, in order: WHERE (eyebrow), WHAT (h1), WHO + WHY (subtitle), and
+ * WHAT NEXT (two actions). It does not open with a biography — one reference
+ * site does, and its H1 is a 450-character paragraph as a result.
+ *
+ * The visual side is a layered tinted composition built from the brand mark,
+ * not stock clinical photography. Until real clinic photography exists, an
+ * honest geometric treatment is better than a generic stock image — and the
+ * advertising regulations make invented clinical imagery a liability.
+ */
+import { localizePath, type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { clinic, telUrl, whatsappUrl } from '../../data/clinic';
+import Button from '../primitives/Button.astro';
+import Icon from '../primitives/Icon.astro';
+import Logo from '../primitives/Logo.astro';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const waMessage = {
+  he: 'שלום, אשמח לקבוע תור במרפאה.',
+  ar: 'مرحبًا، أودّ حجز موعد في العيادة.',
+  en: 'Hello, I would like to request an appointment.',
+}[locale];
+---
+
+<section class="relative overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-porcelain)]">
+  <!-- Decorative tinted wash. Depth from layered colour, not shadow. -->
+  <div
+    aria-hidden="true"
+    class="pointer-events-none absolute inset-0 -z-10"
+    style="background:
+      radial-gradient(60rem 32rem at 85% -10%, var(--color-haze) 0%, transparent 65%),
+      radial-gradient(40rem 26rem at 5% 105%, var(--color-mist) 0%, transparent 70%);"
+  >
+  </div>
+
+  <div class="shell grid items-center gap-12 py-14 md:py-20 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
+    <div>
+      <p class="eyebrow flex items-center gap-1.5">
+        <Icon name="map-pin" size={15} />
+        {t('hero.eyebrow')}
+      </p>
+
+      <h1 class="mt-3">{t('hero.title')}</h1>
+
+      <p class="mt-5 max-w-xl text-[var(--text-lg)] leading-relaxed text-[var(--color-muted)]">
+        {t('hero.subtitle')}
+      </p>
+
+      <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+        <Button href={localizePath(locale, 'contact')} variant="primary" size="lg" icon="plus">
+          {t('action.bookAppointment')}
+        </Button>
+
+        <Button
+          href={whatsappUrl(waMessage)}
+          variant="whatsapp"
+          size="lg"
+          icon="whatsapp"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          {t('action.whatsapp')}
+        </Button>
+      </div>
+
+      <!-- Phone stated as text as well as a link: the flyer's own call to
+           action is "call now", and on desktop the number must be readable
+           without tapping. Bidi-isolated so it never reorders inside RTL. -->
+      <p class="mt-6 text-[var(--text-sm)] text-[var(--color-muted)]">
+        {t('action.callNow')}:{' '}
+        <a
+          href={telUrl('landline')}
+          class="u-ltr font-semibold text-[var(--color-ink)] no-underline hover:underline"
+        >
+          {clinic.phone.landline.display}
+        </a>
+      </p>
+    </div>
+
+    <!-- Visual: concentric tinted panels holding the clinic mark. -->
+    <div class="relative mx-auto hidden w-full max-w-md lg:block">
+      <div
+        class="aspect-square rounded-[2rem] border border-[var(--color-line)] bg-[var(--color-mist)] p-8"
+      >
+        <div
+          class="flex h-full items-center justify-center rounded-[1.5rem] border border-[var(--color-line)] bg-[var(--color-haze)] p-10"
+        >
+          <div
+            class="flex size-full items-center justify-center rounded-[1rem] bg-[var(--color-porcelain)]"
+          >
+            <Logo size={148} />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

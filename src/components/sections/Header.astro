@@ -1,0 +1,122 @@
+---
+/**
+ * Site header.
+ *
+ * The mobile menu is a native <details>/<summary> disclosure — keyboard
+ * operable, screen-reader understood, and functional with JavaScript
+ * disabled. No framework island is needed for navigation.
+ */
+import { localizePath, type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { clinic, telUrl } from '../../data/clinic';
+import Icon from '../primitives/Icon.astro';
+import LanguageSwitcher from './LanguageSwitcher.astro';
+import Logo from '../primitives/Logo.astro';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const current = Astro.url.pathname;
+
+const nav = [
+  { key: 'nav.home', path: '' },
+  { key: 'nav.about', path: 'about' },
+  { key: 'nav.treatments', path: 'treatments' },
+  { key: 'nav.faq', path: 'faq' },
+  { key: 'nav.contact', path: 'contact' },
+] as const;
+
+function isActive(path: string): boolean {
+  const href = localizePath(locale, path);
+  return path === '' ? current === href : current.startsWith(href);
+}
+---
+
+<header class="sticky top-0 z-40 border-b border-[var(--color-line)] bg-[var(--color-porcelain)]/92 backdrop-blur-sm">
+  <div class="shell flex items-center justify-between gap-4 py-3">
+    <a
+      href={localizePath(locale, '')}
+      class="flex items-center gap-2.5 no-underline"
+      aria-label={t('site.shortName')}
+    >
+      <Logo size={38} />
+      <span class="leading-tight">
+        <span class="block text-[var(--text-sm)] font-semibold text-[var(--color-ink)]">
+          {clinic.doctor[locale]}
+        </span>
+        <span class="block text-[var(--text-xs)] text-[var(--color-muted)]">
+          {clinic.tagline[locale]}
+        </span>
+      </span>
+    </a>
+
+    <!-- Desktop navigation -->
+    <nav class="hidden items-center gap-1 md:flex" aria-label={t('a11y.mainNav')}>
+      {
+        nav.map((item) => (
+          <a
+            href={localizePath(locale, item.path)}
+            aria-current={isActive(item.path) ? 'page' : undefined}
+            class:list={[
+              'rounded-[var(--radius-btn)] px-3 py-2 text-[var(--text-sm)] no-underline transition-colors duration-[var(--dur-fast)]',
+              isActive(item.path)
+                ? 'bg-[var(--color-mist)] font-semibold text-[var(--color-ink)]'
+                : 'text-[var(--color-muted)] hover:bg-[var(--color-mist)] hover:text-[var(--color-ink)]',
+            ]}
+          >
+            {t(item.key)}
+          </a>
+        ))
+      }
+    </nav>
+
+    <div class="flex items-center gap-2">
+      <LanguageSwitcher locale={locale} />
+
+      <a
+        href={telUrl('landline')}
+        class="hidden min-h-[44px] items-center gap-2 rounded-[var(--radius-btn)] bg-[var(--color-ink)] px-4 text-[var(--text-sm)] font-semibold text-white no-underline transition-colors duration-[var(--dur-fast)] hover:bg-[var(--color-ink-deep)] md:inline-flex"
+      >
+        <Icon name="phone" size={18} />
+        <span class="u-ltr">{clinic.phone.landline.display}</span>
+      </a>
+
+      <!-- Mobile disclosure -->
+      <details class="group relative md:hidden">
+        <summary
+          class="flex min-h-[44px] min-w-[44px] cursor-pointer list-none items-center justify-center rounded-[var(--radius-btn)] border border-[var(--color-line-strong)] text-[var(--color-ink)] [&::-webkit-details-marker]:hidden"
+          aria-label={t('a11y.openMenu')}
+        >
+          <Icon name="menu" size={22} class="group-open:hidden" />
+          <Icon name="close" size={22} class="hidden group-open:block" />
+        </summary>
+
+        <nav
+          class="absolute inset-inline-end-0 z-50 mt-2 w-[min(78vw,20rem)] rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-2 shadow-[0_18px_44px_-24px_rgba(12,82,131,0.45)]"
+          aria-label={t('a11y.mainNav')}
+          style="inset-inline-end:0"
+        >
+          {
+            nav.map((item) => (
+              <a
+                href={localizePath(locale, item.path)}
+                aria-current={isActive(item.path) ? 'page' : undefined}
+                class:list={[
+                  'block rounded-[var(--radius-btn)] px-4 py-3 text-[var(--text-base)] no-underline',
+                  isActive(item.path)
+                    ? 'bg-[var(--color-mist)] font-semibold text-[var(--color-ink)]'
+                    : 'text-[var(--color-body)] hover:bg-[var(--color-mist)]',
+                ]}
+              >
+                {t(item.key)}
+              </a>
+            ))
+          }
+        </nav>
+      </details>
+    </div>
+  </div>
+</header>

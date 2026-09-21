@@ -1,0 +1,29 @@
+---
+/**
+ * 404. Served at the site root for any unmatched path, so it cannot assume
+ * a locale — it defaults to Hebrew and offers all three languages.
+ */
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Button from '../components/primitives/Button.astro';
+import { DEFAULT_LOCALE, LOCALES, LOCALE_META, localizePath } from '../i18n/config';
+import { useTranslations } from '../i18n/ui';
+
+const locale = DEFAULT_LOCALE;
+const t = useTranslations(locale);
+---
+
+<BaseLayout locale={locale} title={t('error.404.title')} description={t('error.404.body')} noindex hideActionBar>
+  <div class="shell section max-w-xl text-center">
+    <p class="eyebrow">404</p>
+    <h1 class="mt-3">{t('error.404.title')}</h1>
+    <p class="mt-4 text-[var(--text-lg)] text-[var(--color-muted)]">{t('error.404.body')}</p>
+
+    <div class="mt-8 flex flex-wrap justify-center gap-3">
+      {LOCALES.map((l) => (
+        <Button href={localizePath(l, '')} variant={l === locale ? 'primary' : 'outline'} lang={l} dir={LOCALE_META[l].dir}>
+          {LOCALE_META[l].label}
+        </Button>
+      ))}
+    </div>
+  </div>
+</BaseLayout>
