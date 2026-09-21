@@ -26,6 +26,18 @@ interface Props {
 const { locale, treatments, headingLevel = 'h2', showIntro = true, limit } = Astro.props;
 const t = useTranslations(locale);
 const Heading = headingLevel;
+
+/**
+ * Card titles sit one level below the section title, always.
+ *
+ * This grid appears under an h1 on /treatments/ and under an h2 on the home
+ * page. Hardcoding h3 made the first case jump h1 -> h3. In Israel that is
+ * not a stylistic point: IS 5568 makes WCAG 2.4.10 Section Headings
+ * MANDATORY at level AA, where WCAG itself treats it as AAA — so a skipped
+ * level is a conformance failure, not a nitpick. Derived here so the two
+ * cannot drift apart again. scripts/audit-html.mjs fails the build if they do.
+ */
+const CardHeading = headingLevel === 'h1' ? 'h2' : 'h3';
 const items = limit ? treatments.slice(0, limit) : treatments;
 ---
 
@@ -46,13 +58,20 @@ const items = limit ? treatments.slice(0, limit) : treatments;
           <li class="reveal" style={`--i:${i % 3}`}>
             <a
               href={localizePath(locale, `treatments/${item.data.slug}`)}
-              class="group flex h-full flex-col rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-6 no-underline transition-[border-color,background-color] duration-[var(--dur-base)] ease-[var(--ease-out)] hover:border-[var(--color-signal)] hover:bg-white"
+              class="group relative flex h-full flex-col overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-6 no-underline transition-[border-color,background-color,transform] duration-[var(--dur-base)] ease-[var(--ease-out)] hover:-translate-y-0.5 hover:border-[var(--color-line-strong)] hover:bg-white focus-within:border-[var(--color-ink)]"
             >
+              {/* A rule that draws across on hover. Depth from a line and a
+                  tint shift, never a drop shadow — that is the identity. */}
+              <span
+                aria-hidden="true"
+                class="absolute inset-inline-start-0 top-0 h-0.5 w-0 bg-[var(--color-signal)] transition-[width] duration-[var(--dur-slow)] ease-[var(--ease-out)] group-hover:w-full"
+                style="inset-inline-start:0"
+              />
               <span class="flex size-12 items-center justify-center rounded-[var(--radius-btn)] bg-[var(--color-haze)] text-[var(--color-ink)] transition-colors duration-[var(--dur-base)] group-hover:bg-[var(--color-tide)]">
                 <Icon name={item.data.icon} size={26} />
               </span>
 
-              <h3 class="mt-5 text-[var(--text-lg)] font-semibold">{item.data.cardTitle}</h3>
+              <CardHeading class="mt-5 text-[var(--text-lg)] font-semibold">{item.data.cardTitle}</CardHeading>
 
               <p class="mt-2 grow text-[var(--text-sm)] leading-relaxed text-[var(--color-muted)]">
                 {item.data.summary}
@@ -60,7 +79,11 @@ const items = limit ? treatments.slice(0, limit) : treatments;
 
               <span class="mt-5 inline-flex items-center gap-1.5 text-[var(--text-sm)] font-semibold text-[var(--color-ink)]">
                 {t('action.readMore')}
-                <Icon name="chevron" size={16} />
+                <Icon
+                  name="chevron"
+                  size={16}
+                  class="transition-transform duration-[var(--dur-base)] ease-[var(--ease-out)] group-hover:translate-x-0.5 rtl:group-hover:-translate-x-0.5"
+                />
               </span>
             </a>
           </li>

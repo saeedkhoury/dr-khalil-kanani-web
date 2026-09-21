@@ -1,0 +1,3 @@
+#!/bin/sh
+# Blocks unreviewed clinic media. See scripts/check-assets.mjs for why.
+node scripts/check-assets.mjs || exit 1

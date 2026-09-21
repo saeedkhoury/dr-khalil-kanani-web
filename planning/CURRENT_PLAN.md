@@ -1,40 +1,36 @@
 # Current plan
 
-**Approved:** 2026-09-20 · **Phase:** 1–5 complete, gated on owner verification
+**Updated:** 2026-09-21 · Phase 3 premium upgrade merged to main
 
-## Done
+The original numbered implementation plan (core pages, six treatments in three
+languages and appointment requests) is complete. The current Phase 3 refers to
+the premium upgrade in `CHANGELOG.md`, merged through PR #1.
 
-| Phase | Scope | State |
-|---|---|---|
-| 0 | Research + architecture | ✅ |
-| 1 | Repo, gates, tokens, `clinic.ts` | ✅ |
-| 2 | Design system + i18n foundation | ✅ |
-| 3 | Core pages, all three locales | ✅ |
-| 4 | 6 Tier-1 treatments × 3 locales | ✅ |
-| 5 | Appointment request flow + endpoint | ✅ |
+## Completed
 
-## Blocked — needs the owner, not code
+- Typography, hero, treatment cards, conditional gallery, Google aggregate
+  link-out, click-to-load map and reduced-motion behavior.
+- Asset, content, locale, claims and built-HTML accessibility gates.
+- Follow-up fixes for gallery initialization, tablet layout, WhatsApp handoff,
+  Western Arabic numerals, Hebrew tracking, safe-area clearance and reveals.
+- 76 unit tests and 19 Chromium/axe tests, enforced in preview/production CI.
+- Homepage/contact screenshot samples reviewed at 375/768/1440px in he/ar/en.
 
-Production build is **refused** until these resolve. `npm run build` lists them.
+## Remaining launch follow-up
 
-1. Exact street address + verified map pin
-2. Opening hours
-3. Domain name
-4. Canonical Arabic spelling and Latin transliteration of the doctor's name
-5. Native Arabic review of the tagline
-6. Credentials (none verifiable were found anywhere)
-7. Accessibility contact name / phone / email
-8. Israeli legal review of claims posture, accessibility statement, privacy policy
+- Verify the production workflow and live three-locale smoke checks.
+- Complete human checks in `docs/QA-CHECKLIST.md`: VoiceOver, real iPhone/Android
+  handoff, native-language review and outdoor legibility.
+- Owner confirmation of address, map pin, hours, domain, doctor spellings,
+  Arabic tagline, credentials and accessibility contact. Do not invent these.
+- Owner/legal decision on `docs/GIT-HISTORY-REMEDIATION.md` and legal review
+  of clinic copy, accessibility statement and privacy policy.
 
-## Next, once unblocked
+## Later, separate work
 
-- Phase 6: Tier-2 treatments (crowns, fillings, extractions, cleaning);
-  clinic photography
-- Phase 7: CSP, KV binding, Supabase table + RLS, cookieless analytics
-- Phase 8: Playwright suite covering the manual matrix in `docs/TESTING.md`
-- Phase 9: Deploy, then GBP + Waze + health-fund directory + citations
+- Four Tier-2 treatments: crowns, fillings, extractions, cleaning.
+- Reviewed clinic/doctor photography, Google Business Profile and real rating.
+- Cookieless analytics and hosting-appropriate security headers if required.
 
-## Parallelisable
-
-Tier-2 content authoring splits cleanly by locale (disjoint directories).
-Phase 7 review passes are read-only and can run concurrently.
+The architecture is static GitHub Pages with WhatsApp handoff (ADR 0007).
+Supabase, KV and a server appointment endpoint are not current tasks.

@@ -146,7 +146,6 @@ const graph = buildGraph({ locale, pathname, title: fullTitle, description, brea
       // failure above this line leaves the page fully visible. See the
       // fail-visible note in global.css.
       if (!reduced && 'IntersectionObserver' in window) {
-        document.documentElement.classList.add('js-reveal');
         targets.forEach((el) => {
           // A section that re-hides on scroll-back is a distraction, not a
           // delight, so this fires once and stops observing.
@@ -159,6 +158,7 @@ const graph = buildGraph({ locale, pathname, title: fullTitle, description, brea
         window.setTimeout(() => {
           targets.forEach((el) => el.classList.add('is-in'));
         }, 2000);
+        document.documentElement.classList.add('js-reveal');
       }
 
       // Header gains a hairline + surface tint once the page scrolls, so it

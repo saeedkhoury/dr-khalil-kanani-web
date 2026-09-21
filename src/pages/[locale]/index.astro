@@ -21,6 +21,7 @@ import TrustStrip from '../../components/sections/TrustStrip.astro';
 import TreatmentsGrid from '../../components/sections/TreatmentsGrid.astro';
 import DoctorIntro from '../../components/sections/DoctorIntro.astro';
 import FaqAccordion from '../../components/sections/FaqAccordion.astro';
+import ClinicGallery from '../../components/sections/ClinicGallery.astro';
 import PatientFeedback from '../../components/sections/PatientFeedback.astro';
 import FindTheClinic from '../../components/sections/FindTheClinic.astro';
 import ContactCta from '../../components/sections/ContactCta.astro';
@@ -45,6 +46,7 @@ const faq = generalFaq.slice(0, 5).map((f) => ({ q: f.q[locale], a: f.a[locale] 
   <TrustStrip locale={locale} />
   <TreatmentsGrid locale={locale} treatments={treatments} limit={6} />
   <DoctorIntro locale={locale} />
+  <ClinicGallery locale={locale} />
   <PatientFeedback locale={locale} />
   <FaqAccordion locale={locale} items={faq} id="home-faq" />
   <FindTheClinic locale={locale} />

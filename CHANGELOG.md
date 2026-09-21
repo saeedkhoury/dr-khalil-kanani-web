@@ -2,6 +2,92 @@
 
 ## [Unreleased]
 
+### Phase 3 — premium production upgrade
+
+Merged to `main` through PR #1 on 2026-09-21. Production deployment is tracked
+by the `Deploy to Production` GitHub workflow.
+
+**QA completion (2026-09-21 follow-up)**
+- Added 19 Chromium/axe tests covering locales at 375/768/1440px, contact
+  validation and WhatsApp popup/fallback behavior, no-JS/reduced-motion
+  visibility, and synthetic gallery/rating/map interactions. Both workflows
+  enforce the suite before uploading/deploying the site.
+- Fixed gallery initialization order, English tablet header overflow and
+  duplicate WhatsApp navigation. Escaped gallery JSON, corrected Arabic rating
+  numerals and Hebrew h3 tracking, included mobile safe-area clearance, and
+  moved reveal hiding after observer/failsafe registration.
+- Asset guard checks tracked media in CI and the staged manifest on commit,
+  fails closed on Git errors and refuses CI bypass; three regression tests
+  bring unit coverage to 76 tests.
+- Opened homepage/contact screenshot samples across nine locale/width pairs.
+  Physical-device, VoiceOver, native-copy and owner/legal checks remain open.
+
+**Safety — patient images (3.0)**
+- 13 patient before/after photographs, swept into `7cd7ea5` by a `git add -A`,
+  quarantined to gitignored `.private-assets/` and removed from the tree. They
+  were never referenced and never served. **They remain in public Git history** —
+  see `docs/GIT-HISTORY-REMEDIATION.md`. No irreversible action taken.
+- `scripts/check-assets.mjs` + `.githooks/pre-commit`: an image cannot be
+  committed unless it is registered in `src/data/media.ts`, which requires a
+  category and alt text in three languages — impossible to write without having
+  opened the file. `git add -A` banned in `AGENTS.md` §3.2.
+
+**Deployment safety (3.0)**
+- `VERIFY_RELAX` demoted to preview-only. Production now uses `ACK_UNVERIFIED`,
+  an explicit per-field allowlist; any *other* unverified published field fails
+  the build. The gate also distinguishes *published* fields (block) from
+  *hidden* ones (warn), so a guarded placeholder no longer blocks a deploy.
+- `preview.yml`: PRs build, run every gate and upload an artifact. Never deploy.
+- `deploy.yml`: production only.
+
+**Design (3.1–3.4)**
+- Display type scale, media radius, section rhythm, full-bleed helper
+- Hero rebuilt with two deliberate states — photographic, or a **typographic**
+  composition with a fact strip. The empty state is a design, not a placeholder.
+- `src/lib/images.ts` resolves manifest filenames to real Astro assets.
+  `<Image src="string">` silently fails to optimise; this was a latent bug that
+  would have surfaced the moment a photo was added.
+- Treatment cards: a rule that draws across on hover, a small lift, and a
+  chevron that travels *towards the reading direction* in both RTL and LTR
+- Clinic gallery: asymmetric editorial grid, native `<dialog>` lightbox with
+  RTL-aware arrow keys and swipe. Renders nothing while unregistered.
+
+**Reviews and location (3.5)**
+- Google review **aggregate** (rating + count + attribution), shown only from
+  owner-supplied figures. Still no quotes, no names, no `AggregateRating`
+  markup — Google rules self-controlled review markup ineligible, and Israeli
+  law prohibits patient identities (ADR 0005). The star row is a proportional
+  fill, so 4.9 never rounds up to five.
+- **Click-to-load map facade** (ADR 0008). The iframe is created in script on
+  press, so no iframe, `preconnect` or `dns-prefetch` for Google exists in the
+  served HTML. Zero third-party contact on load is preserved and now tested.
+
+**Motion (3.6)**
+- `<dialog>` entry and backdrop via `@starting-style` + `allow-discrete`
+- Map iframe fades in on `load`, with a 4s failsafe so it can never stay blank
+- Both honour `prefers-reduced-motion`
+
+**Fixed**
+- **Dead JS on every page.** The gallery lightbox script was hoisted into the
+  bundle whenever the component was on the page — including when the gallery
+  rendered nothing, which is every page today. Moved inside the conditional as
+  an inline script. The site now ships **no external JS file at all**: ~2.7KB
+  inline, down from ~4.1KB.
+- **Heading skip, AA-mandatory in Israel.** `/treatments/` emitted `h1 → h3`
+  because card titles were hardcoded. Card level is now derived from the
+  section level, and `scripts/audit-html.mjs` fails the build if they drift.
+- Star-fill width no longer emits `98.00000000000001%`.
+
+**Quality (3.7–3.8)**
+- `scripts/audit-html.mjs` — audits **built** HTML for heading order, duplicate
+  ids, missing alt, unnamed controls, untitled iframes and `lang`/`dir`
+  correctness. Wired into both workflows. 41/41 pages clean.
+- Unit tests 65 → **73**: review-aggregate guards, star-fill rounding, a test
+  asserting `aggregateRating` never appears in structured data, and structural
+  tests that the facade contacts nobody before being pressed.
+- New: `docs/QA-CHECKLIST.md` (nothing on it has been ticked),
+  `docs/GIT-HISTORY-REMEDIATION.md`, ADR 0008.
+
 ### Phase 2
 
 **Fixed — the live site was losing every appointment request.**

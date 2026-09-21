@@ -1,45 +1,61 @@
-# Testing strategy
+# Testing
 
-## What is enforced automatically
+## Required checks
 
-| Gate | Command | Blocks |
-|---|---|---|
-| Launch verification | `npm run build` | Production build with any unverified clinic fact |
-| Locale parity | `npm run build` | A treatment missing from any locale |
-| Claims linter | `npm run lint:claims` | Prohibited advertising patterns |
-| Mixed-script linter | `npm run lint:scripts` | Cyrillic/Greek homoglyphs in he/ar text |
-| Type check | `npm run check` | Type errors |
+```bash
+npm run verify
+npm test
+npm run lint:assets -- --all
+npm run build
+npm run lint:a11y
+npx playwright install chromium
+npm run test:e2e
+```
 
-`npm run verify` runs the linters and the type check together.
+The bare production build refuses unconfirmed published facts. To reproduce
+the **existing** production workflow without disabling its gate:
 
-## Manual verification matrix
+```bash
+ASTRO_SITE=https://www.drkhalilkanani.com ACK_UNVERIFIED=doctor.ar,doctor.en,tagline.ar npm run build
+```
 
-Every UI change is checked across:
+This is an acknowledgement, not owner verification. Do not expand the list or
+set `VERIFY_RELAX` in production. `npm run build:preview` is preview only.
 
-- **Locales**: he, ar, en
-- **Directions**: RTL and LTR
-- **Viewports**: 375px and desktop
+## Automated coverage
 
-and for:
+- 76 unit tests: locales, contact helpers, launch gates, content/media rules,
+  asset guard staging/CI regressions.
+- Built-HTML audit: 41 pages, heading order, ids, alt, accessible names,
+  language and direction.
+- 19 Playwright tests in Chromium: 39 localized pages × 375, 768, 1440px;
+  axe WCAG 2/2.1 A/AA, horizontal overflow, resource failures, console errors,
+  zero third-party requests on load, mobile footer clearance.
+- Root homepage and 404 axe checks.
+- Native menus, equivalent-page language switching, invalid form submissions,
+  consent and intercepted WhatsApp handoff, including popup-blocked fallback.
+- No-JS contact fallback and visible content with reduced motion or failed
+  IntersectionObserver initialization.
+- Synthetic gallery, rating and map: opening/navigation/Escape/focus return,
+  modal keyboard isolation, Western Arabic digits, and map privacy behavior.
 
-- axe-core — **zero violations** (wcag2a, wcag2aa, wcag21a, wcag21aa)
-- Heading order — no skipped levels, exactly one `h1`
-  (2.4.10 is AA-mandatory in Israel, stricter than baseline WCAG)
-- Keyboard navigation and visible focus throughout
-- The sticky mobile bar never covering footer content
-- Language switcher landing on the equivalent page, not a homepage
-- Form: empty submit, invalid phone, missing consent, valid submit
-- Endpoint: honeypot, too-fast submit, rate limit, unconfigured delivery
+Playwright owns preview servers on loopback ports 4330 and 4331. Build `dist/`
+first. The second server builds an isolated OS temporary copy containing the
+existing vector mark and synthetic data. It never writes fixture values into
+the real source or production build. WhatsApp and Google navigation is
+intercepted locally; no test message is sent.
 
-## Current state
+Both GitHub workflows run the suite after a fresh build and HTML audit.
+Failure traces/screenshots are retained as workflow artifacts for seven days.
+Local reports are in gitignored `playwright-report/` and `test-results/`.
 
-Verification so far has been **manual plus axe-core in-browser**, and all of
-the above passes. An automated Playwright suite covering the same matrix is
-the main testing gap — see `planning/ROADMAP.md`.
+## Verification limits
 
-## Baseline results (2026-09-20)
+The 2026-09-21 follow-up passed the checks above. Homepage/contact screenshot
+samples were opened across all nine locale × width combinations. No approved
+visual baseline exists, so visual regression status is inconclusive. No
+physical-device, VoiceOver, outdoor contrast, native-language approval or live
+map/rating confirmation is implied. See [QA-CHECKLIST.md](QA-CHECKLIST.md).
 
-- axe-core across 8 page types: 0 violations
-- Heading order on `/he/`: `1233332333333222222`, no skips
-- Client JS: ~2.9KB inline, zero external JS files
-- Fonts: he 31.5KB · en 35KB · ar 162KB per page
+The site is static and requests hand off to WhatsApp (ADR 0007). There is no
+appointment endpoint, database, rate limiter or server delivery path to test.

@@ -2,7 +2,8 @@
 
 ## NOW
 
-- Owner verification pass — everything else is blocked behind it
+- Remaining real-device / VoiceOver QA after the Phase 3 merge
+- Owner verification pass
 - Israeli legal review
 - Tier-2 treatments: crowns, fillings, extractions, cleaning
 
@@ -11,8 +12,8 @@
 - Clinic and doctor photography (the main visual gap; the hero currently uses
   a geometric treatment of the logo mark)
 - Arabic and English logo lockups — the supplied wordmark is Hebrew-only
-- Playwright suite covering the manual verification matrix
-- CSP, KV rate-limit binding, cookieless analytics
+- Expand browser coverage to WebKit/Firefox if required; Chromium/axe is in CI
+- Hosting-appropriate security headers and cookieless analytics
 - Google Business Profile, Waze, health-fund directory, citations
 
 ## LATER

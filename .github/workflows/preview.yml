@@ -1,0 +1,112 @@
+name: Preview (pull requests)
+
+# Runs on every pull request. Builds, gates, and publishes the result as a
+# downloadable artifact. It NEVER deploys to production — that only happens
+# when a PR is merged to main.
+#
+# Preview builds use VERIFY_RELAX=1 so unfinished work with placeholder clinic
+# data can still be reviewed. That is exactly the distinction the production
+# workflow enforces: preview may show placeholders, production may not.
+
+on:
+  pull_request:
+    branches: ['main']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci
+
+      # These gates are NOT relaxed for previews. A medical claim or an
+      # unreviewed patient image is just as unacceptable on a branch.
+      - name: Medical claims linter
+        run: npm run lint:claims
+      - name: Mixed-script linter
+        run: npm run lint:scripts
+      - name: Asset guard (unreviewed clinic media)
+        run: npm run lint:assets
+      - name: Type check
+        run: npm run check
+      - name: Unit tests
+        run: npm test
+
+  build-preview:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci
+
+      - name: Build preview
+        env:
+          ASTRO_SITE: https://preview.invalid
+        run: npm run build:preview
+
+      # Fails the PR. The preview build relaxes the DATA gate, never the
+      # accessibility one — heading order is AA-mandatory under IS 5568 and
+      # is not a "fix it before production" item.
+      - name: Accessibility audit (built HTML)
+        run: npm run lint:a11y
+
+      - name: Install browser for QA
+        run: npx playwright install --with-deps chromium
+      - name: Browser QA (three locales, responsive layouts, axe and contact flow)
+        run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: preview-browser-qa
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+      - name: Report what the strict gate would say
+        continue-on-error: true
+        env:
+          NODE_ENV: production
+          ASTRO_SITE: https://www.drkhalilkanani.com
+        run: |
+          echo "::group::Strict production gate (informational — does not fail the PR)"
+          npm run build || true
+          echo "::endgroup::"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preview-site
+          path: ./dist
+          retention-days: 14
+
+      - name: How to review this build
+        run: |
+          echo "### Preview build ready" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download the **preview-site** artifact above, then:" >> $GITHUB_STEP_SUMMARY
+          echo '```bash' >> $GITHUB_STEP_SUMMARY
+          echo 'unzip preview-site.zip -d preview && cd preview' >> $GITHUB_STEP_SUMMARY
+          echo 'python3 -m http.server 4330' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "Then open <http://localhost:4330/he/>, \`/ar/\` and \`/en/\`." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "> A hosted preview URL is not possible on GitHub Pages, which allows" >> $GITHUB_STEP_SUMMARY
+          echo "> one deployment per repository. See docs/DEPLOYMENT.md for the" >> $GITHUB_STEP_SUMMARY
+          echo "> options if a live preview link becomes worth adding." >> $GITHUB_STEP_SUMMARY

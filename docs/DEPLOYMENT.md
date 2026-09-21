@@ -1,95 +1,69 @@
 # Deployment
 
-## Target
+## Production target
 
 **GitHub Pages**, custom domain `www.drkhalilkanani.com`, via
 `.github/workflows/deploy.yml` on push to `main`.
 
-Fully static — no adapter, no server routes. The workflow uploads `./dist`.
+The site is fully static: no adapter, server endpoint, database, KV binding or
+runtime secrets. The workflow uploads `dist/`. Appointment requests compose a
+WhatsApp message for the visitor to review and send (ADR 0007).
 
-⚠️ **The workflow runs `npm run build:preview`, which sets `VERIFY_RELAX=1` and
-therefore BYPASSES the launch gate.** The live site is currently serving
-placeholder address and hours. That was a deliberate choice to get the site up,
-but it means the gate is not protecting production. Either resolve the
-outstanding facts or make the bypass an explicit, reviewed decision.
+## Gates
 
-### Verify the contact path after every deploy
+Production runs claims, script and asset linters, type checking, unit tests,
+a strict build, the built-HTML accessibility audit and Chromium/axe browser
+QA before deploying. Asset checks scan tracked files in CI.
 
-The form is the site's only conversion. A build that succeeds proves nothing
-about whether a request reaches the dentist. After each deploy, submit a real
-test request and confirm it arrives on WhatsApp. The previous architecture
-passed every build check while losing every live enquiry.
+The workflow sets `ASTRO_SITE=https://www.drkhalilkanani.com`, `ASTRO_BASE=/`
+and the existing explicit `ACK_UNVERIFIED=doctor.ar,doctor.en,tagline.ar`
+allowlist. These three fields remain unconfirmed; acknowledgement does not
+promote them to verified. Any other unacknowledged published fact blocks the
+build. Unconfirmed address, coordinates and hours remain hidden.
 
-## Environment variables
+`VERIFY_RELAX=1` is only for local/PR previews. It is never set in the
+production workflow. `npm run build` without the acknowledgement still
+refuses the three unconfirmed published fields.
 
-See `.env.example`. Nothing is committed.
+## Environment
 
-| Variable | Purpose | Required |
-|---|---|---|
-| `SUPABASE_URL` | Lead store endpoint | Yes — endpoint returns 503 without it |
-| `SUPABASE_SERVICE_KEY` | Server-only insert key. **Never client-visible** | Yes |
-| `VERIFY_RELAX` | Bypasses the launch gate. **Local preview only** | Never in CI |
+| Variable | Purpose |
+|---|---|
+| `ASTRO_SITE` | Canonical production origin and sitemap origin |
+| `ASTRO_BASE` | Hosting base path, `/` for the custom domain |
+| `ACK_UNVERIFIED` | Explicit reviewed list of unconfirmed published fields |
+| `VERIFY_RELAX` | Preview-only relaxation; forbidden in production |
 
-## Bindings and secrets — read this before deploying
+No Supabase credentials are used. `.env.example` contains only optional local
+build settings. Never put secrets or clinic data in public build variables.
 
-On Cloudflare Workers, secrets and bindings are **not** on `process.env`, not
-on `globalThis`, and not in `import.meta.env` at runtime. They come from
-`import { env } from 'cloudflare:workers'`, which is what `src/lib/env.ts`
-does. Reading them any other way fails silently and in the worst direction:
-the rate limiter decides KV is unavailable, and delivery decides it is
-unconfigured and 503s every genuine patient enquiry.
+## Pull requests
 
-Required in `wrangler.jsonc`:
+`.github/workflows/preview.yml` verifies, builds and tests the site, then uploads
+`preview-site` as a downloadable artifact. It does not deploy to GitHub Pages.
+Synthetic browser fixtures live in an OS temporary copy and are never included
+in the uploaded site.
 
-```jsonc
-"kv_namespaces": [
-  { "binding": "RATE_LIMIT_KV", "id": "<create with: wrangler kv namespace create RATE_LIMIT_KV>" }
-]
-```
+A separate Cloudflare Workers Git integration currently also reports a build
+check. It is not the GitHub Pages deployment workflow. Its failure predates
+Phase 3; see `HANDOFF.md` for investigation status. Do not add a Worker adapter,
+restore the removed appointment server, disable a content gate, or change DNS
+merely to make that separate check pass.
 
-Secrets, set once per environment:
+## After deployment
 
-```bash
-wrangler secret put SUPABASE_URL
-wrangler secret put SUPABASE_SERVICE_KEY
-```
-
-After changing `wrangler.jsonc`, regenerate types so `npm run check` stays
-accurate:
-
-```bash
-npx wrangler types
-```
-
-Without the KV binding the rate limiter falls back to a per-isolate in-memory
-map — not a durable limit — and logs a loud warning on every request. It fails
-**open** deliberately: blocking real patients is worse than letting spam
-through, which validation and the spam flag still catch.
-
-## Before first deploy
-
-1. Resolve every launch blocker — run `npm run build` to list them.
-2. Israeli legal review of the advertising posture, accessibility statement
-   and privacy policy.
-3. Create the `appointment_requests` table with RLS denying public reads;
-   the endpoint is insert-only. Columns include `status`
-   (`new` | `spam_suspected`) and `spam_signal` — filter the clinic's lead
-   view on `status = 'new'` and triage the rest rather than discarding them.
-4. Bind `RATE_LIMIT_KV` and set both secrets (above), then `npx wrangler types`.
-5. Enable a strict CSP via Astro's CSP API — there are no third-party scripts,
-   fonts or pixels, so the policy can be tight.
-6. Verify `siteUrl` in `src/data/clinic.ts` matches the real domain; sitemap
-   and canonicals derive from it.
-
-## After deploy
-
-1. Create the Google Business Profile — **single-script name** (dual-script
-   names were banned 2026-08-10). Set the "Languages spoken" attribute.
-2. Claim the Waze place.
-3. Submit the sitemap in Search Console; verify all three locales index.
-4. Confirm the form delivers end to end, and that a lead actually lands.
+1. Confirm the production workflow succeeded for the intended `main` commit.
+2. Verify `/he/`, `/ar/`, `/en/`, contact pages, sitemap, canonical URLs and
+   self-hosted assets on the real domain.
+3. Check phone/WhatsApp targets, form validation, responsive layout and axe.
+   Intercept external handoffs for automated tests so no test enquiry is sent.
+4. A human real-device check should confirm phone/WhatsApp app opening. Sending
+   a real test enquiry to the clinic requires explicit authorization.
+5. Keep owner verification, native-language and legal-review items open in
+   `HANDOFF.md` until actually completed.
 
 ## Rollback
 
-Static output — redeploy the previous build. The only stateful dependency is
-the Supabase table, which is append-only from the site's side.
+Revert the offending change on `main` and let the full gated workflow redeploy.
+There is no website database to roll back. Do not return quarantined patient
+media to the repository when selecting or reverting a historical commit.

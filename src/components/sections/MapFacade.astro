@@ -1,0 +1,129 @@
+---
+/**
+ * Click-to-load map facade.
+ *
+ * ── WHY A FACADE AND NOT AN EMBED ─────────────────────────────────────────
+ * This site contacts zero third parties on load. That is what lets it ship
+ * without a cookie banner and is the foundation of its Amendment 13 posture
+ * (Protection of Privacy Law, in force 14 Aug 2025). A Google Maps iframe
+ * placed in the page would contact Google, set cookies and pull several
+ * hundred kilobytes before the visitor ever asked to see a map.
+ *
+ * So nothing is loaded until the visitor presses the button. Until then this
+ * is entirely local: our own markup, our own colours, no network at all. The
+ * button says plainly what pressing it does, because a visitor who has not
+ * been told is not consenting to anything.
+ *
+ * The iframe is created in JavaScript rather than sitting in the HTML with a
+ * swapped `src`, so nothing about it — not even a preconnect or a DNS
+ * lookup — exists in the document until the press.
+ *
+ * ── WHY IT IS NOT THE PRIMARY WAY TO NAVIGATE ─────────────────────────────
+ * The Maps and Waze buttons above it are. Someone driving to a dental clinic
+ * wants turn-by-turn directions in their own app, not a small square of map
+ * on a website. The facade is for orientation — "which part of the village
+ * is this?" — which is a real but secondary need.
+ *
+ * ── HIDES ITSELF WITHOUT COORDINATES ──────────────────────────────────────
+ * Renders nothing until the owner confirms a map pin. A map centred on
+ * (0, 0) points at the Atlantic Ocean, and a map centred on a guessed pin is
+ * worse — it sends patients somewhere with total confidence.
+ */
+import { type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { clinic, hasGeo } from '../../data/clinic';
+import Icon from '../primitives/Icon.astro';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const { lat, lng } = clinic.address.geo;
+
+/**
+ * The classic `output=embed` form. It needs no API key, no billing account
+ * and no Google Cloud project — one fewer credential for a solo clinic to
+ * own, rotate and eventually lose.
+ */
+const embedSrc = `https://www.google.com/maps?q=${lat},${lng}&z=16&hl=${locale}&output=embed`;
+---
+
+{
+  hasGeo() && (
+    <div class="mt-6">
+      <div
+        id="map-facade"
+        class="relative overflow-hidden rounded-[var(--radius-media)] border border-[var(--color-line)] bg-[var(--color-haze)]"
+        style="aspect-ratio: 16 / 9"
+      >
+        {/* Local placeholder: a tinted field with a pin. No tiles, no
+            requests — this is drawn with the same tokens as the rest of the
+            page rather than pretending to be a screenshot of a map. */}
+        <div
+          aria-hidden="true"
+          class="absolute inset-0"
+          style="background:
+            radial-gradient(28rem 18rem at 50% 42%, var(--color-mist) 0%, transparent 70%),
+            repeating-linear-gradient(45deg, transparent 0 22px, color-mix(in srgb, var(--color-line) 55%, transparent) 22px 23px);"
+        />
+
+        <div class="absolute inset-0 flex flex-col items-center justify-center gap-4 p-6 text-center">
+          <span class="flex size-12 items-center justify-center rounded-full bg-[var(--color-porcelain)] text-[var(--color-signal)] ring-1 ring-[var(--color-line)]">
+            <Icon name="map-pin" size={24} />
+          </span>
+
+          <button
+            type="button"
+            id="map-facade-load"
+            class="inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-[var(--color-ink)] px-6 text-[var(--text-sm)] font-semibold text-white transition-[background-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-[var(--color-ink-deep)] active:translate-y-px"
+          >
+            {t('map.load')}
+          </button>
+
+          {/* Said before the press, not after. */}
+          <p class="max-w-sm text-[var(--text-sm)] leading-relaxed text-[var(--color-muted)]">
+            {t('map.privacy')}
+          </p>
+        </div>
+      </div>
+
+      <script is:inline define:vars={{ embedSrc, frameTitle: t('map.frameTitle') }}>
+        (() => {
+          const container = document.getElementById('map-facade');
+          const button = document.getElementById('map-facade-load');
+          if (!container || !button) return;
+
+          button.addEventListener(
+            'click',
+            () => {
+              const frame = document.createElement('iframe');
+              frame.src = embedSrc;
+              // Named, because an unlabelled iframe is an unlabelled region
+              // that a screen reader announces as "frame".
+              frame.title = frameTitle;
+              frame.loading = 'lazy';
+              frame.referrerPolicy = 'no-referrer';
+              frame.setAttribute('allowfullscreen', '');
+              frame.className = 'map-frame';
+              frame.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;border:0';
+              // Fade up only once tiles have actually painted, so the
+              // placeholder is not swapped for a white rectangle while the
+              // network works. If load never fires, a timeout shows it
+              // anyway — a permanently invisible map is the worse failure.
+              const reveal = () => frame.classList.add('is-loaded');
+              frame.addEventListener('load', reveal, { once: true });
+              setTimeout(reveal, 4000);
+              container.replaceChildren(frame);
+              // Focus follows the press: the control that had focus has just
+              // been removed from the document.
+              frame.focus();
+            },
+            { once: true },
+          );
+        })();
+      </script>
+    </div>
+  )
+}

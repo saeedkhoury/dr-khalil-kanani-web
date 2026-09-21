@@ -417,11 +417,20 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
       // Opening in a new tab keeps the site (and the success state) available.
       // If a popup blocker intervenes, navigate in place instead — never leave
       // the visitor with a dead button.
-      const opened = window.open(url, '_blank', 'noopener,noreferrer');
+      // noopener makes window.open return null even when the tab opens.
+      // Open a blank same-origin tab first so popup detection is meaningful,
+      // then sever its opener before navigating to WhatsApp.
+      const opened = window.open('', '_blank');
       if (!opened) {
         window.location.href = url;
         return;
       }
+      opened.opener = null;
+      const referrer = opened.document.createElement('meta');
+      referrer.name = 'referrer';
+      referrer.content = 'no-referrer';
+      opened.document.head.appendChild(referrer);
+      opened.location.replace(url);
 
       form.hidden = true;
       success.hidden = false;

@@ -45,7 +45,25 @@ Never populate a credential, address, opening hour, price or qualification that
 has not been confirmed in writing by the owner. `doctor.credentials` is empty
 on purpose — discovery found no verifiable qualifications in any public source.
 
-### 3.2 Never introduce a prohibited medical claim
+### 3.2 Never commit media you have not opened
+
+**`git add -A` is banned for anything that could include media.** Stage files
+by path, or run `npm run lint:assets` first.
+
+Every image must be registered in `src/data/media.ts` with a category and alt
+text in three languages before it can be committed. A pre-commit hook
+(`.githooks/pre-commit`) enforces this and CI re-checks it.
+
+No image containing a patient, any part of a patient, or a before/after
+comparison may ever be registered — not with consent, not cropped, not
+anonymised. Move such files to `.private-assets/` (gitignored).
+
+This rule exists because thirteen patient before/after images reached the
+public repository in a single unreviewed `git add -A`. The guard cannot
+recognise a patient photograph; it makes skipping the look impossible.
+See docs/ASSETS.md.
+
+### 3.3 Never introduce a prohibited medical claim
 
 Israeli law (**תקנות רופאי השיניים (פרסומת אסורה), תשס"ט-2009**) makes it a
 **criminal** matter for a dentist to advertise:
@@ -83,8 +101,30 @@ npm run build       # includes the launch gate and locale-parity gate
 | **Locale parity** | A treatment existing in one language but not all three | `src/lib/verify.ts` via `src/lib/content.ts` |
 | **Claims linter** | Prohibited advertising patterns in he/ar/en | `scripts/lint-claims.mjs` |
 | **Mixed-script linter** | Cyrillic/Greek homoglyphs inside Hebrew or Arabic text | `scripts/lint-mixed-scripts.mjs` |
+| **Asset guard** | Committing an image nobody has opened and classified | `scripts/check-assets.mjs` + `.githooks/pre-commit` |
+| **Accessibility audit** | Heading skips, duplicate ids, missing alt, unnamed controls, wrong `lang`/`dir` — in the **built** HTML | `scripts/audit-html.mjs`, `npm run lint:a11y` |
+| **Unit tests** | Regressions in config, locales, contact URLs, gating | `npm test` |
 
-`VERIFY_RELAX=1` bypasses the launch gate for **local preview only**. Never in CI.
+Heading order is not a style preference here. IS 5568 promotes WCAG 2.4.10
+Section Headings to **mandatory at AA** in Israel, where WCAG itself treats it
+as AAA — so a skipped level is a conformance failure. The audit runs against
+`dist/` because a component can be correct and still emit a duplicate id once
+it renders three times on one page. It runs in both workflows and blocks the
+deploy.
+
+**`VERIFY_RELAX=1` is preview-only.** It disables the gate entirely and must
+never touch production — it did once, and the live site shipped unverified data
+for days while the gate appeared to be protecting it.
+
+Production uses **`ACK_UNVERIFIED`** instead: a comma-separated allowlist of
+the exact fields knowingly shipped unverified. A blanket bypass absorbs
+whatever placeholder appears next; an allowlist fails the moment an
+unacknowledged field shows up. The set can only shrink or be consciously
+extended.
+
+The gate also distinguishes *published* from *hidden* facts. An unverified
+address is guarded by `hasAddress()` and never rendered, so it warns. An
+unverified Arabic spelling of a real person's name IS rendered, so it blocks.
 
 ---
 
@@ -200,14 +240,19 @@ Every file needs a reason to exist. Never create `temp`, `new`, `final2`,
 
 ---
 
-## 10. Definition of done
+## 11. Definition of done
 
 - [ ] `npm run verify` passes
 - [ ] `npm run build` passes (with the launch gate, not `VERIFY_RELAX`)
+- [ ] `npm test` passes
+- [ ] `npm run lint:a11y` passes against the fresh build
 - [ ] Verified in **all three locales**, both directions
 - [ ] Verified at 375px and desktop
 - [ ] axe-core: zero violations
-- [ ] Heading order has no skips
+- [ ] Heading order has no skips (`npm run lint:a11y` proves this mechanically)
+- [ ] Anything claimed as *visually* verified was actually looked at. If it was
+      not, say so — `docs/QA-CHECKLIST.md` is the list of what only a person
+      can check
 - [ ] No new medical claim introduced
 - [ ] No unverified fact promoted to verified
 - [ ] `HANDOFF.md` reflects reality

@@ -12,11 +12,13 @@
  */
 import { localizePath, type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
+import { Image } from 'astro:assets';
 import { doctor, hasCredentials } from '../../data/doctor';
+import { portrait } from '../../data/media';
+import { resolveImage } from '../../lib/images';
 import { clinic } from '../../data/clinic';
 import Icon from '../primitives/Icon.astro';
 import Button from '../primitives/Button.astro';
-import Logo from '../primitives/Logo.astro';
 
 interface Props {
   locale: Locale;
@@ -25,28 +27,42 @@ interface Props {
 }
 const { locale, standalone = false } = Astro.props;
 const t = useTranslations(locale);
+
+// Portrait comes from the media manifest, resolved to a real asset. Missing
+// file -> no portrait, rather than a broken image on a doctor's page.
+const portraitAsset = portrait ? resolveImage(portrait.file) : undefined;
 ---
 
 <section class="section" aria-labelledby="doctor-heading">
   <div class="shell reveal reveal-soft grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-14">
     <div>
-      <div
-        class="flex aspect-[4/5] max-w-xs items-center justify-center rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-mist)]"
-      >
-        {
-          doctor.portrait ? (
-            <img
-              src={doctor.portrait}
-              alt={clinic.doctor[locale]}
-              width="320"
-              height="400"
-              class="size-full rounded-[var(--radius-card)] object-cover"
+      {
+        portrait && portraitAsset ? (
+          <Image
+            src={portraitAsset}
+            alt={portrait.alt[locale]}
+            widths={[320, 480, 640]}
+            sizes="(min-width: 1024px) 24vw, 60vw"
+            loading="lazy"
+            class="media aspect-[4/5] max-w-xs"
+          />
+        ) : (
+          /* No portrait yet. Rather than repeat the logo mark a third time on
+             one page, this states the doctor's name at scale — which is the
+             actual subject of the section — over the surface ladder. It reads
+             as a considered panel, not an empty frame. */
+          <div class="flex aspect-[4/5] max-w-xs flex-col justify-end rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-mist)] p-6">
+            <p class="eyebrow">{clinic.tagline[locale]}</p>
+            <p class="mt-2 text-[var(--text-2xl)] font-light leading-tight text-[var(--color-ink)]">
+              {clinic.doctor[locale]}
+            </p>
+            <span
+              aria-hidden="true"
+              class="mt-4 block h-px w-14 bg-[var(--color-signal)]"
             />
-          ) : (
-            <Logo size={96} />
-          )
-        }
-      </div>
+          </div>
+        )
+      }
     </div>
 
     <div>

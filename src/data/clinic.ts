@@ -137,6 +137,31 @@ export const clinic = {
     googleBusiness: '',
   },
 
+  /**
+   * Google review aggregate.
+   *
+   * The RATING and COUNT only — never individual reviews. Israeli dental
+   * advertising regulations prohibit publishing patient identities, so quotes,
+   * names and dates stay on Google where the patient published them
+   * (ADR 0005). An aggregate is Google's own published figure about the
+   * business, not a patient's identity.
+   *
+   * These must be copied from the live Google Business Profile, never
+   * estimated. Leave at null and the block does not render.
+   *
+   * NOTE: do NOT mirror these into AggregateRating structured data. Google
+   * rules self-controlled review markup ineligible for stars and it risks a
+   * manual action. See src/lib/schema.ts.
+   */
+  googleRating: {
+    /** e.g. 4.9 — as displayed on the profile. */
+    value: null as number | null,
+    /** e.g. 27 */
+    count: null as number | null,
+    /** When these numbers were last copied across. */
+    checkedOn: '' as string,
+  },
+
   /** Production origin. Owner must confirm the domain. */
   siteUrl: 'https://example.invalid',
 } as const;
@@ -152,7 +177,22 @@ export const clinic = {
  */
 export const VERIFICATION: Record<
   string,
-  { tier: Verification; blocking: boolean; note?: string }
+  {
+    tier: Verification;
+    blocking: boolean;
+    note?: string;
+    /**
+     * Whether the value is actually RENDERED while unverified.
+     *
+     * `false` means a guard (hasAddress, hasHours, hasGeo...) hides it, so the
+     * visitor sees nothing rather than something false. Absent information is
+     * not a lie, so those warn instead of failing a production build.
+     *
+     * Defaults to true — a field must opt IN to being treated as hidden, so
+     * forgetting the flag fails safe.
+     */
+    published?: boolean;
+  }
 > = {
   'doctor.he': { tier: 'verified', blocking: true, note: 'Logo + flyer + Instagram' },
   'doctor.ar': {
@@ -180,11 +220,16 @@ export const VERIFICATION: Record<
     note: 'Flyer + IG bio + post footer. WhatsApp presence NOT yet confirmed.',
   },
   email: { tier: 'placeholder', blocking: false, note: 'No published address found.' },
-  'address.street': { tier: 'placeholder', blocking: true, note: 'Owner must supply.' },
+  'address.street': { tier: 'placeholder', blocking: true, published: false, note: 'Owner must supply. hasAddress() hides it.' },
   'address.locality': { tier: 'owner', blocking: false, note: 'IG address + post footer' },
-  'address.geo': { tier: 'placeholder', blocking: true, note: 'Needs confirmed map pin.' },
-  hours: { tier: 'placeholder', blocking: true, note: 'Owner must supply. Never guess.' },
-  siteUrl: { tier: 'placeholder', blocking: true, note: 'Owner must confirm domain.' },
+  'address.geo': { tier: 'placeholder', blocking: true, published: false, note: 'Needs confirmed map pin. hasGeo() hides Maps/Waze.' },
+  hours: { tier: 'placeholder', blocking: true, published: false, note: 'Owner must supply. hasHours() hides the block.' },
+  siteUrl: {
+    tier: 'placeholder',
+    blocking: true,
+    published: false,
+    note: 'Overridden by ASTRO_SITE in CI, so the placeholder never ships.',
+  },
   'social.instagram': { tier: 'verified', blocking: false },
 };
 
@@ -220,6 +265,12 @@ export function hasGeo(): boolean {
 /** True once a Google Business Profile URL has been supplied. */
 export function hasGoogleProfile(): boolean {
   return clinic.social.googleBusiness.trim() !== '';
+}
+
+/** True once a real rating AND count have been copied from the profile. */
+export function hasGoogleRating(): boolean {
+  const r = clinic.googleRating;
+  return typeof r.value === 'number' && typeof r.count === 'number' && r.count > 0;
 }
 
 /**
