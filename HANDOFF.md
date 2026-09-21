@@ -12,9 +12,17 @@ Current repository state. Not a history — see `CHANGELOG.md` for that.
 `main`).
 
 Phase 3 implementation and automated browser QA are complete on
-`feature/phase-3-premium-upgrade`. It is ready for draft PR review, **not merged
+`feature/phase-3-premium-upgrade`, pushed for review in
+[draft PR #1](https://github.com/saeedkhoury/dr-khalil-kanani-web/pull/1), **not merged
 or deployed**. Local `main` remains at `fc5c91b`; production has not been changed
 by this work. Owner verification and the manual checks below remain outstanding.
+
+The PR also receives a separate `Workers Builds: dr-khalil-kanani-web` check
+from Cloudflare. It failed on `9c6f440`; GitHub exposes no failure log, and the
+linked Cloudflare dashboard requires sign-in. Its cause is unverified. This is
+separate from the repository's GitHub Pages workflows and needs investigation
+in the Cloudflare account before treating all PR checks as green. No hosting
+settings were changed here.
 
 ### ⚠️ Open safety item — read `docs/GIT-HISTORY-REMEDIATION.md`
 

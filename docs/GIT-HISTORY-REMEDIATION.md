@@ -7,6 +7,11 @@ with the facts in front of you rather than under pressure.
 
 **Written:** 2026-09-21
 
+**Phase 3 follow-up:** the branch has now been pushed and
+[draft PR #1](https://github.com/saeedkhoury/dr-khalil-kanani-web/pull/1) is open.
+The preservation prerequisite below is complete. No visibility change or
+history rewrite has been performed; the remediation decision remains open.
+
 ---
 
 ## 1. What is actually exposed
@@ -103,8 +108,8 @@ git push --force --mirror
 | Risk | Severity | Mitigation |
 |---|---|---|
 | Every commit SHA after the rewrite point changes | Certain | Only `main` exists and only you have a clone. Re-clone afterwards; do not `git pull` into the old copy. |
-| Any un-pushed local work is stranded | High if it exists | Push or stash everything first. **The current `feature/phase-3-premium-upgrade` branch is unpushed — push it before any rewrite.** |
-| Open PRs break | None today | No open PRs. |
+| Any un-pushed local work is stranded | High if it exists | Push or stash everything first. Phase 3 has now been pushed; check for any newer local work. |
+| Open PRs break | PR #1 is now open | Preserve its work and plan to recreate/rebase the PR after rewriting. |
 | Pages deployment re-runs | Low | The workflow rebuilds from source; content is unchanged. |
 | Backup taken after the rewrite is worthless | High | Take the backup first, as above. |
 | The rewrite looks complete but is not | Medium | Verify: `git log --all --oneline -- 'src/assets/images/*'` must print nothing, in a **fresh** clone. |
@@ -118,8 +123,7 @@ value to you.
 
 ## 4. Recommended sequence
 
-1. **Push `feature/phase-3-premium-upgrade`** so no work is stranded. *(Safe,
-   and needed regardless.)*
+1. **Push `feature/phase-3-premium-upgrade`** so no work is stranded. **Done.**
 2. **Tell Dr. Kanani** what happened, in plain terms. He cannot take legal
    advice about an exposure he has not been told about.
 3. **Confirm the Pages/private-repo plan question**, then **Option A**.
