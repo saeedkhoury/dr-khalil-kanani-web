@@ -6,8 +6,8 @@
 |---|---|---|
 | Framework | **Astro 7.3** | Content site, not an app. Ships zero JS by default, which serves the two hardest constraints: mobile Core Web Vitals and accessibility. Content Collections + Zod make trilingual content a build-time contract. |
 | Styling | **Tailwind 4.3** | Native logical properties (`inline-s-*`/`inline-e-*`) — exactly what RTL needs, no plugin. |
-| Hosting | **Cloudflare Workers** | Turnstile, KV rate limiting, generous free tier, first-class Astro support since Cloudflare acquired Astro (Jan 2026). One-line swap to Vercel. |
-| Store | **Supabase Postgres**, one table | Supabase Studio doubles as the clinic's lead inbox — which is why no admin dashboard is built. |
+| Hosting | **GitHub Pages** (static) | Where the site is actually deployed, at www.drkhalilkanani.com. No adapter — the build is plain static output, so what is built is what is served. |
+| Store | **None** | The form hands off to WhatsApp (ADR 0007); the site stores nothing at all. |
 | Motion | **motion** (2.3kb) | `framer-motion` renamed to `motion`; the vanilla API avoids pulling React into a zero-JS site. |
 | Fonts | Noto Sans Hebrew / Arabic / Latin | Modular but cross-script harmonised. Self-hosted and subset by Astro's Fonts API. |
 
@@ -25,8 +25,12 @@ Translation drift becomes a failed build, not a silent 404.
 
 ## Rendering
 
-Static by default. Exactly one server route (`/api/appointment-request/`) with
-`prerender = false`. Client JS is ~2.9KB inline with zero external JS files.
+**Fully static. No server routes, no adapter.**
+
+An adapter was previously configured and split the build into `dist/client` +
+`dist/server`. The deploy workflow uploaded only `dist/client`, so the form
+endpoint was never deployed and every live request 405'd. Removing the adapter
+removes that whole class of mismatch: `dist/` is the site.
 
 ## Directory map
 

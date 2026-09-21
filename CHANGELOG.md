@@ -2,6 +2,35 @@
 
 ## [Unreleased]
 
+### Phase 2
+
+**Fixed — the live site was losing every appointment request.**
+`POST /api/appointment-request/` returned 405 in production. GitHub Pages is
+static-only; the Cloudflare adapter placed the endpoint in `dist/server`, which
+the deploy workflow never uploaded. Requests posted into a void.
+
+- Form now composes a WhatsApp message to the clinic's verified mobile and
+  hands off to it — reaching the dentist directly (ADR 0007, supersedes 0003)
+- Cloudflare adapter removed; build is flat static `dist/`, so what is built is
+  what is served. Workflow upload path corrected.
+- Dead server modules deleted; `lib/validation.ts` -> `lib/form-options.ts`
+- Nothing is stored by the site now, which removes the Amendment 13 database
+  duties entirely
+
+**Added**
+- Motion language: one easing, four duration tokens, CSS-only stagger, and a
+  **fail-visible** guarantee (content visible by default; hidden only under
+  `.js-reveal` with a 2s failsafe) so a script failure can never blank a section
+- Hero entrance choreography; scroll reveals extended from 2 to 14 elements
+- Header scroll state (hairline + tint, never a shadow)
+- `FindTheClinic` — location, hours, Google Maps and Waze, all behind the
+  verified-address guard; no embedded map, so the site still contacts zero
+  third parties
+- `PatientFeedback` — a link-out to the clinic's Google profile. NOT a
+  testimonials block: no names, quotes or ratings, because Israeli law
+  prohibits publishing patient identities (ADR 0005)
+- Hover/focus states on components that had none
+
 ### Added
 - Astro 7 + Tailwind 4 foundation with Cloudflare adapter
 - Trilingual he/ar/en routing with RTL support and location-preserving switcher

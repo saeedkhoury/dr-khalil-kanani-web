@@ -138,6 +138,16 @@ export const ui = {
     'legal.illustrative': 'תמונה להמחשה בלבד — אינה מטופל/ת של המרפאה.',
     'legal.reviewedBy': 'נבדק על ידי',
 
+    'location.title': 'איך מגיעים למרפאה',
+    'location.subtitle': 'המרפאה נמצאת בג׳דיידה-מכר. אפשר לנווט ישירות מכאן.',
+    'location.pendingTitle': 'פרטי הכתובת המדויקת',
+    'location.pendingBody': 'לקבלת הכתובת המדויקת והוראות הגעה, אנא התקשרו או כתבו לנו בוואטסאפ.',
+    'action.waze': 'ניווט ב-Waze',
+    'action.googleMaps': 'פתיחה ב-Google Maps',
+    'feedback.title': 'חוות דעת של מטופלים',
+    'feedback.body': 'חוות דעת על המרפאה מתפרסמות בפרופיל Google של המרפאה. אפשר לקרוא אותן שם.',
+    'feedback.cta': 'קריאת חוות הדעת ב-Google',
+
     'footer.rights': 'כל הזכויות שמורות',
 
     'error.404.title': 'הדף לא נמצא',
@@ -265,6 +275,16 @@ export const ui = {
       'المعلومات في هذا الموقع عامة فقط ولا تشكّل استشارة أو توصية طبية. كل علاج يُحدَّد بشكل شخصي بعد الفحص.',
     'legal.illustrative': 'صورة توضيحية فقط — ليست لمريض/ة في العيادة.',
     'legal.reviewedBy': 'روجعت بواسطة',
+
+    'location.title': 'كيف تصلون إلى العيادة',
+    'location.subtitle': 'العيادة في الجديدة-المكر. يمكنكم التوجّه إليها مباشرة من هنا.',
+    'location.pendingTitle': 'تفاصيل العنوان الدقيق',
+    'location.pendingBody': 'للحصول على العنوان الدقيق وإرشادات الوصول، يُرجى الاتصال أو المراسلة عبر واتساب.',
+    'action.waze': 'التنقّل عبر Waze',
+    'action.googleMaps': 'فتح في Google Maps',
+    'feedback.title': 'آراء المرضى',
+    'feedback.body': 'تُنشر الآراء حول العيادة في ملف Google الخاص بها. يمكنكم قراءتها هناك.',
+    'feedback.cta': 'قراءة الآراء على Google',
 
     'footer.rights': 'جميع الحقوق محفوظة',
 
@@ -394,6 +414,16 @@ export const ui = {
       'Information on this site is general only and is not medical advice or a recommendation. Every treatment is determined individually after examination.',
     'legal.illustrative': 'Illustrative image only — not a patient of the clinic.',
     'legal.reviewedBy': 'Reviewed by',
+
+    'location.title': 'How to reach the clinic',
+    'location.subtitle': 'The clinic is in Jadeidi-Makr. You can navigate straight there from here.',
+    'location.pendingTitle': 'Exact address details',
+    'location.pendingBody': 'For the exact address and directions, please call us or send a WhatsApp message.',
+    'action.waze': 'Navigate with Waze',
+    'action.googleMaps': 'Open in Google Maps',
+    'feedback.title': 'Patient feedback',
+    'feedback.body': 'Reviews of the clinic are published on its Google profile. You can read them there.',
+    'feedback.cta': 'Read reviews on Google',
 
     'footer.rights': 'All rights reserved',
 

@@ -131,27 +131,51 @@ const graph = buildGraph({ locale, pathname, title: fullTitle, description, brea
     {!hideActionBar && <StickyActionBar locale={locale} />}
 
     <script>
-      // Scroll reveal — subtle tier only. Motion is 2.3kb for this API and the
-      // page renders fully without it, so this is pure progressive enhancement.
+      // Scroll reveal + header state.
+      //
+      // CSS owns the transition and the stagger (see the motion language block
+      // in global.css); this only toggles a class. Motion's inView is ~1kb for
+      // this API and the page renders fully without it, so it stays pure
+      // progressive enhancement.
       import { inView } from 'motion';
 
       const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       const targets = document.querySelectorAll<HTMLElement>('.reveal');
 
-      if (reduced) {
-        targets.forEach((el) => el.classList.add('is-in'));
-      } else {
+      // Opt IN to the hidden state only once observers are registered, so a
+      // failure above this line leaves the page fully visible. See the
+      // fail-visible note in global.css.
+      if (!reduced && 'IntersectionObserver' in window) {
+        document.documentElement.classList.add('js-reveal');
         targets.forEach((el) => {
-          inView(
-            el,
-            () => {
-              el.classList.add('is-in');
-              el.style.transition =
-                'opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out)';
-            },
-            { amount: 0.15 },
-          );
+          // A section that re-hides on scroll-back is a distraction, not a
+          // delight, so this fires once and stops observing.
+          inView(el, () => el.classList.add('is-in'), { amount: 0.15 });
         });
+
+        // Failsafe: whatever happens, nothing stays hidden. If an observer
+        // never fires (throttled tab, odd viewport, future refactor), reveal
+        // everything after 2s rather than risk a blank section.
+        window.setTimeout(() => {
+          targets.forEach((el) => el.classList.add('is-in'));
+        }, 2000);
+      }
+
+      // Header gains a hairline + surface tint once the page scrolls, so it
+      // separates from content without a drop shadow. Passive listener, and a
+      // single dataset write guarded by a change check — no layout reads.
+      const header = document.querySelector<HTMLElement>('.site-header');
+      if (header) {
+        let scrolled = false;
+        const sync = () => {
+          const next = window.scrollY > 24;
+          if (next !== scrolled) {
+            scrolled = next;
+            header.dataset.scrolled = String(next);
+          }
+        };
+        sync();
+        window.addEventListener('scroll', sync, { passive: true });
       }
     </script>
   </body>

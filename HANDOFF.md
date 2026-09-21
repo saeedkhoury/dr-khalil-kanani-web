@@ -2,14 +2,26 @@
 
 Current repository state. Not a history — see `CHANGELOG.md` for that.
 
-**Last updated:** 2026-09-20
+**Last updated:** 2026-09-21
 
 ---
 
 ## Status
 
-Phase 1–5 built and verified. The site runs, builds, and passes its gates.
-**It cannot be deployed to production yet**, by design — see Blockers.
+**LIVE** at https://www.drkhalilkanani.com (GitHub Pages, deploys on push to
+`main`). Phase 2 polish in progress.
+
+⚠️ The deploy workflow runs `build:preview` (`VERIFY_RELAX=1`), which
+**bypasses the launch gate**. The live site is serving placeholder address and
+hours. Either resolve the outstanding facts or make that bypass an explicit,
+reviewed decision — right now the gate is not protecting production.
+
+### Fixed this session (was losing every enquiry)
+
+`POST /api/appointment-request/` returned **405** in production. GitHub Pages
+is static-only; the Cloudflare adapter put the endpoint in `dist/server`, which
+the workflow never uploaded. The form now hands off to WhatsApp instead
+(ADR 0007), the adapter is gone, and the build is plain static output.
 
 ## What exists
 
@@ -29,8 +41,9 @@ Phase 1–5 built and verified. The site runs, builds, and passes its gates.
 | hreflang / canonical | language-only codes, x-default→he, self-referencing |
 | Language switcher | preserves location page-to-page |
 | Form validation + error summary | inline errors, focus moves, links to fields |
-| Endpoint defences | cross-origin 403, bad input 422, rate limit 429, unconfigured 503 |
-| Spam signals | flagged `spam_suspected` and stored — never silently dropped |
+| Form delivery | Composes a WhatsApp message to the verified mobile; he + ar verified |
+| Form validation | Empty submit raises 3 linked errors and focuses the summary |
+| Motion | Fail-visible: all 14 reveals get `.is-in` within 2s even if observers never fire |
 | Sticky mobile bar | 35px clearance, never covers footer |
 | Client JS | ~2.9KB inline, **zero external JS files** |
 | Fonts per page | he 31.5KB · en 35KB · ar 162KB (was 393KB everywhere) |
@@ -55,24 +68,29 @@ Also blocking, but not build-enforced:
 - `doctor.credentials` is empty — no verifiable qualifications were found in any
   public source. Nothing may be written there without owner confirmation.
 - `ACCESSIBILITY_CONTACT` in `src/data/legal.ts` needs a real name/phone/email.
-- Delivery is unconfigured: `SUPABASE_URL` / `SUPABASE_SERVICE_KEY`. The endpoint
-  returns 503 and logs loudly rather than silently discarding an enquiry.
-  On Cloudflare these must be set with `wrangler secret put` — they are read
-  via `cloudflare:workers`, not `process.env`. See docs/DEPLOYMENT.md.
-- `RATE_LIMIT_KV` is not bound. Without it the limiter falls back to a
-  per-isolate map and warns on every request.
+- **Google Business Profile URL** (`clinic.social.googleBusiness`). Until it is
+  set, the PatientFeedback link-out does not render. Reviews live on Google by
+  legal necessity (ADR 0005), so this is the clinic's only review surface.
+- **Clinic photography** (9–12 images: interior, rooms, equipment, reception —
+  no patients) and a doctor portrait. The gallery is not yet built; it is the
+  largest remaining visual gap.
 
 ## Known gaps (not blockers)
 
 - 4 Tier-2 treatments not yet written: crowns, fillings, extractions, cleaning.
+- Clinic gallery not built — blocked on real photography, not on code.
+- Motion could not be VISUALLY verified: the browser pane runs hidden in this
+  environment, which pauses the document timeline and IntersectionObserver.
+  The mechanism and the fail-visible guarantee were verified programmatically;
+  the visual result needs a human eye on a real screen.
 - No clinic photography. The hero uses a geometric treatment of the logo mark,
   which is honest but placeholder-ish.
 - The logo wordmark is Hebrew-only; no Arabic or English lockup exists. The UI
   works around this by using the mark plus localised HTML text.
 - No automated test suite yet (verification has been manual + axe in-browser).
-- Rate limiting falls back to in-memory without a KV binding (warns loudly).
-- The `appointment_requests` table needs `status` and `spam_signal` columns;
-  the clinic's lead view should filter `status = 'new'` and triage the rest.
+- Waze and Google Maps buttons are written but render only once
+  `address.geo` holds a confirmed pin; until then FindTheClinic shows an honest
+  "call us for the exact address" panel instead of guessing a location.
 
 ## Recommended next action
 

@@ -115,6 +115,12 @@ display type at 24px+.
 
 Text, links and buttons use `--color-ink` (`#0C5283`, 8.09:1) or darker.
 
+### Motion must fail visible
+Scroll reveals hide content by default only under `.js-reveal`, which the
+script adds **after** its observers are registered, plus a 2s failsafe that
+reveals everything regardless. Never write a reveal that depends on JS
+succeeding in order for content to be readable — a visitor may be in pain.
+
 ### Client JavaScript
 Default to zero. Before adding an island, check whether a native element does
 it: `<details>` for accordions and menus, `<dialog>` for modals, a real

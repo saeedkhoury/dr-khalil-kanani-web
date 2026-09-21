@@ -2,7 +2,21 @@
 
 Amendment 13 to the Protection of Privacy Law, 1981 — in force **14 Aug 2025**.
 
-## What is collected
+## What the site stores: nothing
+
+Since ADR 0007 the appointment form does not send anything to a server. It
+composes a WhatsApp message that the visitor sends themselves.
+
+That removes the Amendment 13 database duties entirely — there is no database,
+so there is no registration question, no retention policy to enforce, no
+deletion path to build and no security tier to maintain. From the moment the
+visitor presses send, the message lives in their WhatsApp account and the
+clinic's, under WhatsApp's own policies.
+
+The inline notice at the point of collection says exactly this. It previously
+described a server that, as deployed, did not exist.
+
+## What is entered
 
 Name, phone, preferred contact method, and optionally treatment of interest,
 preferred daypart and a free-text note.
@@ -53,13 +67,13 @@ analytics makes the banner question moot. Never Google Analytics or Meta Pixel.
 
 ## Retention
 
-Unconverted leads: deleted at **12 months**, automated. Converted leads migrate
-to the clinical system (Patient's Rights Law, 1996 — a separate regime) and are
-purged from the web store.
+Not applicable to the website: it stores nothing. Retention of an actual
+patient's record is governed by the Patient's Rights Law, 1996 and the clinic's
+own systems — a separate regime the site does not touch.
 
-**Email is not the system of record** — you cannot reliably delete from
-inboxes, forwarded threads and backups, which would make both the retention
-policy and any deletion request undeliverable.
+WhatsApp message history is held in the clinic's WhatsApp account, which is
+outside this site's control and should be covered by the clinic's own
+procedures.
 
 ## GDPR
 

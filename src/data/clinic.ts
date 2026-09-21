@@ -125,6 +125,16 @@ export const clinic = {
 
   social: {
     instagram: 'https://www.instagram.com/dr.khalil.kanani',
+    /**
+     * Google Business Profile. UNVERIFIED — no profile was found during
+     * discovery and the clinic may not have claimed one yet.
+     *
+     * This is where patient reviews live. Israeli dental advertising
+     * regulations prohibit publishing patient identities on the clinic's own
+     * site, so the site LINKS OUT here rather than republishing reviews
+     * (ADR 0005). Until this is set, the feedback block does not render.
+     */
+    googleBusiness: '',
   },
 
   /** Production origin. Owner must confirm the domain. */
@@ -200,4 +210,45 @@ export function hasHours(): boolean {
 /** True when a confirmed street address exists in the given locale. */
 export function hasAddress(locale: Locale): boolean {
   return clinic.address.street[locale].trim() !== '';
+}
+
+/** True once the owner has confirmed a map pin. Never geocode a guess. */
+export function hasGeo(): boolean {
+  return clinic.address.geo.lat !== 0 && clinic.address.geo.lng !== 0;
+}
+
+/** True once a Google Business Profile URL has been supplied. */
+export function hasGoogleProfile(): boolean {
+  return clinic.social.googleBusiness.trim() !== '';
+}
+
+/**
+ * Google Maps link.
+ *
+ * Prefers exact coordinates; falls back to a name+locality search so the link
+ * is still useful once an address exists but a pin has not been confirmed.
+ * Returns null when neither is known — a wrong map link is worse than none.
+ * (One reference site sends patients to the wrong street on every page.)
+ */
+export function mapsUrl(locale: Locale): string | null {
+  if (hasGeo()) {
+    return `https://www.google.com/maps/search/?api=1&query=${clinic.address.geo.lat},${clinic.address.geo.lng}`;
+  }
+  if (hasAddress(locale)) {
+    const q = encodeURIComponent(
+      `${clinic.address.street[locale]} ${clinic.address.locality[locale]}`.trim(),
+    );
+    return `https://www.google.com/maps/search/?api=1&query=${q}`;
+  }
+  return null;
+}
+
+/**
+ * Waze deep link. Coordinates only — Waze's address search is unreliable for
+ * Israeli Arab localities where plot numbers are used instead of street names,
+ * and sending a patient to the wrong place is the failure mode to avoid.
+ */
+export function wazeUrl(): string | null {
+  if (!hasGeo()) return null;
+  return `https://waze.com/ul?ll=${clinic.address.geo.lat},${clinic.address.geo.lng}&navigate=yes`;
 }

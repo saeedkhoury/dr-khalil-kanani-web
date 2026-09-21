@@ -10,6 +10,10 @@
  * There is no reviews section and no before/after gallery. Both are
  * prohibited for Israeli dentists — patient identities and photographs may
  * not be used in advertising. See docs/decisions/0005 and 0006.
+ *
+ * PatientFeedback is NOT a testimonials block: it links out to the clinic's
+ * Google profile, where the patient publishes, and carries no names, quotes
+ * or ratings. It renders only once a profile URL is supplied.
  */
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Hero from '../../components/sections/Hero.astro';
@@ -17,6 +21,8 @@ import TrustStrip from '../../components/sections/TrustStrip.astro';
 import TreatmentsGrid from '../../components/sections/TreatmentsGrid.astro';
 import DoctorIntro from '../../components/sections/DoctorIntro.astro';
 import FaqAccordion from '../../components/sections/FaqAccordion.astro';
+import PatientFeedback from '../../components/sections/PatientFeedback.astro';
+import FindTheClinic from '../../components/sections/FindTheClinic.astro';
 import ContactCta from '../../components/sections/ContactCta.astro';
 
 import { LOCALES, type Locale } from '../../i18n/config';
@@ -39,6 +45,8 @@ const faq = generalFaq.slice(0, 5).map((f) => ({ q: f.q[locale], a: f.a[locale] 
   <TrustStrip locale={locale} />
   <TreatmentsGrid locale={locale} treatments={treatments} limit={6} />
   <DoctorIntro locale={locale} />
+  <PatientFeedback locale={locale} />
   <FaqAccordion locale={locale} items={faq} id="home-faq" />
+  <FindTheClinic locale={locale} />
   <ContactCta locale={locale} />
 </BaseLayout>

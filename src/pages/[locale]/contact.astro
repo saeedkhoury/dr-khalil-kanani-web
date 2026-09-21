@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AppointmentForm from '../../components/islands/AppointmentForm.astro';
+import FindTheClinic from '../../components/sections/FindTheClinic.astro';
 import Icon from '../../components/primitives/Icon.astro';
 import Button from '../../components/primitives/Button.astro';
 import { LOCALES, localizePath, type Locale } from '../../i18n/config';
@@ -99,4 +100,6 @@ const dayNames: Record<Locale, Record<string, string>> = {
       <AppointmentForm locale={locale} treatments={treatments} />
     </div>
   </div>
+
+  <FindTheClinic locale={locale} />
 </BaseLayout>

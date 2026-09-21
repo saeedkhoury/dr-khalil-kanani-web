@@ -1,0 +1,189 @@
+---
+/**
+ * "How to reach the clinic" — location, hours and navigation.
+ *
+ * ── WHY THERE IS NO EMBEDDED MAP ──────────────────────────────────────────
+ * This site contacts ZERO third parties. That is not incidental — the whole
+ * Amendment 13 privacy posture, and the ability to ship without a cookie
+ * banner, rests on it. A Google Maps iframe would contact Google, set
+ * cookies and add several hundred KB before the visitor asked for a map.
+ *
+ * So navigation is offered as LINKS, not an embed. The visitor taps and
+ * their own map app opens — which is what someone actually driving to a
+ * clinic wants anyway. If an interactive map is ever wanted, it should be a
+ * click-to-load facade, never an eager embed.
+ *
+ * ── WHY EVERYTHING IS GUARDED ─────────────────────────────────────────────
+ * The street address and map pin are unverified placeholders. Rather than
+ * hide this section until they arrive, it renders what IS known (locality,
+ * phone, WhatsApp) and swaps the navigation buttons for an honest "call us
+ * for the exact address" message. A wrong map link is worse than none: one
+ * reference clinic sends patients to the wrong street on every page.
+ *
+ * Waze requires coordinates, not an address string — its address search is
+ * unreliable for Israeli Arab localities that use plot numbers rather than
+ * street names.
+ */
+import { type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import {
+  clinic,
+  telUrl,
+  whatsappUrl,
+  hasAddress,
+  hasHours,
+  mapsUrl,
+  wazeUrl,
+} from '../../data/clinic';
+import Icon from '../primitives/Icon.astro';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+
+const maps = mapsUrl(locale);
+const waze = wazeUrl();
+const canNavigate = Boolean(maps || waze);
+
+const waMessage = {
+  he: 'שלום, אשמח לקבל את הכתובת המדויקת של המרפאה.',
+  ar: 'مرحبًا، أودّ الحصول على العنوان الدقيق للعيادة.',
+  en: 'Hello, could you send me the exact address of the clinic?',
+}[locale];
+
+const dayNames: Record<Locale, Record<string, string>> = {
+  he: { Sunday: 'ראשון', Monday: 'שני', Tuesday: 'שלישי', Wednesday: 'רביעי', Thursday: 'חמישי', Friday: 'שישי', Saturday: 'שבת' },
+  ar: { Sunday: 'الأحد', Monday: 'الإثنين', Tuesday: 'الثلاثاء', Wednesday: 'الأربعاء', Thursday: 'الخميس', Friday: 'الجمعة', Saturday: 'السبت' },
+  en: { Sunday: 'Sunday', Monday: 'Monday', Tuesday: 'Tuesday', Wednesday: 'Wednesday', Thursday: 'Thursday', Friday: 'Friday', Saturday: 'Saturday' },
+};
+
+const actionClass =
+  'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[var(--radius-btn)] ' +
+  'px-5 text-[var(--text-sm)] font-semibold no-underline ' +
+  'transition-[background-color,border-color,transform] duration-[var(--dur-fast)] ' +
+  'ease-[var(--ease-out)] active:translate-y-px';
+---
+
+<section class="section bg-[var(--color-mist)]" aria-labelledby="location-heading">
+  <div class="shell">
+    <div class="max-w-2xl">
+      <p class="eyebrow flex items-center gap-1.5">
+        <Icon name="map-pin" size={15} />
+        {clinic.address.locality[locale]}
+      </p>
+      <h2 id="location-heading" class="mt-2">{t('location.title')}</h2>
+      <p class="mt-3 text-[var(--text-lg)] text-[var(--color-muted)]">{t('location.subtitle')}</p>
+    </div>
+
+    <div class="reveal reveal-soft mt-10 grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:gap-10">
+      <!-- Details -->
+      <div class="rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-6 sm:p-8">
+        <dl class="grid gap-6 sm:grid-cols-2">
+          <div>
+            <dt class="eyebrow">{t('contact.addressLabel')}</dt>
+            <dd class="mt-1.5 flex items-start gap-2" style="margin-inline-start:0">
+              <Icon name="map-pin" size={17} class="mt-1 shrink-0 text-[var(--color-signal)]" />
+              <span>
+                {hasAddress(locale) && <>{clinic.address.street[locale]}<br /></>}
+                {clinic.address.locality[locale]}<br />
+                <span class="text-[var(--color-muted)]">{clinic.address.region[locale]}</span>
+              </span>
+            </dd>
+          </div>
+
+          <div>
+            <dt class="eyebrow">{t('contact.phoneLabel')}</dt>
+            <dd class="mt-1.5 space-y-1" style="margin-inline-start:0">
+              <a href={telUrl('landline')} class="u-ltr block no-underline hover:underline">
+                {clinic.phone.landline.display}
+              </a>
+              <a href={telUrl('mobile')} class="u-ltr block no-underline hover:underline">
+                {clinic.phone.mobile.display}
+              </a>
+            </dd>
+          </div>
+
+          {
+            hasHours() && (
+              <div class="sm:col-span-2">
+                <dt class="eyebrow">{t('contact.hoursLabel')}</dt>
+                <dd class="mt-1.5" style="margin-inline-start:0">
+                  <ul class="grid gap-1 sm:grid-cols-2" style="list-style:none;padding-inline-start:0;margin:0">
+                    {clinic.hours.map((h) => (
+                      <li class="flex justify-between gap-6 text-[var(--text-sm)]">
+                        <span class="text-[var(--color-muted)]">{dayNames[locale][h.day]}</span>
+                        <span class="u-ltr">{h.closed ? '—' : `${h.opens}–${h.closes}`}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </dd>
+              </div>
+            )
+          }
+        </dl>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex flex-col justify-center rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-haze)] p-6 sm:p-8">
+        {
+          canNavigate ? (
+            <div class="flex flex-col gap-3">
+              {maps && (
+                <a
+                  href={maps}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class={`${actionClass} bg-[var(--color-ink)] text-white hover:bg-[var(--color-ink-deep)]`}
+                >
+                  <Icon name="map-pin" size={18} />
+                  {t('action.googleMaps')}
+                </a>
+              )}
+              {waze && (
+                <a
+                  href={waze}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class={`${actionClass} border border-[var(--color-line-strong)] bg-[var(--color-porcelain)] text-[var(--color-ink)] hover:border-[var(--color-ink)]`}
+                >
+                  <Icon name="chevron" size={18} />
+                  {t('action.waze')}
+                </a>
+              )}
+            </div>
+          ) : (
+            /* Address not yet verified — say so plainly and give the two
+               channels that DO work, rather than guessing a location. */
+            <div>
+              <h3 class="text-[var(--text-base)] font-semibold">{t('location.pendingTitle')}</h3>
+              <p class="mt-2 text-[var(--text-sm)] leading-relaxed text-[var(--color-muted)]">
+                {t('location.pendingBody')}
+              </p>
+            </div>
+          )
+        }
+
+        <div class="mt-4 flex flex-col gap-3">
+          <a
+            href={telUrl('landline')}
+            class={`${actionClass} border border-[var(--color-line-strong)] bg-[var(--color-porcelain)] text-[var(--color-ink)] hover:border-[var(--color-ink)]`}
+          >
+            <Icon name="phone" size={18} />
+            <span class="u-ltr">{clinic.phone.landline.display}</span>
+          </a>
+          <a
+            href={whatsappUrl(waMessage)}
+            target="_blank"
+            rel="noopener noreferrer"
+            class={`${actionClass} bg-[var(--color-wa)] text-white hover:brightness-90`}
+          >
+            <Icon name="whatsapp" size={18} />
+            {t('action.whatsapp')}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

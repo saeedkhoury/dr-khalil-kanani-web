@@ -31,6 +31,16 @@ An entire moderation subsystem (submit → pending → approved → published) w
 not built. Trust is carried instead by the doctor, the clinic, and the clarity
 of the content.
 
+## Approved resolution (2026-09-21)
+
+The owner chose the **Google link-out**. `PatientFeedback.astro` renders a
+block pointing to the clinic's Google Business Profile — no names, no quotes,
+no ratings, no `AggregateRating` markup. It is navigation, not advertising,
+and it renders only once a profile URL is supplied.
+
+This keeps reviews where the patient publishes them and where they actually
+affect local ranking, without the clinic advertising a patient's identity.
+
 ## Instead
 
 Stand up the Google Business Profile and ask every patient equally, never

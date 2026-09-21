@@ -1,6 +1,11 @@
 # ADR 0003 — Appointment request delivery
 
-**Status:** Accepted · 2026-09-20
+**Status:** SUPERSEDED by [ADR 0007](./0007-whatsapp-handoff.md) · 2026-09-21
+
+> This decision assumed a host that runs server code. The site deployed to
+> GitHub Pages, which does not, so the endpoint was never reachable in
+> production and every live request was lost. Kept for the reasoning about
+> why email-alone was rejected — that still holds.
 
 ## Decision
 

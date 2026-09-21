@@ -42,8 +42,8 @@ const items = limit ? treatments.slice(0, limit) : treatments;
       style="list-style:none;padding-inline-start:0;margin-block-end:0"
     >
       {
-        items.map((item) => (
-          <li class="reveal">
+        items.map((item, i) => (
+          <li class="reveal" style={`--i:${i % 3}`}>
             <a
               href={localizePath(locale, `treatments/${item.data.slug}`)}
               class="group flex h-full flex-col rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-6 no-underline transition-[border-color,background-color] duration-[var(--dur-base)] ease-[var(--ease-out)] hover:border-[var(--color-signal)] hover:bg-white"

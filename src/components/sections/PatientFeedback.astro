@@ -1,0 +1,67 @@
+---
+/**
+ * Patient feedback — a LINK OUT to Google, never reviews on this site.
+ *
+ * ── WHY THIS IS NOT A TESTIMONIALS SECTION (ADR 0005) ─────────────────────
+ * Israeli law (תקנות רופאי השיניים (פרסומת אסורה), תשס"ט-2009) prohibits a
+ * dentist from advertising using a patient's name, image, likeness or any
+ * identifying information — reportedly even with the patient's consent.
+ * Violation is criminal, and outsourcing the copy does not shift liability.
+ *
+ * Google separately rules review markup on the reviewed entity's own site
+ * ineligible for star rich results, so republishing would not even render.
+ *
+ * Both roads lead to the same place: reviews belong ON GOOGLE, where the
+ * patient publishes them themselves. This component points there. It carries
+ * no names, no quotes, no ratings and no AggregateRating markup — it is
+ * navigation, not advertising.
+ *
+ * DO NOT "improve" this by pulling review text in. That is the change this
+ * file exists to prevent.
+ *
+ * Renders only once a Google Business Profile URL is supplied. An empty
+ * "what patients say" heading with nothing under it is worse than absence.
+ */
+import { type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { clinic, hasGoogleProfile } from '../../data/clinic';
+import Icon from '../primitives/Icon.astro';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+---
+
+{
+  hasGoogleProfile() && (
+    <section class="section" aria-labelledby="feedback-heading">
+      <div class="shell">
+        <div class="reveal reveal-soft mx-auto max-w-2xl rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-mist)] px-6 py-10 text-center sm:px-10">
+          <span class="mx-auto flex size-12 items-center justify-center rounded-[var(--radius-btn)] bg-[var(--color-haze)] text-[var(--color-ink)]">
+            <Icon name="check" size={24} />
+          </span>
+
+          <h2 id="feedback-heading" class="mt-5 text-[var(--text-xl)]">{t('feedback.title')}</h2>
+
+          <p class="mx-auto mt-3 max-w-lg leading-relaxed text-[var(--color-muted)]">
+            {t('feedback.body')}
+          </p>
+
+          <p class="mt-6">
+            <a
+              href={clinic.social.googleBusiness}
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[var(--radius-btn)] border border-[var(--color-line-strong)] bg-[var(--color-porcelain)] px-6 text-[var(--text-sm)] font-semibold text-[var(--color-ink)] no-underline transition-[border-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:border-[var(--color-ink)] active:translate-y-px"
+            >
+              {t('feedback.cta')}
+              <Icon name="chevron" size={16} />
+            </a>
+          </p>
+        </div>
+      </div>
+    </section>
+  )
+}

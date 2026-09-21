@@ -52,14 +52,48 @@ surfaces — not from a decorative face.
 Neither reference clinic uses Noto (one uses IBM Plex Sans Hebrew, the other
 Rubik), so this also differentiates.
 
-## Shape and motion
+## Shape
 
 Radius: cards 14px, buttons 12px, fields 10px, pills 999px. Consistency is
 non-negotiable — mixed radii are the tell of an unsystematised UI.
 
-Motion is the **subtle tier** only: a 380ms opacity/translate reveal on scroll,
-and 150ms state transitions. `prefers-reduced-motion` is honoured globally, and
-content renders fully without JS.
+## Motion language
+
+Five rules govern every animation:
+
+1. **Transform and opacity only.** Nothing that triggers layout.
+2. **One easing** (`--ease-out`) everywhere. A single curve is what makes
+   unrelated animations feel like one system.
+3. **Motion marks arrival, never demands attention.** No looping, no
+   auto-advancing, no parallax, no scroll-jacking.
+4. **Nothing delays content.** Reveals are short and start early.
+5. **No X-axis motion.** Every animation is Y or opacity, so none needs
+   mirroring in RTL and none can break in Arabic or Hebrew. A deliberate
+   constraint, not an oversight.
+
+| Token | Value | Used for |
+|---|---|---|
+| `--dur-fast` | 150ms | State changes: hover, press, focus |
+| `--dur-base` | 240ms | Card and surface transitions, accordion chevron |
+| `--dur-slow` | 380ms | Scroll reveals |
+| `--dur-entrance` | 480ms | Hero entrance only |
+
+Stagger is CSS-only: set `--i` on each item and the shared rule applies
+`calc(var(--i) * 60ms)`. No JS timing.
+
+### Fail-visible
+
+Content is visible by default. The hidden state applies only under
+`.js-reveal`, added by the script **after** its observers register, backed by a
+2s failsafe. The obvious inversion — hide by default, reveal with JS — means
+any script failure leaves sections permanently blank. On a clinic site the
+worst case must be "no animation", never "no page".
+
+### What is deliberately not animated
+
+Parallax, page transitions, scroll-jacking, auto-advancing carousels, text
+scrambles, cursor effects. Wrong register for a clinic whose visitors may be
+in pain.
 
 ## Anti-patterns
 

@@ -85,6 +85,7 @@
   --dur-fast: 150ms;
   --dur-base: 240ms;
   --dur-slow: 380ms;
+  --dur-entrance: 480ms;
 }
 
 /* ==========================================================================
@@ -294,21 +295,99 @@
     transform: scaleX(-1);
   }
 
-  /* Scroll-reveal initial state. Motion.dev sets the end state; if JS never
-     runs the content is still visible, so this degrades safely. */
+  /* ======================================================================
+     MOTION LANGUAGE
+
+     Five rules govern every animation on this site:
+
+       1. Transform and opacity only. Nothing that triggers layout.
+       2. One easing (--ease-out) everywhere. A single curve is what makes
+          unrelated animations feel like one system.
+       3. Motion marks ARRIVAL, never demands attention. No looping, no
+          auto-advancing, no parallax, no scroll-jacking.
+       4. Nothing delays content. Reveals are short and start early; the
+          page is readable if JS never runs.
+       5. No X-axis motion. Every animation here is Y or opacity, so none of
+          it needs mirroring in RTL and none of it can break in Arabic or
+          Hebrew. This is a deliberate constraint, not an oversight.
+
+     Context: visitors include people in pain looking for an emergency
+     dentist. Calm and quick beats impressive.
+     ====================================================================== */
+
+  /* Scroll reveal.
+     ── FAIL-VISIBLE BY DESIGN ───────────────────────────────────────────
+     Content is visible by DEFAULT. The hidden state applies only under
+     `.js-reveal`, which the script adds to <html> *after* it has
+     successfully registered its observers.
+
+     The obvious way round (hide by default, let JS reveal) means any script
+     failure — a throw elsewhere on the page, a missing
+     IntersectionObserver, a bad refactor — leaves sections permanently
+     blank. On a clinic site where a visitor may be in pain, a decorative
+     mechanism must never be able to hide the content. Inverting it makes
+     the worst case "no animation" instead of "no page". */
   .reveal {
+    transition:
+      opacity var(--dur-slow) var(--ease-out),
+      transform var(--dur-slow) var(--ease-out);
+    /* Stagger: set --i on each item; no JS timing needed. */
+    transition-delay: calc(var(--i, 0) * 60ms);
+  }
+  .js-reveal .reveal:not(.is-in) {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translateY(var(--reveal-y, 14px));
   }
-  .reveal.is-in,
-  .no-js .reveal {
-    opacity: 1;
-    transform: none;
+
+  /* Quieter variant for large blocks that would feel heavy sliding. */
+  .reveal-soft {
+    --reveal-y: 8px;
   }
-  @media (prefers-reduced-motion: reduce) {
-    .reveal {
+
+  /* ---- Hero entrance ----------------------------------------------------
+     Runs once on load, not on scroll. Staggered so the eye is led through
+     eyebrow -> headline -> subtitle -> actions in reading order. */
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
       opacity: 1;
       transform: none;
+    }
+  }
+
+  /* Hero entrance. Pure CSS, so it needs no JS — but it is still gated on
+     .js-reveal so that a page whose scripts never run shows the hero
+     immediately rather than waiting on an animation. */
+  .js-reveal .enter {
+    animation: rise-in var(--dur-entrance) var(--ease-out) both;
+    animation-delay: calc(var(--i, 0) * 70ms);
+  }
+
+  /* ---- Header scroll state ---------------------------------------------
+     Depth from a hairline and surface tint, never a drop shadow. */
+  .site-header {
+    transition:
+      background-color var(--dur-base) var(--ease-out),
+      border-color var(--dur-base) var(--ease-out);
+  }
+  .site-header[data-scrolled='true'] {
+    background-color: color-mix(in srgb, var(--color-porcelain) 92%, transparent);
+    border-color: var(--color-line-strong);
+  }
+
+  /* ---- Reduced motion ---------------------------------------------------
+     Everything lands in its final state instantly. Nothing is hidden, and
+     nothing waits. global.css also zeroes all durations further up. */
+  @media (prefers-reduced-motion: reduce) {
+    .js-reveal .reveal:not(.is-in),
+    .js-reveal .enter {
+      opacity: 1;
+      transform: none;
+      animation: none;
+      transition-delay: 0ms;
     }
   }
 }

@@ -2,10 +2,23 @@
 
 ## Target
 
-Cloudflare Workers via `@astrojs/cloudflare`. Static pages plus one server
-route (`/api/appointment-request/`).
+**GitHub Pages**, custom domain `www.drkhalilkanani.com`, via
+`.github/workflows/deploy.yml` on push to `main`.
 
-Swapping to Vercel is a one-line adapter change; nothing else depends on it.
+Fully static — no adapter, no server routes. The workflow uploads `./dist`.
+
+⚠️ **The workflow runs `npm run build:preview`, which sets `VERIFY_RELAX=1` and
+therefore BYPASSES the launch gate.** The live site is currently serving
+placeholder address and hours. That was a deliberate choice to get the site up,
+but it means the gate is not protecting production. Either resolve the
+outstanding facts or make the bypass an explicit, reviewed decision.
+
+### Verify the contact path after every deploy
+
+The form is the site's only conversion. A build that succeeds proves nothing
+about whether a request reaches the dentist. After each deploy, submit a real
+test request and confirm it arrives on WhatsApp. The previous architecture
+passed every build check while losing every live enquiry.
 
 ## Environment variables
 
