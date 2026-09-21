@@ -67,6 +67,19 @@ jobs:
       - name: Accessibility audit (built HTML)
         run: npm run lint:a11y
 
+      - name: Install browser for QA
+        run: npx playwright install --with-deps chromium
+      - name: Browser QA (three locales, responsive layouts, axe and contact flow)
+        run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: preview-browser-qa
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
       - name: Report what the strict gate would say
         continue-on-error: true
         env:

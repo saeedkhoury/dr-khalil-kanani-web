@@ -18,20 +18,21 @@
  * patient photography, it makes *skipping the look* impossible.
  *
  * Run automatically via .githooks/pre-commit, and in CI.
- * Manual: npm run lint:assets
- * Bypass (logged, use only for a reviewed exception): ASSETS_ALLOW=1
+ * Manual: npm run lint:assets (staged), npm run lint:assets -- --all (tracked)
+ * CI always scans tracked files. Local reviewed exception: ASSETS_ALLOW=1.
  */
 
 import { execFileSync } from 'node:child_process';
-import { readFileSync, existsSync } from 'node:fs';
-import { join, extname, basename } from 'node:path';
+import { extname, basename } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url).pathname;
-const MANIFEST = join(ROOT, 'src/data/media.ts');
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
+const MANIFEST = 'src/data/media.ts';
+const scanAll = process.env.CI === 'true' || process.argv.includes('--all');
 
 const MEDIA_EXT = new Set([
   '.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif', '.tif', '.tiff',
-  '.heic', '.heif', '.bmp', '.mp4', '.mov', '.webm', '.avi',
+  '.heic', '.heif', '.bmp', '.svg', '.ico', '.mp4', '.mov', '.webm', '.avi',
 ]);
 
 /** Files that are part of the design system, not clinic media. */
@@ -46,34 +47,28 @@ const GRN = '\x1b[32m';
 const DIM = '\x1b[2m';
 const OFF = '\x1b[0m';
 
-function stagedFiles() {
-  try {
-    // execFileSync with an argument array: no shell, so nothing here can be
-    // interpreted as a shell metacharacter.
-    const out = execFileSync(
-      'git',
-      ['diff', '--cached', '--name-only', '--diff-filter=ACMR'],
-      { encoding: 'utf8' },
-    );
-    return out.split('\n').map((l) => l.trim()).filter(Boolean);
-  } catch {
-    return [];
-  }
+function candidateFiles() {
+  // Argument array and NUL delimiters preserve filenames without shell parsing.
+  const out = execFileSync(
+    'git',
+    scanAll ? ['ls-files', '-z'] : ['diff', '--cached', '--name-only', '-z', '--diff-filter=ACMR'],
+    { encoding: 'utf8', cwd: ROOT },
+  );
+  return out.split('\0').filter(Boolean);
 }
 
 /** Every filename mentioned in the manifest's `file:` fields. */
 function registeredFiles() {
-  if (!existsSync(MANIFEST)) return new Set();
-  const src = readFileSync(MANIFEST, 'utf8');
+  // Read the index, so an unstaged registration cannot approve a commit.
+  const src = execFileSync('git', ['show', `:${MANIFEST}`], { encoding: 'utf8', cwd: ROOT });
   const names = [...src.matchAll(/\bfile:\s*['"]([^'"]+)['"]/g)].map((m) => m[1]);
   return new Set(names);
 }
 
-const staged = stagedFiles();
-const media = staged.filter((f) => MEDIA_EXT.has(extname(f).toLowerCase()));
+const media = candidateFiles().filter((f) => MEDIA_EXT.has(extname(f).toLowerCase()));
 
 if (media.length === 0) {
-  console.log(`${GRN}✓ asset guard: no media files staged.${OFF}`);
+  console.log(`${GRN}✓ asset guard: no media files ${scanAll ? 'tracked' : 'staged'}.${OFF}`);
   process.exit(0);
 }
 
@@ -97,13 +92,13 @@ if (problems.length === 0) {
   process.exit(0);
 }
 
-if (process.env.ASSETS_ALLOW === '1') {
+if (process.env.ASSETS_ALLOW === '1' && process.env.CI !== 'true') {
   console.log(`${YEL}⚠ asset guard BYPASSED via ASSETS_ALLOW=1 for ${problems.length} file(s):${OFF}`);
   problems.forEach((p) => console.log(`    ${p.file}`));
   process.exit(0);
 }
 
-console.log(`\n${RED}✗ asset guard: ${problems.length} unreviewed media file(s) staged.${OFF}\n`);
+console.log(`\n${RED}✗ asset guard: ${problems.length} unreviewed media file(s) ${scanAll ? 'tracked' : 'staged'}.${OFF}\n`);
 for (const p of problems) {
   console.log(`  ${RED}${p.file}${OFF}\n      ${p.why}`);
 }

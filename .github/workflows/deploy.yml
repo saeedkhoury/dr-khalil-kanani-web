@@ -37,6 +37,8 @@ jobs:
         run: npm run lint:claims
       - name: Mixed-script linter
         run: npm run lint:scripts
+      - name: Asset guard (tracked media)
+        run: npm run lint:assets
       - name: Type check
         run: npm run check
       - name: Unit tests
@@ -76,6 +78,19 @@ jobs:
       # this blocks the deploy rather than warning.
       - name: Accessibility audit (built HTML)
         run: npm run lint:a11y
+
+      - name: Install browser for QA
+        run: npx playwright install --with-deps chromium
+      - name: Browser QA (three locales, responsive layouts, axe and contact flow)
+        run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: production-browser-qa
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
 
       - name: Prepare Pages files
         run: touch ./dist/.nojekyll

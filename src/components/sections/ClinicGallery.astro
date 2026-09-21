@@ -82,7 +82,7 @@ const items = gallery
                   class="size-full object-cover transition-transform duration-[var(--dur-slow)] ease-[var(--ease-out)] group-hover:scale-[1.03]"
                 />
                 {asset.caption && (
-                  <span class="media-scrim pointer-events-none absolute inset-x-0 bottom-0 p-4 text-start text-[var(--text-sm)] font-semibold text-white">
+                  <span class="media-scrim pointer-events-none absolute inset-x-0 inset-be-0 p-4 text-start text-[var(--text-sm)] font-semibold text-white">
                     {asset.caption[locale]}
                   </span>
                 )}
@@ -143,6 +143,17 @@ const items = gallery
 
       {/* Source data for the lightbox. Kept as JSON rather than data-attributes
           on every tile so the markup stays clean and alt text is not duplicated. */}
+      <script
+        type="application/json"
+        id="gallery-data"
+        set:html={JSON.stringify(
+          items.map(({ asset, resolved }) => ({
+            src: resolved.src,
+            alt: asset.alt[locale],
+            caption: asset.caption?.[locale] ?? '',
+          })),
+        ).replace(/</g, '\\u003c')}
+      />
 
       {/* ── WHY is:inline ────────────────────────────────────────────────
           A normal Astro <script> is hoisted into the page bundle whenever
@@ -213,17 +224,6 @@ const items = gallery
         })();
       </script>
 
-      <script
-        type="application/json"
-        id="gallery-data"
-        set:html={JSON.stringify(
-          items.map(({ asset, resolved }) => ({
-            src: resolved.src,
-            alt: asset.alt[locale],
-            caption: asset.caption?.[locale] ?? '',
-          })),
-        )}
-      />
     </section>
   )
 }

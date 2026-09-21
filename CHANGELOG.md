@@ -6,6 +6,21 @@
 
 On branch `feature/phase-3-premium-upgrade`. Not merged, not deployed.
 
+**QA completion (2026-09-21 follow-up)**
+- Added 19 Chromium/axe tests covering locales at 375/768/1440px, contact
+  validation and WhatsApp popup/fallback behavior, no-JS/reduced-motion
+  visibility, and synthetic gallery/rating/map interactions. Both workflows
+  enforce the suite before uploading/deploying the site.
+- Fixed gallery initialization order, English tablet header overflow and
+  duplicate WhatsApp navigation. Escaped gallery JSON, corrected Arabic rating
+  numerals and Hebrew h3 tracking, included mobile safe-area clearance, and
+  moved reveal hiding after observer/failsafe registration.
+- Asset guard checks tracked media in CI and the staged manifest on commit,
+  fails closed on Git errors and refuses CI bypass; three regression tests
+  bring unit coverage to 76 tests.
+- Opened homepage/contact screenshot samples across nine locale/width pairs.
+  Physical-device, VoiceOver, native-copy and owner/legal checks remain open.
+
 **Safety — patient images (3.0)**
 - 13 patient before/after photographs, swept into `7cd7ea5` by a `git add -A`,
   quarantined to gitignored `.private-assets/` and removed from the tree. They

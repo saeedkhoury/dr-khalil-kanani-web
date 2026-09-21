@@ -103,8 +103,10 @@ file; no component changes.
 ## Checking
 
 ```bash
-npm run lint:assets    # also runs automatically on commit
+npm run lint:assets          # staged paths, also runs automatically on commit
+npm run lint:assets -- --all # all tracked paths; CI always uses this scope
 ```
 
 To bypass for a genuinely reviewed exception: `ASSETS_ALLOW=1 git commit ...`
-The bypass prints what it let through.
+The bypass prints what it let through and is refused in CI. Registrations are
+read from the Git index: stage the manifest together with the reviewed image.

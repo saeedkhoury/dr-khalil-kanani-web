@@ -11,10 +11,10 @@ Current repository state. Not a history — see `CHANGELOG.md` for that.
 **LIVE** at https://www.drkhalilkanani.com (GitHub Pages, deploys on push to
 `main`).
 
-Phase 3 (premium upgrade) is complete **on the branch
-`feature/phase-3-premium-upgrade`**, which has **not** been merged and **not**
-been pushed to `main`. `main` is untouched at `fc5c91b`; production still serves
-Phase 2.
+Phase 3 implementation and automated browser QA are complete on
+`feature/phase-3-premium-upgrade`. It is ready for draft PR review, **not merged
+or deployed**. Local `main` remains at `fc5c91b`; production has not been changed
+by this work. Owner verification and the manual checks below remain outstanding.
 
 ### ⚠️ Open safety item — read `docs/GIT-HISTORY-REMEDIATION.md`
 
@@ -41,7 +41,7 @@ owner's decision, and probably a lawyer's.
 - Click-to-load map facade (ADR 0008), renders nothing without a confirmed pin
 - Accessibility statement and privacy policy (drafts, need legal review)
 
-### Seven enforcement gates
+### Enforcement gates
 
 | Gate | Command | Blocks |
 |---|---|---|
@@ -50,39 +50,54 @@ owner's decision, and probably a lawyer's.
 | Mixed-script (homoglyph) linter | `npm run lint:scripts` | verify + CI |
 | Asset guard (unregistered media) | `npm run lint:assets` | **pre-commit** + CI |
 | Accessibility audit of built HTML | `npm run lint:a11y` | preview + deploy |
-| Unit tests (73) | `npm test` | CI |
+| Unit tests (76) | `npm test` | CI |
 | Type/template check | `npm run check` | verify + CI |
+| Chromium + axe browser QA (19 tests) | `npm run test:e2e` | preview + deploy |
 
 `VERIFY_RELAX=1` is **preview only**. Production uses `ACK_UNVERIFIED`, an
 explicit per-field allowlist; anything not on it fails the build.
 
-## Verified — programmatically, this session
+## Verified — 2026-09-21 follow-up
 
 | Check | Result |
 |---|---|
-| Unit tests | 73 pass, 0 fail |
+| Unit tests | 76 pass, 0 fail |
+| `npm run verify` | Pass, zero type errors/warnings/hints |
+| Production build | 41 pages with existing CI `ASTRO_SITE` and exact three-field `ACK_UNVERIFIED`; no `VERIFY_RELAX` |
+| Bare `npm run build` | Correctly refuses the three unconfirmed published fields |
 | Heading order (2.4.10, AA-mandatory in Israel) | 41/41 pages, no skips, 1×`h1` |
 | Duplicate ids / missing alt / unnamed controls / `lang`+`dir` | 41/41 pages clean |
-| Physical CSS properties in source (RTL risk) | none found |
-| Third-party resources loaded on page load | **zero** |
-| Client JS | ~2.7KB inline, **zero external JS files** |
-| Page weight | he 137KB · en 137KB · ar 268KB (Arabic font) |
-| Gallery render path | probed end-to-end with temporary images, then reverted |
-| Rating + facade render path | probed end-to-end with temporary data, then reverted |
+| Browser matrix | 39 localized pages × 375/768/1440px; no overflow, browser errors, failing responses or third-party requests |
+| axe | Zero WCAG 2/2.1 A/AA violations across matrix, root/404, populated fixtures and open lightbox |
+| Contact flow | Empty/invalid/missing-consent states; intercepted WhatsApp handoff and blocked-popup fallback in he/ar/en |
+| Motion | Normal/reduced-motion, no JS, and failed observer initialization checked |
+| Populated Phase 3 components | Gallery opens/navigates/closes/restores focus; Arabic Western digits; map loads only after press (request intercepted) |
+| Visual review | Homepage/contact screenshots sampled at top, middle and footer in all three locales × three widths; synthetic lightbox inspected |
+
+Browser fixtures build in an OS temporary copy using the existing vector mark
+and synthetic rating/coordinates. They never modify `src/data/` or production
+`dist/`, and are removed when testing finishes.
+
+QA fixes: gallery JSON now precedes its script and escapes `<`; tablet
+navigation collapses before overflow; WhatsApp opens one tab without redirecting
+the original; Arabic ratings use Western digits; Hebrew h3 tracking is neutral;
+mobile footer clearance includes safe-area insets; reveal hiding starts after
+observers and the failsafe exist. The asset guard scans tracked files in CI,
+reads staged registrations, fails on Git errors and disallows CI bypass.
 
 ## NOT verified
 
-**No visual or screen-reader QA has been performed.** The browser pane in this
-environment runs hidden, which pauses the document timeline and
-IntersectionObserver, so anything animated cannot be honestly checked here.
+VoiceOver, physical iPhone/Android app handoff, outdoor legibility, native
+language review and live clinic/map/rating confirmation remain unperformed.
+Screenshot review is not a screen-reader or real-device pass. No approved
+visual regression baseline exists. See [docs/QA-CHECKLIST.md](docs/QA-CHECKLIST.md)
+for the remaining human checks.
 
-[docs/QA-CHECKLIST.md](docs/QA-CHECKLIST.md) lists what a person has to do,
-across nine locale × width passes, plus VoiceOver, plus real devices. Nothing on
-it has been ticked.
+## Outstanding owner verification
 
-## Blockers — production deploy is gated on these
-
-Run `npm run build` for the live list. Currently 7 fields:
+Seven facts remain unverified. The bare production build blocks the three
+published fields; CI already explicitly acknowledges those three. The four
+hidden/overridden fields warn. No verification status was changed here.
 
 | Field | Needs |
 |---|---|
@@ -119,7 +134,6 @@ Also blocking, but not build-enforced:
 
 1. Read `docs/GIT-HISTORY-REMEDIATION.md` and decide. This is time-sensitive in
    a way the rest is not.
-2. Push `feature/phase-3-premium-upgrade` and open a PR — do this **before** any
-   history rewrite, or the work is stranded.
-3. Walk `docs/QA-CHECKLIST.md` in a real browser before merging to `main`.
+2. Review the Phase 3 draft PR and its CI results before merging to `main`.
+3. Complete the remaining human checks in `docs/QA-CHECKLIST.md`.
 4. Send the owner the verification list above. Everything else waits on it.

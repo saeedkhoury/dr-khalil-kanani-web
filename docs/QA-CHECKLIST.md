@@ -2,12 +2,14 @@
 
 **Why this exists:** the automated gates check what can be checked mechanically
 — heading order, duplicate ids, missing alt, `lang`/`dir`, claims wording,
-homoglyphs, and 73 unit tests. None of them can see the page. Everything below
+homoglyphs, and 76 unit tests. None of them can see the page. Everything below
 needs a person with eyes on a real browser.
 
-**This has NOT been performed.** No item here has been ticked by me. The
-programmatic results are reported separately in `HANDOFF.md`; do not read those
-as covering this list.
+**Partial QA completed 2026-09-21.** Chromium/axe covers the full three-locale,
+three-width matrix. Homepage/contact screenshot samples (top, middle, footer)
+and a synthetic gallery lightbox were opened and inspected. Checked items
+below have supporting browser evidence. Unticked items still need human or
+real-device review; do not read automated results as covering those.
 
 Run through it in a browser — `npm run dev`, then `/he/`, `/ar/`, `/en/`.
 
@@ -21,7 +23,7 @@ Nine passes: `he`, `ar`, `en` × 375px, 768px, desktop.
 - [ ] Latin runs inside Hebrew/Arabic (phone numbers, "Google", "WhatsApp") read
       left-to-right and do not reorder around punctuation
 - [ ] Phone numbers never show a leading or trailing character on the wrong side
-- [ ] No horizontal scrollbar at 375px on any page
+- [x] No horizontal scrollbar at 375px on any localized page (also 768/1440px)
 - [ ] Headings do not overflow their container in Arabic (longest strings)
 - [ ] The Arabic font renders — not a system fallback
 - [ ] Line length stays readable; nothing runs edge to edge
@@ -35,7 +37,7 @@ Nine passes: `he`, `ar`, `en` × 375px, 768px, desktop.
 
 ## C. Sticky mobile action bar
 
-- [ ] Never covers footer content — scroll to the very bottom on all three
+- [x] Never covers footer content — scroll to the very bottom on all three
       locales and confirm the last line is reachable
 - [ ] Never covers a form field's error message
 - [ ] Buttons are comfortably thumb-sized in the bottom corners
@@ -51,11 +53,11 @@ Nine passes: `he`, `ar`, `en` × 375px, 768px, desktop.
 
 ## E. Motion
 
-- [ ] Reveals fire as you scroll and never leave a section blank
-- [ ] With `prefers-reduced-motion: reduce` everything appears instantly and
+- [x] Reveals/failsafe leave content visible, including when observer setup fails
+- [x] With `prefers-reduced-motion: reduce` everything appears instantly and
       nothing is hidden *(macOS: System Settings → Accessibility → Display →
       Reduce motion)*
-- [ ] With JavaScript disabled entirely, every section is visible
+- [x] With JavaScript disabled entirely, every section is visible
 - [ ] Dialog entry (once a gallery exists) feels like arrival, not a glitch
 
 ## F. Screen reader
@@ -96,11 +98,11 @@ At minimum one full pass with VoiceOver (⌘F5) on `/he/` and `/en/`.
 
 ---
 
-## Tools worth running that I could not
+## Additional checks
 
 | Tool | What it catches that the gates do not |
 |---|---|
-| axe DevTools / Lighthouse | Contrast in context, ARIA misuse, live-region issues |
+| axe-core | Completed in Chromium; zero WCAG 2/2.1 A/AA violations, including synthetic populated components |
 | Lighthouse (mobile, throttled) | Real LCP/CLS/INP on the actual fonts |
 | WebPageTest, Israel region | Latency from where visitors actually are |
 | A native Hebrew and a native Arabic reader | Tone, dialect, and whether the Arabic translation reads as written by a person |

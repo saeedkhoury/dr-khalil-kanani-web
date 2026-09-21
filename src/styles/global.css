@@ -138,7 +138,7 @@
     /* Clears the sticky mobile action bar so it never covers the footer —
        the exact failure seen on a reference site, where a floating button
        sat on top of the phone number. */
-    padding-block-end: var(--actionbar-h);
+    padding-block-end: calc(var(--actionbar-h) + env(safe-area-inset-bottom, 0px));
   }
 
   @media (min-width: 768px) {
@@ -183,7 +183,8 @@
     font-weight: 400;
   }
   html[lang='he'] h1,
-  html[lang='he'] h2 {
+  html[lang='he'] h2,
+  html[lang='he'] h3 {
     letter-spacing: 0;
     line-height: 1.3;
   }

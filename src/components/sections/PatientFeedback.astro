@@ -60,13 +60,14 @@ const count = clinic.googleRating.count ?? 0;
  */
 const fillPercent = Math.max(0, Math.min(100, (value / 5) * 100)).toFixed(2);
 
-/** Formatted in the visitor's own locale: 4.9 in Hebrew, ٤٫٩ in Arabic. */
+/** Western digits in every locale, including Levantine Arabic. */
 const formatter = new Intl.NumberFormat(locale, {
+  numberingSystem: 'latn',
   minimumFractionDigits: 1,
   maximumFractionDigits: 1,
 });
 const displayValue = formatter.format(value);
-const displayCount = new Intl.NumberFormat(locale).format(count);
+const displayCount = new Intl.NumberFormat(locale, { numberingSystem: 'latn' }).format(count);
 
 const star =
   '<path d="m12 3.6 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8L3.6 9.7l5.8-.8L12 3.6Z"/>';
@@ -92,7 +93,7 @@ const starRow = `<svg viewBox="0 0 120 24" width="120" height="24" fill="current
                   {/* Empty row underneath, filled row clipped on top. */}
                   <span class="absolute inset-0 text-[var(--color-line-strong)]" set:html={starRow} />
                   <span
-                    class="absolute inset-y-0 start-0 overflow-hidden text-[var(--color-signal)]"
+                    class="absolute inset-y-0 inset-s-0 overflow-hidden text-[var(--color-signal)]"
                     style={`width:${fillPercent}%`}
                     set:html={starRow}
                   />
