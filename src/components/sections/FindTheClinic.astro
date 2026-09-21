@@ -95,11 +95,20 @@ const actionClass =
 
           <div>
             <dt class="eyebrow">{t('contact.phoneLabel')}</dt>
-            <dd class="mt-1.5 space-y-1" style="margin-inline-start:0">
-              <a href={telUrl('landline')} class="u-ltr block no-underline hover:underline">
+            <dd class="mt-1" style="margin-inline-start:0">
+              {/* min-h-11 (44px): these are phone numbers, the primary action
+                  on mobile. 24px would satisfy WCAG 2.2 and still be a poor
+                  thumb target. */}
+              <a
+                href={telUrl('landline')}
+                class="u-ltr -mx-2 flex min-h-11 items-center rounded-[var(--radius-btn)] px-2 no-underline transition-colors duration-[var(--dur-fast)] hover:bg-[var(--color-mist)]"
+              >
                 {clinic.phone.landline.display}
               </a>
-              <a href={telUrl('mobile')} class="u-ltr block no-underline hover:underline">
+              <a
+                href={telUrl('mobile')}
+                class="u-ltr -mx-2 flex min-h-11 items-center rounded-[var(--radius-btn)] px-2 no-underline transition-colors duration-[var(--dur-fast)] hover:bg-[var(--color-mist)]"
+              >
                 {clinic.phone.mobile.display}
               </a>
             </dd>
