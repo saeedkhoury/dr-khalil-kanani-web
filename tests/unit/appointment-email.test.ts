@@ -274,9 +274,24 @@ describe('email content', () => {
 });
 
 describe('site wiring', () => {
-  test('the endpoint is unset until the owner deploys the relay', () => {
-    assert.equal(hasRequestEndpoint(), false);
-    assert.equal(clinic.requestEndpoint, '');
+  test('the relay endpoint is configured, HTTPS, and not a placeholder', () => {
+    // The relay is deployed and verified end to end, so the form now emails
+    // first. Plain HTTP would send patient details in clear text.
+    assert.equal(hasRequestEndpoint(), true);
+    assert.match(clinic.requestEndpoint, /^https:\/\//, 'the endpoint must be HTTPS');
+    assert.ok(
+      !/example|localhost|TODO|changeme/i.test(clinic.requestEndpoint),
+      'the endpoint must not be a placeholder',
+    );
+  });
+
+  test('the destination inbox is never exposed to the browser', () => {
+    // requestEndpoint ships in the page source. It must address the relay and
+    // nothing else -- the recipient stays a Worker secret.
+    assert.ok(
+      !/@/.test(clinic.requestEndpoint),
+      'no email address may appear in the client-visible endpoint',
+    );
   });
 
   test('an unset endpoint means WhatsApp, never a dropped request', async () => {

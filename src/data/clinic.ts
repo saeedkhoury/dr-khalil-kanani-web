@@ -132,7 +132,7 @@ export const clinic = {
    * Once deployed, set this to the Worker URL. The form then emails the
    * clinic and falls back to WhatsApp if the Worker is unreachable.
    */
-  requestEndpoint: '' as string,
+  requestEndpoint: 'https://drkanani-appointment-email.saed-khoury10.workers.dev' as string,
 
   social: {
     instagram: 'https://www.instagram.com/dr.khalil.kanani',
