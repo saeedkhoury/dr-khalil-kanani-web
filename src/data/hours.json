@@ -1,0 +1,9 @@
+[
+  { "day": "Sunday",    "opens": "", "closes": "", "closed": false },
+  { "day": "Monday",    "opens": "", "closes": "", "closed": false },
+  { "day": "Tuesday",   "opens": "", "closes": "", "closed": false },
+  { "day": "Wednesday", "opens": "", "closes": "", "closed": false },
+  { "day": "Thursday",  "opens": "", "closes": "", "closed": false },
+  { "day": "Friday",    "opens": "", "closes": "", "closed": false },
+  { "day": "Saturday",  "opens": "", "closes": "", "closed": true  }
+]

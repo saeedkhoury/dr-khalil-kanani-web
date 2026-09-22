@@ -13,6 +13,11 @@
  * while any launch-blocking field is still unverified.
  */
 
+import hoursData from './hours.json' with { type: 'json' };
+import { assertHoursShape, type OpeningHoursRow } from '../lib/data-schema.ts';
+
+export type { OpeningHoursRow };
+
 export type Verification =
   /** Confirmed by 2+ independent sources. Safe to publish. */
   | 'verified'
@@ -105,18 +110,19 @@ export const clinic = {
 
   /* ------------------------------------------------------------------------ */
   /*  Hours — Sunday-first, per the Israeli working week.                      */
-  /*  PLACEHOLDER. Owner must supply. Do not guess clinic hours.               */
+  /*                                                                          */
+  /*  The ONLY clinic fact stored outside this file. It lives in hours.json    */
+  /*  because it is the one fact the owner must be able to change himself,     */
+  /*  and a file containing nothing but seven rows cannot be corrupted by      */
+  /*  editing it the way a TypeScript module can.                              */
+  /*                                                                          */
+  /*  Validated on import: JSON has no compile-time shape, so a bad edit must  */
+  /*  fail the build rather than render a wrong hour at a real clinic.         */
+  /*                                                                          */
+  /*  PLACEHOLDER until the owner supplies real hours. Do not guess them.      */
   /* ------------------------------------------------------------------------ */
 
-  hours: [
-    { day: 'Sunday', opens: '', closes: '', closed: false },
-    { day: 'Monday', opens: '', closes: '', closed: false },
-    { day: 'Tuesday', opens: '', closes: '', closed: false },
-    { day: 'Wednesday', opens: '', closes: '', closed: false },
-    { day: 'Thursday', opens: '', closes: '', closed: false },
-    { day: 'Friday', opens: '', closes: '', closed: false },
-    { day: 'Saturday', opens: '', closes: '', closed: true },
-  ],
+  hours: assertHoursShape(hoursData),
 
   /* ------------------------------------------------------------------------ */
   /*  Social                                                                   */
@@ -236,7 +242,20 @@ export const VERIFICATION: Record<
   'address.street': { tier: 'owner', blocking: true, note: 'Owner supplied Street 1003, Jadeidi-Makr on 2026-09-21.' },
   'address.locality': { tier: 'owner', blocking: false, note: 'IG address + post footer' },
   'address.geo': { tier: 'owner', blocking: true, note: 'Resolved from owner-supplied https://waze.com/ul/hsvbgrg6s4 on 2026-09-21.' },
-  hours: { tier: 'placeholder', blocking: true, published: false, note: 'Owner must supply. hasHours() hides the block.' },
+  hours: {
+    tier: 'placeholder',
+    blocking: true,
+    /**
+     * DERIVED, never stored. hasHours() is what actually decides whether the
+     * block renders, so a literal here drifts the moment the owner fills the
+     * hours in — the gate would keep calling them hidden while they were on
+     * screen. One authoritative value, read through a getter.
+     */
+    get published() {
+      return hasHours();
+    },
+    note: 'Owner must supply. hasHours() hides the block.',
+  },
   siteUrl: {
     tier: 'placeholder',
     blocking: true,
