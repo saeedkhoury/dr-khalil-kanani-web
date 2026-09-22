@@ -2,7 +2,7 @@
 
 Current repository state. Not a history — see `CHANGELOG.md` for that.
 
-**Last updated:** 2026-09-21
+**Last updated:** 2026-09-22
 
 ---
 
@@ -75,6 +75,39 @@ Nothing irreversible has been done about this. The recommendation, the risks of
 each option, and the order to do them in are in
 [docs/GIT-HISTORY-REMEDIATION.md](docs/GIT-HISTORY-REMEDIATION.md). It needs the
 owner's decision, and probably a lawyer's.
+
+### Branch `feat/admin-cms` — admin CMS Phase 1 COMPLETE, unmerged
+
+Five commits on `feat/admin-cms`, not pushed and not merged. Phase 1 is the
+**data foundation only**: no admin Worker, no admin UI, no Cloudflare or DNS
+change, nothing the owner can log into yet.
+
+| | Commit | What it does |
+|---|---|---|
+| 1 | `78f81be` | media types extracted to `src/data/media-types.ts`, so a future admin Worker can import types without importing the manifest that holds `treatmentWork` |
+| 2 | `af13d20` | asset guard reads both manifests; staged and full modes over one validation core |
+| 3 | `58d0a53` | opening hours move to `src/data/hours.json`; `VERIFICATION.hours.published` becomes derived |
+| 4 | `2e9ee2a` | clinic photography becomes `src/data/clinic-photography.json` with a required `status` |
+| 5 | `10165ef` | QA fixtures own their JSON; `docs/ASSETS.md` and `AGENTS.md` updated |
+
+**The site did not change.** All 128 built files are byte-identical to a
+baseline captured before the first commit — 0 of 47 HTML pages differ, same
+SHA-256 tree digest. This was a data-model migration and nothing else.
+
+Two mutable JSON files now exist, and nothing but a developer can write them
+yet: `src/data/hours.json` (seven rows, still empty, block still hidden) and
+`src/data/clinic-photography.json` (`[]`).
+
+New gate: `npm run lint:data`, now part of `npm run verify`. It validates both
+JSON files using `src/lib/data-schema.ts` — the same functions the build calls,
+deliberately not a second copy, so CI and the build cannot start disagreeing
+about what is valid.
+
+`npm run lint:assets` is now staged-scope and `npm run lint:assets:full` is
+full-scope; `verify` and CI use the latter.
+
+Phase 1 stopped where the plan says it stops. **Do not** assume the owner can
+edit anything yet.
 
 ## What exists
 
@@ -162,7 +195,7 @@ owner on 2026-09-21 and are now marked `owner`.
 
 | Field | Needs |
 |---|---|
-| `hours` | Opening hours, Sun–Thu / Fri / Sat |
+| `hours` | Opening hours, Sun–Thu / Fri / Sat — now edited in `src/data/hours.json` |
 | `siteUrl` | Confirmed domain (CI overrides it, so it never ships) |
 | `doctor.ar` / `doctor.en` | Canonical Arabic spelling and Latin transliteration |
 | `tagline.ar` | Native Arabic review |
