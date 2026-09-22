@@ -71,6 +71,26 @@ Deploy workflow: claims linter · mixed-script linter · asset guard
 GitHub Pages ── live in roughly 2–4 minutes
 ```
 
+### JSON-backed mutable content
+
+The Worker never edits TypeScript. The two mutable datasets are extracted into
+JSON files that the TypeScript imports:
+
+```
+src/data/hours.json                  ← CMS-writable
+src/data/clinic-photography.json     ← CMS-writable
+src/data/media.ts  (treatmentWork)   ← NOT writable, stays inline in TS
+```
+
+A file containing nothing but hours has no adjacent content to corrupt, so the
+Worker does `JSON.parse` → validate → `JSON.stringify`. No regex, no AST
+tooling, no new dependency.
+
+**This is also how `treatmentWork` is protected.** The CMS is *structurally
+incapable* of touching treatment or patient work, because those entries do not
+live in any file on the Worker's path allow-list — not because a validation
+rule says so. Validation is the third line of defence here, not the first.
+
 ### Why git-backed rather than a runtime store
 
 A runtime store (KV, D1) would publish instantly, and the owner did ask for
@@ -118,11 +138,20 @@ Seven rows, one per day, labelled in Hebrew. Each row:
 One Save button. Validation: a day that is not closed must have both times, and
 opening must precede closing.
 
-**On save the verification manifest is updated too.** `VERIFICATION.hours` is
-currently `published: false`, which is accurate only while hours are empty —
-`hasHours()` renders them as soon as they are filled. Leaving the entry
-unchanged would make the manifest claim hours are hidden while they are on
-screen, which is exactly the drift the manifest exists to prevent.
+Hours are stored in `src/data/hours.json` and replaced wholesale on save, so a
+partial write cannot leave a half-edited week.
+
+**The verification state is derived, not synchronised.** An earlier draft had
+the Worker also updating `VERIFICATION.hours.published`. That was wrong: it
+creates two mutable sources of truth that can drift. `hasHours()` is already
+content-driven, so the manifest entry is derived from it:
+
+```ts
+get published() { return hasHours(); },
+```
+
+One authoritative value. The Worker writes exactly one file, and the drift the
+manifest exists to prevent becomes impossible rather than merely handled.
 
 ### 3.2 Photos
 
@@ -146,7 +175,33 @@ least-used locale and gets a placeholder rather than blocking the upload.
 **The filename is generated**, never typed: `<category>-<nn>.jpg`, following
 `docs/ASSETS.md`.
 
-**Removal** deletes the manifest entry and the image file in one commit.
+### Photo lifecycle — three states, not deletion
+
+Removal is not destruction. A photograph moves between:
+
+| State | Public gallery | Available actions |
+|---|---|---|
+| **מפורסם** (published) | Rendered | Unpublish |
+| **מוסתר** (unpublished) | Hidden; metadata and file retained | Publish · Delete permanently |
+| **Deleted** | Gone | — |
+
+**Unpublish is the normal removal action.** It hides the photograph from the
+public gallery on the next deployment while keeping the original file and all
+its metadata, so it can be published again later unchanged.
+
+**Zero published photographs is a valid state.** Unpublishing the last one is
+allowed; the gallery section already hides itself when empty. Nothing forces a
+minimum.
+
+**Permanent deletion** removes the record and the current image file in one
+ordinary, auditable commit. It is visually separated from the normal actions
+and requires a confirmation naming the specific photograph.
+
+It **current-tree only**. It does not rewrite git history, force-push, purge
+historical objects or change repository visibility. Historical git objects are
+outside the CMS's responsibility — see
+[`GIT-HISTORY-REMEDIATION.md`](../GIT-HISTORY-REMEDIATION.md), which closed
+history rewriting as not worth its risk.
 
 ---
 
@@ -162,8 +217,32 @@ shows one of three states in Hebrew:
 
 - **מתפרסם…** — running
 - **פורסם** — deployed, with the time
-- **נכשל** — failed, with a plain-language reason and a "tell the developer"
-  prompt. The raw log is never shown; it would be noise to him.
+- **נכשל** — failed, classified per below. The raw log is never shown.
+
+#### Content failure versus technical failure
+
+A failed deployment has two very different meanings, and conflating them either
+blames the doctor for an infrastructure problem or hides a real content
+mistake.
+
+| Classification | Determined by | Message |
+|---|---|---|
+| **Content** | A *known* job whose failure can only mean rejected content: `lint:claims`, `lint:scripts`, `lint:assets`, plus server-side validation refusals | Names exactly what to change |
+| **Technical** | Everything else — build, `test:e2e`, `lint:a11y`, infrastructure, **and anything unrecognised** | "הפרסום נכשל מסיבה טכנית. זו לא בעיה בתוכן שלכם." plus a developer-support path |
+
+**Unknown failures default to technical.** A unit-test failure is *not*
+automatically a content failure — most unit tests have nothing to do with his
+input. Classification is driven by an explicit list of known jobs and known
+validation types; anything outside it is treated as the project's problem, not
+his.
+
+#### A failed publication never claims success
+
+GitHub Pages continues serving the **previous successful deployment** when a
+build fails, so the live site is never broken by a rejected change. The admin
+UI must reflect that precisely: on failure it states that the change is **not**
+live and the previous version is still showing. It must never imply new content
+is published when it is not.
 
 ### 4.2 The patient-photograph confirmation
 
@@ -179,7 +258,27 @@ already had thirteen patient photographs committed unreviewed.
 The confirmation is recorded in the commit message, so the record of who
 confirmed what survives in history.
 
-### 4.3 Concurrent edits
+### 4.3 The asset guard must not weaken
+
+`scripts/check-assets.mjs` blocks any image committed without being registered.
+It currently finds registrations by reading `src/data/media.ts` from the git
+index. Moving clinic photographs into JSON would silently take them outside
+that check — the guard would keep passing while covering less.
+
+**That is the single most dangerous side effect of this migration**, because
+the guard exists precisely because thirteen patient photographs were once
+committed unreviewed.
+
+After migration the guard must understand **both** sources:
+
+- the developer-managed manifest (`src/data/media.ts` — `treatmentWork`,
+  `illustrations`)
+- the CMS-managed `src/data/clinic-photography.json`
+
+Regression tests are an explicit acceptance criterion of the migration, not a
+follow-up. See the implementation plan, Phase 1.
+
+### 4.4 Concurrent edits
 
 If the doctor saves while a developer is working in the repository, the commit
 could clobber. The GitHub Contents API requires the current file SHA; the
@@ -187,7 +286,7 @@ Worker fetches it immediately before committing, and on a 409 retries once
 with a fresh SHA. A second conflict surfaces as "try again in a moment"
 rather than silently overwriting.
 
-### 4.4 Image validation
+### 4.5 Image validation
 
 Checked in the browser for a fast message, and **again in the Worker**, which
 is the control:
@@ -206,12 +305,13 @@ arbitrary content to a medical website.
 
 | Control | Detail |
 |---|---|
-| **Authentication** | Cloudflare Access, email one-time code, allow-list of one address. No password to leak or reuse. |
+| **Authentication** | Cloudflare Access, email one-time code. Allow-list of two identities: the doctor as primary, the developer as fallback. No password to leak or reuse. |
+| **Fail-closed allow-list** | `ALLOWED_EMAILS` is configuration, never code, and ships **empty**. An unconfigured Worker refuses every request rather than admitting anyone. Both addresses are `NEEDS OWNER CONFIGURATION` and must not be invented, guessed or hardcoded. |
 | **Authorisation** | The Worker re-checks the `Cf-Access-Jwt-Assertion` header and verifies the JWT against Cloudflare's public keys. Access sitting in front is not treated as sufficient on its own. |
 | **GitHub credential** | Fine-grained PAT: one repository, `contents: write` only. No workflow, packages, or account scope. Stored via `wrangler secret put`, never committed. |
 | **Secret exposure** | Nothing secret reaches the browser. The panel never sees the GitHub token; all writes are server-side. |
 | **Input validation** | Every field re-validated in the Worker. Category must be a known enum member. Filenames are generated, never accepted from the client — no path traversal surface. |
-| **Commit scope** | The Worker may only write `src/data/clinic.ts`, `src/data/media.ts` and files under `src/assets/images/`. Any other path is refused. |
+| **Commit scope** | The Worker may only write `src/data/hours.json`, `src/data/clinic-photography.json` and files under `src/assets/images/`. Any other path is refused. `src/data/media.ts` is deliberately absent, which is what makes `treatmentWork` unreachable. |
 | **Rate limiting** | Cloudflare WAF rule on the admin hostname, as with the email relay. |
 | **Audit trail** | Every change is a git commit with the authenticated email in the message. Cloudflare Access keeps its own access log. |
 | **Blast radius** | A compromised token can commit to this repository only. It cannot deploy, cannot read secrets, cannot touch DNS or other repositories. |
@@ -410,11 +510,26 @@ this project has already made once.
 Save stays `disabled` until it is ticked, and the disabled state is explained
 in text beneath the button rather than left for him to work out.
 
-### Removing
+### Removing — two different actions
 
-Confirmation dialog naming the photograph, per the destructive-action
-guideline. Native `<dialog>`, matching the site's lightbox: focus trap,
-Escape and focus restore all come from the browser.
+**הסתרה (unpublish)** is the normal action and sits with the other controls. It
+takes effect on the next successful deployment; the file and metadata are kept
+so it can be published again unchanged. No confirmation dialog — it is
+reversible in one tap.
+
+**מחיקה לצמיתות (delete permanently)** appears only on already-unpublished
+photographs, and is placed apart from the normal controls. It uses
+`--color-danger` as text on the ordinary surface, **not** a red-filled button:
+loud styling on a rare action trains people to dismiss it.
+
+It opens the site's standard native `<dialog>`, naming the specific
+photograph — focus trap, Escape and focus restore all come from the browser.
+Deliberately not a dramatic modal; the design system already has the right
+component.
+
+A photograph can never be permanently deleted in one click from the published
+state: it must be unpublished first, which is itself the pause that prevents
+the accident.
 
 ## 13. Publish status — the component that earns its keep
 

@@ -286,6 +286,11 @@ as position:
 | מפורסם (published) | הסתרה (unpublish) |
 | מוסתר (unpublished) | פרסום (publish) · **מחיקה לצמיתות** |
 
+**Zero published photographs is valid.** Unpublishing the last one is allowed;
+the gallery section already hides itself when empty. No minimum is enforced.
+Permanent delete is reachable only from the unpublished state, so a photograph
+can never be destroyed in a single click.
+
 Permanent delete is visually separated — placed apart, `--color-danger` text on
 the site's normal surface, **not** a red-filled button and not a dramatic
 modal. It opens the site's standard `<dialog>` naming the specific photograph.
@@ -422,6 +427,17 @@ with "still publishing — check back shortly".
 
 No toast. The region persists until the next save.
 
+### A failed publication never claims the content is live
+
+GitHub Pages keeps serving the **last successful deployment** when a build
+fails, so a rejected change cannot break the live site. The UI must say so
+precisely: on failure it states that the change is **not** live and the
+previous version is still being served.
+
+`published` is set **only** on `conclusion: success`. A commit being accepted
+by GitHub is never sufficient — that is the `committed` state, and the two are
+never conflated.
+
 ---
 
 ## H. Concurrency
@@ -493,16 +509,29 @@ The deploy runs a full Playwright suite. A flaky browser test would fail the
 doctor's hours change for a reason unrelated to his content — and he would have
 no way to tell the difference.
 
-**Mitigation, not gate removal:** the Worker classifies the failed job.
+**Mitigation, not gate removal:** the Worker classifies the failed job against
+an **explicit allow-list of known content failures**. Everything else — 
+including anything unrecognised — is technical.
 
 ```
-Failed job = lint:claims | lint:scripts | lint:assets | test
+CONTENT failure  (a known job whose failure can only mean rejected content)
+  lint:claims | lint:scripts | lint:assets
+  + server-side validation refusals raised before the commit
   → "התוכן לא עבר את הבדיקה" + the specific reason + what to change
 
-Failed job = test:e2e | build | lint:a11y | anything else
-  → "הפרסום נכשל מסיבה טכנית. זו לא בעיה בתוכן שלכם.
-     המפתח קיבל הודעה." + the developer is told
+TECHNICAL failure  (everything else, and the default)
+  build | test:e2e | lint:a11y | check | test | infrastructure | UNKNOWN
+  → "הפרסום נכשל מסיבה טכנית. זו לא בעיה בתוכן שלכם."
+     + developer-support path
 ```
+
+**A unit-test failure is NOT automatically a content failure.** Most unit tests
+have nothing to do with his input; `npm test` failing almost always means a
+developer broke something. It is classified technical.
+
+**Unknown job names default to technical.** If a future workflow step is added
+and the classifier does not recognise it, the doctor must not be blamed for it.
+Failing toward "our problem" is the only safe default.
 
 He is never shown a raw log, and never blamed for an infrastructure failure.
 Gates stay; the *message* does the work.
@@ -599,11 +628,31 @@ change.
 `scripts/check-assets.mjs`, `scripts/serve-qa-fixtures.mjs`.
 **Tests:** existing 118 must pass unchanged; new tests for the derived
 `VERIFICATION.hours.published` and for the asset guard reading JSON.
-**Acceptance:** `npm run verify`, `npm test`, build, a11y, e2e all pass, and
-**the built HTML is byte-identical to before** (same method used for the media
-split).
-**Risks:** the asset guard silently stops covering photos. Mitigated by a test
-that stages an unregistered image and asserts rejection.
+**Acceptance — all of the following, none optional:**
+
+1. `npm run verify`, `npm test`, build, a11y audit and e2e all pass.
+2. **The built HTML is byte-identical to before** the migration, compared file
+   by file across all 47 pages (the method already used for the media split).
+3. **The asset guard is demonstrably no weaker than today.** These six
+   regression tests must exist and pass:
+
+   | | Case | Expected |
+   |---|---|---|
+   | A | Registered clinic photograph (JSON) staged | **accepted** |
+   | B | Registered developer-managed treatment image (`media.ts`) staged | **accepted** |
+   | C | Unregistered image staged under `src/assets/images/` | **rejected** |
+   | D | JSON record referencing a missing image file | **rejected** |
+   | E | Same filename registered twice, or in both sources | **rejected** |
+   | F | A `treatmentWork` entry written into the CMS JSON | **rejected** |
+
+**Phase 1 is not complete until the asset-safety guarantees are at least as
+strong as they are today.** Case F matters beyond tidiness: it proves the CMS
+cannot smuggle treatment work in through the one file it is allowed to write.
+
+**Risks:** the guard silently stops covering photographs — the single most
+dangerous side effect of this migration, because that guard exists precisely
+because thirteen patient photographs were once committed unreviewed. Mitigated
+by the six cases above being acceptance criteria rather than follow-up work.
 **Dependencies:** none.
 **Rollback:** revert the commit; nothing external changed.
 
@@ -731,16 +780,27 @@ byte-identical output as the acceptance test.
 
 ---
 
-## P. Open questions
+## P. Decisions and remaining questions
 
-1. **`ALLOWED_EMAILS` values** — still `NEEDS OWNER CONFIGURATION`.
-2. **Should unpublishing a photo that is the *only* published one be allowed?**
-   The gallery would render empty. My inclination: allow it and let the section
-   hide itself, which it already does.
-3. **Delete permanence** — should `delete` also purge the image from git
-   history, or only from the current tree? Recommendation: current tree only.
-   History rewriting is what `docs/GIT-HISTORY-REMEDIATION.md` closed as not
-   worth it.
+### Decided by the owner, 2026-09-22
+
+1. **`ALLOWED_EMAILS`** — both addresses remain `NEEDS OWNER CONFIGURATION`.
+   The doctor is the primary identity, the developer the fallback. Neither is
+   to be invented, guessed or hardcoded. The Worker ships with an empty
+   allow-list and **refuses every request until it is configured** — fail
+   closed, never fail open.
+2. **Zero published photographs is allowed.** Unpublishing the last published
+   clinic photograph is permitted; the gallery section already hides itself
+   when the collection is empty. No minimum is enforced.
+3. **Permanent delete is current-tree only.** It removes the record and the
+   current file in one ordinary auditable commit. It does **not** rewrite
+   history, force-push, purge historical objects, or change repository
+   visibility. Historical git objects are outside the CMS's responsibility.
+
+### Still open
+
+None blocking Phase 1. The two email addresses are needed before Phase 9
+(infrastructure), not before implementation begins.
 
 ## Risks and trade-offs
 
