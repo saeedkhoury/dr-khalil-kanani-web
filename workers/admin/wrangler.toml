@@ -1,0 +1,33 @@
+name = "drkanani-admin"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# ── NOTHING PRIVATE IN THIS FILE ───────────────────────────────────────────
+# This repository is PUBLIC.
+#
+# ALLOWED_EMAILS is set out of band and is NOT committed:
+#
+#   wrangler secret put ALLOWED_EMAILS     # "someone@example.com,other@example.com"
+#
+# It is not a credential, but it is a list of personal addresses, and a
+# personal email in a public repository is scraped and spammed within days
+# with no way to undo it. Same reasoning as MAIL_TO on the appointment relay.
+#
+# IT IS CURRENTLY UNSET, AND UNSET MEANS THE WORKER REFUSES EVERYONE --
+# including a perfectly valid, correctly signed Access token. That is the
+# intended resting state until an identity list is deliberately configured.
+#
+# GITHUB_TOKEN does not appear here and is not in the Env type. This Worker
+# cannot write to GitHub; it gains that credential in the phase that needs it.
+
+# ── The values below are deliberately public ───────────────────────────────
+# None is a credential, and each belongs in a diff where a change to it gets
+# reviewed. ACCESS_AUD identifies the Access application; knowing it does not
+# help forge a token, which would require Cloudflare's private key.
+#
+# PLACEHOLDERS. The real values do not exist until the Cloudflare Access
+# application is created, which has not been done. NEEDS CONFIGURATION.
+[vars]
+ACCESS_TEAM_DOMAIN = ""   # <team>.cloudflareaccess.com -- issuer and JWKS are derived from it
+ACCESS_AUD = ""           # the Access application's AUD tag
+ADMIN_ORIGIN = "https://admin.drkhalilkanani.com"

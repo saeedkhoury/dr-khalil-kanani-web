@@ -85,6 +85,44 @@ export async function makePs256Token(email = DOCTOR): Promise<string> {
     .sign(key);
 }
 
+/**
+ * The JWKS document a key server would serve, for stubbing `fetch` so tests
+ * can exercise the Worker end to end with NO network access at all.
+ */
+export const jwksDocument = { keys: [await publicJwk(signing, KID)] };
+
+/**
+ * Replace global fetch for the duration of `run`, serving the JWKS above to
+ * any request for a `/cdn-cgi/access/certs` URL and refusing everything else.
+ *
+ * Nothing leaves the machine: an unstubbed request would be a test depending
+ * on the network, and `notFetched` records any attempt to reach elsewhere.
+ */
+export async function withStubbedJwks<T>(
+  run: () => Promise<T>,
+  { fail = false }: { fail?: boolean } = {},
+): Promise<{ result: T; notFetched: string[] }> {
+  const original = globalThis.fetch;
+  const notFetched: string[] = [];
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input instanceof Request ? input.url : input);
+    if (!url.includes('/cdn-cgi/access/certs')) {
+      notFetched.push(url);
+      throw new Error(`unexpected network access to ${url}`);
+    }
+    if (fail) throw new Error('key server unreachable');
+    return new Response(JSON.stringify(jwksDocument), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }) as typeof fetch;
+  try {
+    return { result: await run(), notFetched };
+  } finally {
+    globalThis.fetch = original;
+  }
+}
+
 export interface TokenOptions {
   email?: string | null;
   issuer?: string;
