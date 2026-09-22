@@ -83,6 +83,27 @@ export interface MediaAsset<C extends MediaCategory = MediaCategory> {
 }
 
 export type ClinicPhotograph = MediaAsset<ClinicPhotographyCategory>;
+
+/** Whether a photograph is currently shown on the site. */
+export type PublicationStatus = 'published' | 'unpublished';
+
+/**
+ * A clinic photograph AS STORED in src/data/clinic-photography.json.
+ *
+ * This is the CMS's record, not the site's view of it. The difference is
+ * `status`: unpublishing must be reversible, so an unpublished record stays
+ * in the file and is filtered out on read. `clinicPhotography` in media.ts is
+ * the published subset, which is why the renderer never sees this type.
+ */
+export interface ClinicPhotographRecord extends ClinicPhotograph {
+  status: PublicationStatus;
+  /**
+   * Set when the English alt text is still a copy of another locale's.
+   * OPTIONAL because it marks a temporary condition — whoever writes real
+   * English deletes the key, and its absence is the normal end state.
+   */
+  needsEnglishReview?: boolean;
+}
 export type TreatmentWorkPhotograph = MediaAsset<TreatmentWorkCategory>;
 export type Illustration = MediaAsset<IllustrationCategory>;
 export type HeroPhotograph = MediaAsset<HeroCategory>;

@@ -14,6 +14,7 @@ import { CONTACT_METHODS, DAYPARTS } from '../../src/lib/form-options.ts';
 import {
   treatmentWork,
   clinicPhotography,
+  clinicPhotographyRecords,
   illustrations,
   portrait,
   heroImage,
@@ -130,6 +131,20 @@ describe('media manifest', () => {
     assert.equal(hasClinicPhotography(), false);
     assert.equal(heroImage, null);
     assert.equal(hasHeroImage(), false);
+  });
+
+  test('clinicPhotography is the published subset of the records', () => {
+    // Unpublishing is reversible: the record stays in the manifest and is
+    // filtered out on read. Every consumer reads this export, so a photograph
+    // the owner took down cannot reach a page by accident.
+    assert.deepEqual(
+      clinicPhotography,
+      clinicPhotographyRecords.filter((r) => r.status === 'published'),
+    );
+    for (const asset of clinicPhotography) {
+      const record = clinicPhotographyRecords.find((r) => r.file === asset.file);
+      assert.equal(record?.status, 'published', `${asset.file} is rendered but not published`);
+    }
   });
 
   test('the collections are disjoint by category', () => {

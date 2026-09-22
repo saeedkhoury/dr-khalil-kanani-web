@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { assertHoursShape, DataShapeError, DAY_ORDER } from '../../src/lib/data-schema.ts';
+import {
+  assertClinicPhotographyShape,
+  assertHoursShape,
+  CMS_CATEGORIES,
+  DataShapeError,
+  DAY_ORDER,
+} from '../../src/lib/data-schema.ts';
 
 /** A full valid week, overridable per day index. */
 const week = (over: Record<number, Record<string, unknown>> = {}) =>
@@ -96,4 +102,118 @@ test('rejects an unknown field rather than ignoring it', () => {
 test('reports every problem at once, not just the first', () => {
   const problems = problemsOf(week({ 0: { opens: '9:00' }, 3: { closes: '' }, 5: { extra: 1 } }));
   assert.ok(problems.length >= 3, `expected several problems, got ${problems.length}`);
+});
+
+/* ────────────────────────────────────────────────────────────────────────────
+   Clinic photography — the manifest the admin CMS writes.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/** A valid record, overridable per test. */
+const photo = (over: Record<string, unknown> = {}) => ({
+  file: 'reception-01.jpg',
+  category: 'reception',
+  width: 2400,
+  height: 1600,
+  status: 'published',
+  alt: { he: 'אזור ההמתנה', ar: 'منطقة الانتظار', en: 'The waiting area' },
+  ...over,
+});
+
+function photoProblems(value: unknown): readonly string[] {
+  try {
+    assertClinicPhotographyShape(value, 'fixture');
+  } catch (error) {
+    assert.ok(error instanceof DataShapeError, `expected DataShapeError, got ${error}`);
+    return error.problems;
+  }
+  assert.fail('expected the shape assertion to throw, but it passed');
+}
+
+test('accepts an empty manifest — the state the site ships in', () => {
+  assert.deepEqual(assertClinicPhotographyShape([], 'fixture'), []);
+});
+
+test('accepts a valid published record', () => {
+  const records = [photo()];
+  assert.deepEqual(assertClinicPhotographyShape(records, 'fixture'), records);
+});
+
+test('accepts both publication states', () => {
+  for (const status of ['published', 'unpublished']) {
+    assert.doesNotThrow(() => assertClinicPhotographyShape([photo({ status })], 'fixture'));
+  }
+});
+
+test('status is required and constrained — an absent state is ambiguous', () => {
+  const { status: _omitted, ...withoutStatus } = photo();
+  assert.match(photoProblems([withoutStatus]).join('\n'), /"status" is required/);
+  assert.match(photoProblems([photo({ status: 'draft' })]).join('\n'), /"status" is required/);
+  assert.match(photoProblems([photo({ status: true })]).join('\n'), /"status" is required/);
+});
+
+test('rejects treatment-work — the CMS may never publish patient imagery', () => {
+  // THE test. Treatment and patient photography is developer-managed and
+  // legally constrained; the CMS writes clinic photography and nothing else.
+  const problems = photoProblems([photo({ category: 'treatment-work' })]).join('\n');
+  assert.match(problems, /not one the CMS may write/);
+  assert.match(problems, /treatment-work/);
+});
+
+test('rejects any category outside the clinic-photography union', () => {
+  for (const bad of ['hero', 'portrait', 'illustration', 'patient', '', null]) {
+    assert.match(photoProblems([photo({ category: bad })]).join('\n'), /not one the CMS may write/, `accepted ${bad}`);
+  }
+});
+
+test('accepts every category the CMS is allowed to write', () => {
+  for (const category of CMS_CATEGORIES) {
+    assert.doesNotThrow(
+      () => assertClinicPhotographyShape([photo({ category })], 'fixture'),
+      `rejected permitted category ${category}`,
+    );
+  }
+});
+
+test('requires non-empty alt text in all three locales', () => {
+  for (const locale of ['he', 'ar', 'en']) {
+    const alt = { he: 'א', ar: 'ب', en: 'c', [locale]: '   ' };
+    assert.match(photoProblems([photo({ alt })]).join('\n'), new RegExp(`"alt\\.${locale}"`));
+  }
+  assert.match(photoProblems([photo({ alt: 'a string' })]).join('\n'), /must be an object with he, ar and en/);
+});
+
+test('needsEnglishReview is optional — absent is the normal end state', () => {
+  assert.doesNotThrow(() => assertClinicPhotographyShape([photo()], 'fixture'));
+  assert.doesNotThrow(() => assertClinicPhotographyShape([photo({ needsEnglishReview: true })], 'fixture'));
+  assert.doesNotThrow(() => assertClinicPhotographyShape([photo({ needsEnglishReview: false })], 'fixture'));
+  assert.match(photoProblems([photo({ needsEnglishReview: 'yes' })]).join('\n'), /must be true or false/);
+});
+
+test('rejects a path-shaped or non-photographic file name', () => {
+  for (const bad of ['../../.github/workflows/deploy.yml', 'sub/dir.jpg', '..\\evil.jpg']) {
+    assert.match(photoProblems([photo({ file: bad })]).join('\n'), /bare filename/, `accepted ${bad}`);
+  }
+  for (const bad of ['reception-01.svg', 'reception-01.webp', 'reception-01']) {
+    assert.match(photoProblems([photo({ file: bad })]).join('\n'), /must end in/, `accepted ${bad}`);
+  }
+});
+
+test('rejects the same file registered twice — file IS the identity', () => {
+  // Two records naming one image would make unpublishing appear to do nothing.
+  const problems = photoProblems([photo(), photo({ status: 'unpublished' })]).join('\n');
+  assert.match(problems, /registered more than once/);
+});
+
+test('requires positive integer dimensions so the grid can reserve space', () => {
+  for (const bad of [0, -1, 1.5, '2400', null]) {
+    assert.match(photoProblems([photo({ width: bad })]).join('\n'), /"width" must be a positive integer/, `accepted ${bad}`);
+  }
+});
+
+test('rejects an unknown field rather than ignoring it', () => {
+  assert.match(photoProblems([photo({ sortIndex: 3 })]).join('\n'), /unknown field "sortIndex"/);
+});
+
+test('rejects anything that is not an array', () => {
+  assert.match(photoProblems({ 'reception-01.jpg': {} }).join('\n'), /must be a JSON array/);
 });

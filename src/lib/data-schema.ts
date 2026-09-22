@@ -23,6 +23,9 @@
  * green pipeline starts disagreeing with what actually ships.
  */
 
+import { LOCALES } from '../i18n/config.ts';
+import type { ClinicPhotographRecord } from '../data/media-types.ts';
+
 /**
  * Sunday-first, per the Israeli working week. The order is SIGNIFICANT —
  * the renderer trusts array position and does not sort.
@@ -144,4 +147,113 @@ export function assertHoursShape(value: unknown, source = 'src/data/hours.json')
 
   if (problems.length > 0) throw new DataShapeError(source, problems);
   return value as OpeningHoursRow[];
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Clinic photography                                                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The only categories the CMS may write. `treatment-work` is deliberately
+ * absent and must stay that way: treatment and patient imagery is
+ * developer-managed, reviewed in a pull request, and Israeli dental
+ * advertising regulations make publishing it a legal matter rather than an
+ * editorial one. scripts/check-assets.mjs enforces the same list at commit
+ * time — two gates, one rule.
+ */
+export const CMS_CATEGORIES = [
+  'exterior', 'reception', 'treatment-room', 'equipment',
+  'doctor-working', 'team', 'atmosphere',
+] as const;
+
+const STATUSES = ['published', 'unpublished'] as const;
+
+/** SVG is excluded: it can carry script, and no photograph is a vector. */
+const PHOTO_EXT = ['.jpg', '.jpeg', '.png'] as const;
+
+const RECORD_KEYS = new Set([
+  'file', 'category', 'alt', 'caption', 'width', 'height',
+  'feature', 'status', 'needsEnglishReview',
+]);
+
+/** Validate the CMS photography manifest and return it typed. */
+export function assertClinicPhotographyShape(
+  value: unknown,
+  source = 'src/data/clinic-photography.json',
+): ClinicPhotographRecord[] {
+  const problems: string[] = [];
+
+  if (!Array.isArray(value)) throw new DataShapeError(source, ['must be a JSON array']);
+
+  const seen = new Set<string>();
+
+  value.forEach((record, i) => {
+    const at = `record ${i + 1}`;
+
+    if (record === null || typeof record !== 'object' || Array.isArray(record)) {
+      problems.push(`${at}: must be an object`);
+      return;
+    }
+    for (const key of Object.keys(record)) {
+      if (!RECORD_KEYS.has(key)) problems.push(`${at}: unknown field "${key}"`);
+    }
+
+    const r = record as Record<string, unknown>;
+    const { file, category, status, alt, width, height, needsEnglishReview } = r;
+
+    // ── file: a bare filename, and the record's stable identity ──
+    if (typeof file !== 'string' || file === '') {
+      problems.push(`${at}: "file" is required and must be a non-empty string`);
+    } else {
+      if (file.includes('/') || file.includes('\\') || file.includes('..')) {
+        problems.push(`${at}: "file" must be a bare filename — no "/", "\\" or ".."`);
+      }
+      if (!PHOTO_EXT.some((ext) => file.toLowerCase().endsWith(ext))) {
+        problems.push(`${at}: "file" must end in ${PHOTO_EXT.join(', ')} — SVG can carry script`);
+      }
+      // `file` IS the identity; there is no separate id. Two records naming
+      // one image make unpublishing appear to do nothing.
+      if (seen.has(file)) problems.push(`${at}: "${file}" is registered more than once`);
+      seen.add(file);
+    }
+
+    if (!(CMS_CATEGORIES as readonly string[]).includes(category as string)) {
+      problems.push(
+        `${at}: category ${JSON.stringify(category)} is not one the CMS may write ` +
+          `(${CMS_CATEGORIES.join(', ')}). Treatment work is developer-managed.`,
+      );
+    }
+
+    // Required, not defaulted: an absent state is ambiguous, and guessing
+    // "published" would publish something nobody chose to publish.
+    if (!(STATUSES as readonly string[]).includes(status as string)) {
+      problems.push(`${at}: "status" is required and must be ${STATUSES.join(' or ')}`);
+    }
+
+    for (const [name, n] of [['width', width], ['height', height]] as const) {
+      if (typeof n !== 'number' || !Number.isInteger(n) || n <= 0) {
+        problems.push(`${at}: "${name}" must be a positive integer — the grid reserves space with it (CLS)`);
+      }
+    }
+
+    // These images are meaningful, never decorative, so an empty alt is never
+    // correct in any locale.
+    if (alt === null || typeof alt !== 'object' || Array.isArray(alt)) {
+      problems.push(`${at}: "alt" must be an object with he, ar and en`);
+    } else {
+      for (const locale of LOCALES) {
+        const text = (alt as Record<string, unknown>)[locale];
+        if (typeof text !== 'string' || text.trim() === '') {
+          problems.push(`${at}: "alt.${locale}" is required and must not be empty`);
+        }
+      }
+    }
+
+    if (needsEnglishReview !== undefined && typeof needsEnglishReview !== 'boolean') {
+      problems.push(`${at}: "needsEnglishReview" must be true or false when present`);
+    }
+  });
+
+  if (problems.length > 0) throw new DataShapeError(source, problems);
+  return value as ClinicPhotographRecord[];
 }

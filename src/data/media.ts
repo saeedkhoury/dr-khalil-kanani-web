@@ -27,8 +27,12 @@
  * for clinic photography. See THE CONTENT MODEL below.
  */
 
+import clinicPhotographyData from './clinic-photography.json' with { type: 'json' };
+import { assertClinicPhotographyShape } from '../lib/data-schema.ts';
+
 import type {
   ClinicPhotograph,
+  ClinicPhotographRecord,
   ClinicPhotographyCategory,
   DoctorPortrait,
   GalleryKind,
@@ -39,6 +43,8 @@ import type {
 } from './media-types';
 
 export type {
+  ClinicPhotographRecord,
+  PublicationStatus,
   ClinicPhotographyCategory,
   TreatmentWorkCategory,
   IllustrationCategory,
@@ -232,6 +238,10 @@ export const illustrations: Illustration[] = [
 /**
  * CLINIC PHOTOGRAPHY — the building, the rooms, the equipment, the people.
  *
+ * The one collection the owner manages himself, so it is the one collection
+ * stored as data rather than code. Validated on import: JSON has no
+ * compile-time shape, and this file will be written by a machine.
+ *
  * Empty until real photographs exist. The gallery renders nothing while it is,
  * rather than borrowing treatment-result images to fill the space: a result
  * photograph cannot tell a patient what the waiting room looks like.
@@ -239,7 +249,21 @@ export const illustrations: Illustration[] = [
  * What is needed, and at what resolution, is in docs/ASSETS.md.
  * OWNER ACTION REQUIRED.
  */
-export const clinicPhotography: ClinicPhotograph[] = [];
+export const clinicPhotographyRecords: ClinicPhotographRecord[] =
+  assertClinicPhotographyShape(clinicPhotographyData);
+
+/**
+ * The PUBLISHED subset — what the site actually renders.
+ *
+ * Unpublishing is reversible, so an unpublished record stays in the file and
+ * is filtered out here instead of being deleted. Every existing consumer reads
+ * this export and therefore cannot accidentally render a photograph the owner
+ * took down; reaching an unpublished one requires asking for the records
+ * explicitly.
+ */
+export const clinicPhotography: ClinicPhotograph[] = clinicPhotographyRecords.filter(
+  (record) => record.status === 'published',
+);
 
 /**
  * Hero image. One landscape photograph — the clinic, or the dentist at work.

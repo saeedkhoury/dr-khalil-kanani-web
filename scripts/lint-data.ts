@@ -17,7 +17,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { assertHoursShape, DataShapeError } from '../src/lib/data-schema.ts';
+import { assertClinicPhotographyShape, assertHoursShape, DataShapeError } from '../src/lib/data-schema.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
@@ -37,6 +37,15 @@ const CHECKS: Check[] = [
     path: 'src/data/hours.json',
     assert: assertHoursShape,
     describe: (v) => `${(v as unknown[]).length} days`,
+  },
+  {
+    path: 'src/data/clinic-photography.json',
+    assert: assertClinicPhotographyShape,
+    describe: (v) => {
+      const records = v as Array<{ status?: string }>;
+      const published = records.filter((r) => r.status === 'published').length;
+      return `${records.length} photograph(s), ${published} published`;
+    },
   },
 ];
 
