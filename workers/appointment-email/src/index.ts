@@ -45,14 +45,30 @@ interface RequestPayload {
   locale: string;
   /** Whether the patient ticked the consent box. Recorded, never assumed. */
   consent?: boolean;
-  /** Honeypot — must be empty. Real people cannot see this field. */
-  company?: string;
+  /**
+   * Honeypot — must be empty. Real people cannot see this field.
+   *
+   * Deliberately NOT called "company", "website" or anything else a browser
+   * recognises: Chrome ignores autocomplete="off" on standard address-form
+   * names and will happily autofill them, which silently discarded a real
+   * patient's request.
+   */
+  hp_ref2?: string;
   /** Milliseconds the form was on screen before submit. */
   elapsedMs?: number;
 }
 
 const MAX_FIELD = 2000;
-const MIN_ELAPSED_MS = 3000;
+/**
+ * Minimum time on screen before a submit is treated as a bot.
+ *
+ * Was 3000ms, which a browser autofilling every field beats easily — and the
+ * request was then dropped while the patient was shown success. For a clinic
+ * receiving a handful of requests a day, ONE lost patient costs more than a
+ * hundred spam emails, so this is now only tight enough to catch a script
+ * posting instantly.
+ */
+const MIN_ELAPSED_MS = 1200;
 
 /**
  * Israeli mobile and landline.
@@ -214,17 +230,30 @@ export default {
     }
 
     // ── Spam defence ──────────────────────────────────────────────────────
-    // These two return 200. Telling a bot which check it tripped only helps
-    // it iterate, and the clinic loses nothing by the bot believing it won.
+    // Both checks answer 200 so a bot learns nothing. The danger is a FALSE
+    // POSITIVE: a real patient silently discarded while being told "sent".
+    // That happened -- Chrome autofilled a honeypot named "company" despite
+    // autocomplete="off", and the request vanished with no trace.
     //
-    // A genuine failure below returns a real error code, because a PATIENT
-    // must never be shown "sent" for a request that was not delivered. That
-    // distinction is the whole point: silence is fine for bots, never for
-    // people.
-    if (clean(payload.company) !== '') {
+    // So every drop is now LOGGED. A dropped request must be explainable
+    // after the fact; the previous version left nothing to look at.
+    if (clean(payload.hp_ref2) !== '') {
+      console.warn('dropped: honeypot filled', JSON.stringify({
+        reason: 'honeypot',
+        // No patient data -- just enough to tell autofill from a bot.
+        hpLength: clean(payload.hp_ref2).length,
+        elapsedMs: payload.elapsedMs ?? null,
+        ua: request.headers.get('User-Agent')?.slice(0, 80) ?? null,
+      }));
       return json(env, { ok: true }, 200);
     }
     if (typeof payload.elapsedMs === 'number' && payload.elapsedMs < MIN_ELAPSED_MS) {
+      console.warn('dropped: submitted too fast', JSON.stringify({
+        reason: 'timing',
+        elapsedMs: payload.elapsedMs,
+        thresholdMs: MIN_ELAPSED_MS,
+        ua: request.headers.get('User-Agent')?.slice(0, 80) ?? null,
+      }));
       return json(env, { ok: true }, 200);
     }
 

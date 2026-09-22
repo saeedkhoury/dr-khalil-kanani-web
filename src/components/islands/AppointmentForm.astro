@@ -240,14 +240,25 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
   {/* ── Honeypot ──────────────────────────────────────────────────────────
       Off-screen rather than display:none — some bots skip hidden inputs but
       almost all fill anything with a plausible name. aria-hidden and
-      tabindex=-1 keep it away from screen readers and the tab order, so it
-      costs a real visitor nothing.
+      tabindex=-1 keep it away from screen readers and the tab order.
 
-      The server treats a filled honeypot as success and drops the message.
-      Telling a bot it failed only helps it iterate. */}
+      THE NAME MATTERS. This was `name="company"` with autocomplete="off",
+      and Chrome autofilled it anyway — browsers ignore that hint on standard
+      address-form names. A real patient's request was silently discarded
+      while the page told them it had been sent.
+
+      `hp_ref2` matches no autofill heuristic. The label is gone for the same
+      reason: a visible-to-the-browser label saying "Company" is itself a
+      strong autofill signal. */}
   <div aria-hidden="true" style="position:absolute;inset-inline-start:-9999px;width:1px;height:1px;overflow:hidden">
-    <label for="f-company">Company</label>
-    <input type="text" id="f-company" name="company" tabindex="-1" autocomplete="off" />
+    <input
+      type="text"
+      id="f-hp-ref2"
+      name="hp_ref2"
+      tabindex="-1"
+      autocomplete="off"
+      aria-hidden="true"
+    />
   </div>
 
   <!-- Consent: unticked, never bundled with the submit action. -->
@@ -418,7 +429,7 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
       const note = el<HTMLTextAreaElement>('f-message');
       const methodField = form!.querySelector('fieldset') as HTMLFieldSetElement;
       const method = form!.querySelector<HTMLInputElement>('input[name="contactMethod"]:checked');
-      const honeypot = el<HTMLInputElement>('f-company');
+      const honeypot = el<HTMLInputElement>('f-hp-ref2');
 
       return {
         fields: [
@@ -437,7 +448,7 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
           { label: daypart.dataset.label, value: daypart.selectedOptions[0]?.text ?? '', key: 'daypart' },
           { label: note.dataset.label, value: note.value, key: 'message' },
         ],
-        company: honeypot?.value ?? '',
+        honeypot: honeypot?.value ?? '',
       };
     }
 
@@ -455,7 +466,7 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
       const entry = readEntry();
       const payload: Record<string, unknown> = {
         locale: form!.dataset.locale ?? '',
-        company: entry.company,
+        hp_ref2: entry.honeypot,
         elapsedMs: Date.now() - startedAt,
         consent: !!(document.getElementById('f-consent') as HTMLInputElement | null)?.checked,
       };

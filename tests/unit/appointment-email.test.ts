@@ -132,7 +132,7 @@ describe('relay behaviour', () => {
 
   test('a filled honeypot is silently dropped, not delivered', async () => {
     const { response, sent } = await withStubbedResend(true, () =>
-      worker.fetch(post({ ...validBody, company: 'Acme SEO' }), env),
+      worker.fetch(post({ ...validBody, hp_ref2: 'Acme SEO' }), env),
     );
     // 200 so the bot learns nothing...
     assert.equal(response.status, 200);
@@ -140,9 +140,40 @@ describe('relay behaviour', () => {
     assert.equal(sent, null);
   });
 
+  test('a browser autofilling every field is NOT treated as a bot', async () => {
+    // The regression that lost a real request. Autofill completes a form in
+    // well under the old 3s threshold, and Chrome filled a honeypot named
+    // "company" despite autocomplete="off". Both were silent, and the patient
+    // was shown success.
+    const { response, sent } = await withStubbedResend(true, () =>
+      worker.fetch(post({ ...validBody, elapsedMs: 1500 }), env),
+    );
+    assert.equal(response.status, 200);
+    assert.ok(sent !== null, 'a fast but human submission must still be delivered');
+  });
+
+  test('the honeypot field name matches no browser autofill heuristic', async () => {
+    const src = await readFile(
+      new URL('../../src/components/islands/AppointmentForm.astro', import.meta.url),
+      'utf8',
+    );
+    // Inspect real <input> tags only — the comment above the honeypot names
+    // the old field on purpose, and matching raw text would flag the very
+    // documentation explaining the bug.
+    const inputNames = [...src.matchAll(/<input\b[^>]*?\bname="([^"]+)"/gs)].map((m) => m[1]);
+    const AUTOFILLABLE = /^(company|organization|website|url|address|city|country|nickname|fax)$/i;
+    for (const fieldName of inputNames) {
+      assert.doesNotMatch(fieldName, AUTOFILLABLE, `input name="${fieldName}" is autofillable`);
+    }
+    assert.ok(inputNames.includes('hp_ref2'), 'the honeypot input must be present');
+    assert.match(src, /name="hp_ref2"/);
+    // A <label> for the honeypot is itself an autofill signal.
+    assert.ok(!/for="f-hp-ref2"/.test(src), 'the honeypot must carry no label');
+  });
+
   test('a submit faster than a human could type is dropped', async () => {
     const { response, sent } = await withStubbedResend(true, () =>
-      worker.fetch(post({ ...validBody, elapsedMs: 400 }), env),
+      worker.fetch(post({ ...validBody, elapsedMs: 200 }), env),
     );
     assert.equal(response.status, 200);
     assert.equal(sent, null);
