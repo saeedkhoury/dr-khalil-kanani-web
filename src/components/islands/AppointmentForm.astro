@@ -282,9 +282,13 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
     </p>
   </div>
 
-  <!-- What actually happens, stated plainly at the point of collection. -->
+  {/* What actually happens to the data, stated at the point of collection.
+      Kept deliberately: Amendment 13 expects a plain statement of handling
+      where the details are entered, not only in a privacy policy nobody
+      opens. The WhatsApp wording is gone; the no-storage fact is still true
+      and now names the real destination. */}
   <p class="mt-5 flex items-start gap-2 rounded-[var(--radius-field)] bg-[var(--color-mist)] p-4 text-[var(--text-sm)] leading-relaxed text-[var(--color-muted)]">
-    <Icon name="whatsapp" size={17} class="mt-0.5 shrink-0 text-[var(--color-wa)]" />
+    <Icon name="mail" size={17} class="mt-0.5 shrink-0 text-[var(--color-signal)]" />
     <span>{t('form.handoffNote')}</span>
   </p>
 

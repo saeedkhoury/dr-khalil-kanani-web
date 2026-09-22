@@ -326,7 +326,12 @@ describe('site wiring', () => {
       [...ui.matchAll(new RegExp(`'${key}':\\s*'([^']*)'`, 'g'))].map((m) => m[1]);
 
     const WHATSAPP = /whatsapp|וואטסאפ|واتساب/i;
-    for (const key of ['form.submit', 'form.submitting', 'form.intro', 'form.success.title', 'form.success.body']) {
+    // handoffNote was missed the first time this test was written, and the
+    // WhatsApp explainer stayed on the live form for another deploy cycle.
+    for (const key of [
+      'form.submit', 'form.submitting', 'form.intro',
+      'form.success.title', 'form.success.body', 'form.handoffNote',
+    ]) {
       const values = line(key);
       assert.ok(values.length >= 3, `${key}: expected all three locales`);
       for (const value of values) {
