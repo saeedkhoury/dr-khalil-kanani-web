@@ -2,7 +2,7 @@
 
 Current repository state. Not a history — see `CHANGELOG.md` for that.
 
-**Last updated:** 2026-09-22
+**Last updated:** 2026-09-23
 
 ---
 
@@ -108,6 +108,40 @@ full-scope; `verify` and CI use the latter.
 
 Phase 1 stopped where the plan says it stops. **Do not** assume the owner can
 edit anything yet.
+
+### Branch `feat/admin-cms` — admin CMS Phase 2 COMPLETE, unmerged
+
+The security shell for `admin.drkhalilkanani.com`. **It proves who you are and
+then does nothing.** No admin UI, no data mutation, no GitHub access, and
+nothing deployed or configured in Cloudflare.
+
+| | Commit | What it does |
+|---|---|---|
+| 1 | `14ea94f` | drop a tsconfig include pointing at a file that never existed |
+| 2 | `9516f0d` | transport layer — `Env`, error contract, security headers, `jose` |
+| 3 | `ee6fd2c` | independent Cloudflare Access JWT verification |
+| 4 | `76d40dd` | routing and `GET /api/session` |
+
+`workers/admin/` is isolated from `workers/appointment-email/` — separate
+config, secrets and domain, nothing shared.
+
+**Not deployed and not configured.** No Access application exists, no custom
+domain is bound, no secret is set. `ALLOWED_EMAILS` is unset, which means the
+Worker **refuses everyone**, including a valid signed token. That is the
+intended resting state until an identity list is deliberately configured.
+`GITHUB_TOKEN` appears nowhere — not in the type, the config, or the account.
+
+**The public site did not change.** All 128 built files remain byte-identical
+to the Phase 1 baseline. `jose` is the Worker's only runtime dependency and no
+site module imports it.
+
+66 new tests, all offline: real RSA keys, real RS256 signatures, `fetch`
+stubbed to serve a local JWKS. Mutation-tested — removing any single security
+control fails at least one test.
+
+**Before deploying:** the Access application must exist and be verified, and a
+non-allow-listed identity refused, *before* a custom domain makes the Worker
+reachable. See `docs/specs/2026-09-22-admin-cms-phase-2.md` §M.
 
 ## What exists
 
