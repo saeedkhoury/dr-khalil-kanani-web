@@ -260,3 +260,204 @@ it is why the credential is scoped as tightly as it is.
    repository and only unpublish it? Deleting is cleaner; keeping allows undo.
 3. **English alt text** is currently a placeholder copied from Arabic. Accept,
    or add a periodic review task?
+
+---
+
+# UI design
+
+Informed by the `ui-ux-pro-max` guideline set (async status, error summaries,
+compact-control semantics, destructive-action confirmation, loading buttons).
+
+## 9. The governing decision: it is the same website
+
+The panel uses `src/styles/global.css` **verbatim** — the same tokens, type
+scale, radii, easing and surfaces as the public site. No new palette, no
+second design language.
+
+This is the single biggest thing separating a professional tool from one that
+looks generated. Admin panels drift into a default aesthetic — indigo accents,
+oversized radii, gradient headers, stat cards nobody reads — because they are
+designed in isolation from the product. The doctor should open this and
+recognise his own website.
+
+Concretely, it inherits:
+
+| | |
+|---|---|
+| Surfaces | porcelain → mist → haze → tide |
+| Depth | **layered tint and hairlines, never a drop shadow** |
+| Accent | one saturated `--color-ink` `#0C5283` |
+| `--color-signal` `#2195D2` | icons and graphics only — 3.34:1, fails for text |
+| Radii | `--radius-card` 14px · `--radius-btn` 12px · `--radius-field` 10px |
+| Motion | `--ease-out`, `--dur-fast/base`, honouring `prefers-reduced-motion` |
+| Direction | logical properties only |
+
+### What it deliberately does not have
+
+No dashboard home. No statistics tiles. No charts. No sidebar. The panel has
+two jobs; a navigation chrome built for twenty would be decoration pretending
+to be product.
+
+## 10. Structure
+
+Phone-first, single column, `--shell-max` capped at a comfortable reading
+width on desktop. He will use this standing up, between patients.
+
+```
+┌─────────────────────────────────┐
+│  ד״ר חליל כנעאני · ניהול        │  ← thin bar, name + sign out
+├─────────────────────────────────┤
+│  [ שעות פתיחה ]  [ תמונות ]     │  ← two tabs, nothing more
+├─────────────────────────────────┤
+│                                 │
+│  (screen)                       │
+│                                 │
+├─────────────────────────────────┤
+│  publish status                 │  ← appears only after a save
+└─────────────────────────────────┘
+```
+
+Two tabs, not a menu. With two destinations a menu is a worse menu.
+
+## 11. Screen: hours
+
+A **list, not cards**. Seven rows of the same shape read as one table the eye
+can scan; seven cards read as seven unrelated objects.
+
+```
+┌─────────────────────────────────────────────┐
+│ ראשון            [ סגור ○ ]                 │
+│ ┌──────────┐  ┌──────────┐                  │
+│ │  09:00   │  │  18:00   │                  │
+│ └──────────┘  └──────────┘                  │
+├─────────────────────────────────────────────┤
+│ שני              [ סגור ○ ]                 │
+│ …                                           │
+├─────────────────────────────────────────────┤
+│ שבת              [ סגור ● ]                 │
+│         — סגור —                            │
+└─────────────────────────────────────────────┘
+```
+
+- Rows separated by a hairline `--color-line`, not gaps. One object.
+- The closed toggle is a **native checkbox**, restyled — not a `<div>` with a
+  click handler. It carries a real label, a real `checked` state and native
+  keyboard behaviour.
+- Closed state is shown by **text as well as position** — "— סגור —" replaces
+  the time fields. State is never conveyed by colour or position alone.
+- Time fields are `<input type="time">`: the phone gives a native time wheel,
+  which beats anything custom for a one-handed user.
+- Fields are `min-height: 48px`, above the 44px floor.
+
+**Save** is a single full-width button at the end of the list, `--color-ink`.
+It is not sticky — the list is seven rows and fits a phone screen, so a sticky
+bar would cover content to solve a problem that does not exist here.
+
+### Validation
+
+Reuses the appointment form's pattern exactly, because it is already built and
+already correct: a focusable error summary at the top with `role="alert"` and
+`tabindex="-1"`, each item linking to its field, **plus** inline errors bound
+with `aria-describedby`. Inline errors are never replaced by the summary.
+
+Rules: a day that is not closed needs both times; opening must precede closing.
+
+## 12. Screen: photos
+
+### The grid
+
+Published photographs as a two-column grid on a phone, three on desktop, each
+at its true aspect ratio. Remove is a labelled icon button in the corner of
+each tile — `aria-label` naming *which* photo, never a bare "remove".
+
+### Adding one — a separate focused step, not an inline form
+
+Pressing **הוספת תמונה** opens a full-screen step. Cramming a file picker,
+two text fields and a legal confirmation into a corner of the grid produces
+the cramped, generated look the owner asked to avoid; more importantly the
+confirmation deserves the screen's full attention.
+
+Order matters, and it is: **pick → see → describe → confirm → save.**
+
+```
+1  [ בחירת תמונה ]
+2  ┌───────────────────┐
+   │   preview         │   ← he sees it BEFORE describing it
+   └───────────────────┘
+3  קטגוריה   [ קבלה ▾ ]
+4  תיאור בעברית   [__________]
+5  وصف بالعربية   [__________]
+6  ┌───────────────────────────────┐
+   │ ☐  אני מאשר/ת: בתמונה אין      │
+   │    מטופל, אין חלק מגוף של      │
+   │    מטופל, ואין השוואת          │
+   │    לפני/אחרי.                  │
+   └───────────────────────────────┘
+7  [      שמירה      ]   ← disabled until 6 is ticked
+```
+
+The preview comes before the description fields for a reason: he cannot write
+alt text for a photograph he has not looked at, and looking at it is also the
+moment he would notice a patient in the frame.
+
+### The confirmation
+
+Given its own bordered block, not a line of small print beside a checkbox. It
+is the only element on the page allowed to interrupt the visual rhythm —
+because it is the only control standing between this panel and the mistake
+this project has already made once.
+
+Save stays `disabled` until it is ticked, and the disabled state is explained
+in text beneath the button rather than left for him to work out.
+
+### Removing
+
+Confirmation dialog naming the photograph, per the destructive-action
+guideline. Native `<dialog>`, matching the site's lightbox: focus trap,
+Escape and focus restore all come from the browser.
+
+## 13. Publish status — the component that earns its keep
+
+Changes take 2–4 minutes. Without this he changes his hours, sees nothing, and
+concludes the tool is broken.
+
+A single region below the screen, present only after a save:
+
+| State | Shows |
+|---|---|
+| Publishing | Animated hairline + **מתפרסם… זה לוקח כ־2–3 דקות** |
+| Published | Check in `--color-ink` + **פורסם באתר** + the time |
+| Failed | Alert icon + plain-language reason + "צרו קשר עם המפתח" |
+
+Marked up as `role="status"` with `aria-atomic="true"`, announcing a full
+sentence rather than a bare word, and **never moving focus** — he may have
+moved on to the next screen. The failed state uses `role="alert"`.
+
+Success is not a toast. A toast disappears; a man who pockets his phone
+mid-publish should be able to pull it out and still see what happened.
+
+Under `prefers-reduced-motion` the animated hairline becomes static.
+
+## 14. Typography and language
+
+Hebrew first, `dir="rtl"`, with the site's own Hebrew face. Arabic fields are
+individually `dir="rtl"` with the Arabic face; times and numbers are wrapped
+in `.u-ltr` so they never reorder.
+
+Body text at `--text-base` (17px) rather than the 14px common in admin tools.
+This is one person on a phone, occasionally in a hurry, possibly without
+reading glasses. There is no information density problem to solve.
+
+## 15. Accessibility
+
+Bound by IS 5568 — WCAG 2.0 AA, with **2.4.10 Section Headings mandatory at
+AA**, so each screen carries a real `<h1>` and correctly nested headings. The
+existing `scripts/audit-html.mjs` gate is extended to cover the panel's
+rendered output.
+
+- Every control reachable and operable by keyboard, with the site's 3px
+  `:focus-visible` ring at 2px offset
+- No state by colour alone — closed days, confirmation, and each publish state
+  all carry text
+- Touch targets ≥48px with ≥8px separation
+- Every icon button carries an `aria-label` naming its specific object
