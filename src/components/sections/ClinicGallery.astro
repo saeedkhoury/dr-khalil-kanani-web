@@ -67,23 +67,70 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
           </div>}
         </div>
 
-        {/* ── WHY COLUMNS, NOT A GRID, FOR TREATMENT WORK ──────────────────
-            These images are a mix of square (1254x1254) and tall 9:16 posts.
-            A uniform grid forces one shape on both: `object-cover` would crop
-            away the clinic's own branding and the before/after labels, which
-            ADR 0009 requires be shown whole, and `object-contain` letterboxes
-            the tall ones into roughly 44% empty space.
+        {/* ── WHY A HORIZONTAL SCROLLER FOR TREATMENT WORK ────────────────
+            These images are a mix of square (1254x1254) and tall 9:16 posts,
+            and every one must be shown WHOLE: `object-cover` would crop away
+            the clinic's own branding and the before/after labels that ADR 0009
+            requires be visible.
 
-            CSS multi-column lets every tile keep its true aspect ratio and
-            packs the uneven heights without gaps. It also respects `direction`,
-            so the first column is on the right in Hebrew and Arabic with no
-            extra work, and reading order still follows DOM order. */}
+            A film-strip solves what a grid cannot. Each tile is a fixed HEIGHT
+            with its width derived from its own aspect ratio, so nothing is
+            cropped and nothing is letterboxed — the strip simply has tiles of
+            differing widths, which reads as intentional rather than ragged.
+
+            Built on native `overflow-x: auto` + scroll-snap rather than a
+            carousel library: touch swipe, momentum, trackpad, and keyboard
+            scrolling all come free and correct, including in RTL, where the
+            strip starts at the right because `direction` already governs
+            inline scrolling. The arrow buttons are a convenience on top, not
+            the mechanism. */}
+        {workGallery && (
+          <div class="mt-10 flex items-center justify-between gap-4">
+            <p class="text-[var(--text-sm)] text-[var(--color-muted)]">{t('gallery.scrollHint')}</p>
+            {/* Convenience only — the strip is fully usable without these. */}
+            <div class="flex gap-2">
+              <button
+                type="button"
+                data-strip-prev
+                aria-controls="work-strip"
+                aria-label={t('gallery.previous')}
+                class="flex size-11 cursor-pointer items-center justify-center rounded-full border border-[var(--color-line-strong)] bg-[var(--color-porcelain)] text-[var(--color-ink)] transition-colors duration-[var(--dur-fast)] hover:bg-[var(--color-mist)] disabled:opacity-40"
+              >
+                <Icon name="chevron" size={18} class="u-flip rotate-180" />
+              </button>
+              <button
+                type="button"
+                data-strip-next
+                aria-controls="work-strip"
+                aria-label={t('gallery.next')}
+                class="flex size-11 cursor-pointer items-center justify-center rounded-full border border-[var(--color-line-strong)] bg-[var(--color-porcelain)] text-[var(--color-ink)] transition-colors duration-[var(--dur-fast)] hover:bg-[var(--color-mist)] disabled:opacity-40"
+              >
+                <Icon name="chevron" size={18} class="u-flip" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* The scroll container is a DIV, not the <ul>. Putting role="region"
+            on the list itself overrides its implicit `list` role, which
+            orphans every <li> — axe reports "listitem" violations and screen
+            readers stop announcing "list, 12 items". For the non-work
+            galleries this wrapper is display:contents, so it changes nothing. */}
+        <div
+          id={workGallery ? 'work-strip' : undefined}
+          role={workGallery ? 'region' : undefined}
+          aria-label={workGallery ? t('gallery.workTitle') : undefined}
+          class:list={[
+            workGallery
+              ? 'work-strip mt-5 snap-x snap-mandatory overflow-x-auto overscroll-x-contain pb-3'
+              : 'contents',
+          ]}
+        >
         <ul
           class:list={[
-            'mt-10',
             workGallery
-              ? 'columns-1 gap-5 sm:columns-2 lg:columns-3'
-              : 'grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:auto-rows-[15rem]',
+              ? 'flex gap-4'
+              : 'mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:auto-rows-[15rem]',
           ]}
           style="list-style:none;padding-inline-start:0;margin-block-end:0"
         >
@@ -91,7 +138,7 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
             <li
               class:list={[
                 'reveal',
-                workGallery ? 'mb-5 break-inside-avoid' : '',
+                workGallery ? 'shrink-0 snap-start' : '',
                 !workGallery && asset.feature ? 'sm:col-span-2 lg:row-span-2' : '',
               ]}
               style={`--i:${i % 3}`}
@@ -112,10 +159,10 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
                   style={workGallery ? `aspect-ratio:${asset.width} / ${asset.height}` : undefined}
                   class:list={[
                     'transition-opacity duration-[var(--dur-base)] group-hover:opacity-90',
-                    /* Its own shape, shown whole. `contain` stays as a safety
-                       net if a registered dimension is ever wrong — a wrong
-                       number should letterbox, never silently crop. */
-                    workGallery ? 'block w-full object-contain' : 'size-full object-cover',
+                    /* Fixed height, width follows the aspect ratio. `contain`
+                       stays as a safety net if a registered dimension is ever
+                       wrong — a wrong number should letterbox, never crop. */
+                    workGallery ? 'block h-[18rem] w-auto object-contain sm:h-[22rem]' : 'size-full object-cover',
                   ]}
                 />
                 {asset.caption && (
@@ -130,6 +177,7 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
             </li>
           ))}
         </ul>
+        </div>
       </div>
 
       {/* ---- Lightbox ---- */}
@@ -203,6 +251,45 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
           not exist. Inline keeps the script inside the conditional, so it
           exists only when there are actually images to open. Plain JS, not
           TypeScript: inline scripts are passed through untransformed. */}
+      <script is:inline>
+        (() => {
+          const strip = document.getElementById('work-strip');
+          if (!strip) return;
+          const prev = document.querySelector('[data-strip-prev]');
+          const next = document.querySelector('[data-strip-next]');
+
+          // In RTL the browser already scrolls the inline axis the right way,
+          // but scrollLeft is NEGATIVE in Chrome and Firefox. Working from the
+          // sign of scrollLeft rather than assuming a direction keeps one code
+          // path correct in Hebrew, Arabic and English.
+          const rtl = () => getComputedStyle(strip).direction === 'rtl';
+          const step = () => Math.max(240, strip.clientWidth * 0.8);
+
+          const scrollByStep = (forward) => {
+            const delta = step() * (forward ? 1 : -1) * (rtl() ? -1 : 1);
+            const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+            strip.scrollBy({ left: delta, behavior: reduce ? 'auto' : 'smooth' });
+          };
+
+          prev?.addEventListener('click', () => scrollByStep(false));
+          next?.addEventListener('click', () => scrollByStep(true));
+
+          // Disable an arrow at the end of travel, so the control tells the
+          // truth about whether there is anything left to see.
+          const sync = () => {
+            const max = strip.scrollWidth - strip.clientWidth;
+            const pos = Math.abs(strip.scrollLeft);
+            const atStart = pos <= 2;
+            const atEnd = pos >= max - 2;
+            if (prev) prev.disabled = atStart;
+            if (next) next.disabled = atEnd || max <= 2;
+          };
+          strip.addEventListener('scroll', sync, { passive: true });
+          addEventListener('resize', sync);
+          sync();
+        })();
+      </script>
+
       <script is:inline>
         (() => {
           const dialog = document.getElementById('gallery-lightbox');

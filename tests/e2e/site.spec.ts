@@ -27,10 +27,30 @@ for (const locale of locales) {
     if (clinic.social.facebook) await expect(gallery.locator('[data-gallery-social] a[href="' + clinic.social.facebook + '"]')).toHaveText('Facebook');
     for (const tile of await tiles.all()) await expect(tile.locator('img')).toHaveCSS('object-fit', 'contain');
     await gallery.scrollIntoViewIfNeeded();
-    for (const image of await tiles.locator('img').all()) {
+    // The strip scrolls horizontally, so tiles past the fold are loading=lazy
+    // and never enter the viewport unaided — naturalWidth stays 0 for them by
+    // design. Assert the eager ones really decoded, and that every lazy one
+    // carries a resolved src so it WILL load when scrolled to.
+    const images = await tiles.locator('img').all();
+    for (const [index, image] of images.entries()) {
       await expect(image).toBeVisible();
-      await expect.poll(() => image.evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
+      const loading = await image.getAttribute('loading');
+      if (loading !== 'lazy') {
+        await expect
+          .poll(() => image.evaluate((el: HTMLImageElement) => el.naturalWidth))
+          .toBeGreaterThan(0);
+      } else {
+        const src = await image.getAttribute('src');
+        expect(src, `tile ${index} has no src to lazy-load`).toBeTruthy();
+      }
     }
+    // Scrolling the strip to the end must actually bring the last tile in.
+    const lastTile = tiles.last();
+    await lastTile.scrollIntoViewIfNeeded();
+    await expect
+      .poll(() => lastTile.locator('img').evaluate((el: HTMLImageElement) => el.naturalWidth))
+      .toBeGreaterThan(0);
+    await tiles.first().scrollIntoViewIfNeeded();
     await tiles.first().click();
     const dialog = page.locator('#gallery-lightbox');
     await expect(dialog).toBeVisible();

@@ -497,6 +497,20 @@
     opacity: 1;
   }
 
+
+  /* ---- Treatment-work film strip ---------------------------------------
+     The scrollbar is hidden because the strip already signals itself: tiles
+     are deliberately cut off at the edge, there is a written hint, and the
+     arrows disable at each end. Scrolling itself stays completely native, so
+     touch, trackpad and keyboard all keep working. */
+  .work-strip {
+    scrollbar-width: none;
+    scroll-padding-inline: 1rem;
+  }
+  .work-strip::-webkit-scrollbar {
+    display: none;
+  }
+
   /* ---- Reduced motion ---------------------------------------------------
      Everything lands in its final state instantly. Nothing is hidden, and
      nothing waits. global.css also zeroes all durations further up. */

@@ -158,6 +158,7 @@ export const ui = {
     'gallery.artTitle': 'רפואת שיניים בתמונות',
     'gallery.artIntro': 'איורים שנוצרו בבינה מלאכותית להמחשה בלבד. אלו אינם צילומי המרפאה או מטופלים.',
     'gallery.close': 'סגירת התמונה',
+    'gallery.scrollHint': 'אפשר לגלול הצידה כדי לראות עוד',
     'gallery.previous': 'הקודמת',
     'gallery.next': 'הבאה',
 
@@ -316,6 +317,7 @@ export const ui = {
     'gallery.artTitle': 'طب الأسنان بالصور',
     'gallery.artIntro': 'رسوم أُنشئت بالذكاء الاصطناعي للتوضيح فقط. ليست صورًا للعيادة أو للمرضى.',
     'gallery.close': 'إغلاق الصورة',
+    'gallery.scrollHint': 'يمكنكم التمرير جانبًا لرؤية المزيد',
     'gallery.previous': 'السابقة',
     'gallery.next': 'التالية',
 
@@ -475,6 +477,7 @@ export const ui = {
     'gallery.artTitle': 'Dentistry, illustrated',
     'gallery.artIntro': 'AI-generated illustrations for visual reference. These are not photographs of the clinic or patients.',
     'gallery.close': 'Close image',
+    'gallery.scrollHint': 'Scroll sideways to see more',
     'gallery.previous': 'Previous',
     'gallery.next': 'Next',
 
