@@ -1,8 +1,13 @@
 ---
 /**
- * Appointment request form — WhatsApp handoff.
+ * Appointment request form — emails the clinic, falls back to WhatsApp.
  *
- * ── WHY THIS IS NOT A SERVER POST (ADR 0007) ──────────────────────────────
+ * The request is POSTed to a Cloudflare Worker which emails it to the clinic
+ * (see workers/appointment-email/). WhatsApp is the FALLBACK, used when the
+ * relay is unreachable or unconfigured — never silently, and never while
+ * telling the patient something different happened.
+ *
+ * ── WHY THERE IS A WHATSAPP FALLBACK AT ALL (ADR 0007) ────────────────────
  * The site is hosted on GitHub Pages, which is static-only. The build's server
  * route lands in `dist/server/` and is never deployed — the workflow uploads
  * `dist/client`. The previous version posted to `/api/appointment-request/`,
@@ -290,9 +295,12 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
     type="submit"
     id="f-submit"
     data-submitting={t('form.submitting')}
-    class="mt-6 inline-flex min-h-[48px] w-full cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-[var(--color-wa)] px-7 font-semibold text-white transition-[filter,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:brightness-90 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+    class="mt-6 inline-flex min-h-[48px] w-full cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-[var(--color-ink)] px-7 font-semibold text-white transition-[background-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-[var(--color-ink-deep)] active:translate-y-px disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
   >
-    <Icon name="whatsapp" size={19} />
+    {/* Deliberately NOT a WhatsApp mark. The request is emailed; WhatsApp is
+        only the fallback, and a green WhatsApp button promised a channel the
+        form no longer uses by default. */}
+    <Icon name="mail" size={19} />
     <span data-label>{t('form.submit')}</span>
   </button>
 
@@ -302,19 +310,28 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
   </p>
 </form>
 
-<!-- Success state replaces the form once WhatsApp has been handed off to. -->
+<!-- Success state replaces the form once the request has actually gone.
+     It carries BOTH wordings because the two delivery paths are genuinely
+     different events: an emailed request is finished, whereas a WhatsApp
+     handoff still needs the patient to press send. Telling someone "sent"
+     when they must still act — or "press send" when it already went — is the
+     kind of small lie that loses an appointment. -->
 <div
   id="form-success"
   role="status"
   tabindex="-1"
   hidden
-  class="rounded-[var(--radius-card)] border border-[var(--color-wa)] bg-[var(--color-mist)] p-8"
+  data-sent-title={t('form.success.title')}
+  data-sent-body={t('form.success.body')}
+  data-wa-title={t('form.success.waTitle')}
+  data-wa-body={t('form.success.waBody')}
+  class="rounded-[var(--radius-card)] border border-[var(--color-line-strong)] bg-[var(--color-mist)] p-8"
 >
-  <span class="flex size-11 items-center justify-center rounded-full bg-[var(--color-wa)] text-white">
+  <span class="flex size-11 items-center justify-center rounded-full bg-[var(--color-ink)] text-white">
     <Icon name="check" size={22} stroke={2.4} />
   </span>
-  <h2 class="mt-4 text-[var(--text-xl)] font-semibold">{t('form.success.title')}</h2>
-  <p class="mt-2 text-[var(--color-muted)]">{t('form.success.body')}</p>
+  <h2 id="form-success-title" class="mt-4 text-[var(--text-xl)] font-semibold">{t('form.success.title')}</h2>
+  <p id="form-success-body" class="mt-2 text-[var(--color-muted)]">{t('form.success.body')}</p>
   <p class="mt-5">
     <a
       href={telUrl('landline')}
@@ -470,7 +487,16 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
       return true;
     }
 
-    function showSuccess() {
+    /**
+     * @param via 'email' when the relay confirmed delivery, 'whatsapp' when we
+     * fell back. The panel must describe the event that actually occurred.
+     */
+    function showSuccess(via: 'email' | 'whatsapp') {
+      const title = document.getElementById('form-success-title')!;
+      const body = document.getElementById('form-success-body')!;
+      const d = success.dataset;
+      title.textContent = (via === 'email' ? d.sentTitle : d.waTitle) ?? title.textContent;
+      body.textContent = (via === 'email' ? d.sentBody : d.waBody) ?? body.textContent;
       form!.hidden = true;
       success.hidden = false;
       success.focus();
@@ -522,7 +548,7 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
       // The original behaviour, unchanged. An unconfigured endpoint must
       // mean "use WhatsApp", never "drop the request".
       if (!endpoint) {
-        if (handOffToWhatsApp()) showSuccess();
+        if (handOffToWhatsApp()) showSuccess('whatsapp');
         restore();
         return;
       }
@@ -544,13 +570,13 @@ const errorBase = 'mt-1.5 flex items-start gap-1.5 text-[var(--text-sm)] text-[v
         .then((response) => (response.ok ? response.json() : Promise.reject(new Error(String(response.status)))))
         .then((body) => {
           if (!body || body.ok !== true) throw new Error('relay_rejected');
-          showSuccess();
+          showSuccess('email');
         })
         .catch(() => {
           // Deliberately quiet toward the visitor: they get a working path,
           // not an explanation of our infrastructure. The request still
           // reaches the dentist.
-          if (handOffToWhatsApp()) showSuccess();
+          if (handOffToWhatsApp()) showSuccess('whatsapp');
           else genericError.hidden = false;
         })
         .finally(() => {

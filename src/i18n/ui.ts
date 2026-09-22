@@ -85,7 +85,7 @@ export const ui = {
     'contact.emailLabel': 'דוא״ל',
 
     'form.title': 'בקשת תור',
-    'form.intro': 'מלאו את הפרטים והבקשה תישלח ישירות לרופא בוואטסאפ. אין צורך בפרטים רפואיים.',
+    'form.intro': 'מלאו את הפרטים והבקשה תישלח ישירות לרופא. אין צורך בפרטים רפואיים.',
     'form.name': 'שם מלא',
     'form.phone': 'טלפון',
     'form.contactMethod': 'איך תעדיפו שנחזור אליכם?',
@@ -105,8 +105,8 @@ export const ui = {
     'form.consent':
       'אני מאשר/ת שתיצרו איתי קשר בנוגע לפנייה זו. הפרטים ישמשו למטרה זו בלבד.',
     'form.marketingOptIn': 'אשמח לקבל עדכונים מהמרפאה (לא חובה)',
-    'form.submit': 'שליחה בוואטסאפ',
-    'form.submitting': 'פותח וואטסאפ…',
+    'form.submit': 'שליחת הבקשה',
+    'form.submitting': 'שולח…',
     'form.handoffNote': 'הפרטים אינם נשמרים באתר. לחיצה על שליחה תפתח וואטסאפ עם הודעה מוכנה — תוכלו לקרוא אותה ולשלוח בעצמכם.',
     'form.noJs': 'כדי לשלוח בקשה דרך הטופס יש להפעיל JavaScript. אפשר גם פשוט להתקשר או לכתוב בוואטסאפ:',
     'form.messageHeading': 'בקשת תור מהאתר',
@@ -123,8 +123,10 @@ export const ui = {
     'form.error.generic': 'השליחה נכשלה. נסו שוב, או חייגו אלינו.',
     'form.error.summaryTitle': 'יש לתקן את הפרטים הבאים',
 
-    'form.success.title': 'וואטסאפ נפתח',
-    'form.success.body': 'ההודעה מוכנה בוואטסאפ — בדקו אותה ולחצו שליחה. אם לא נפתח, אפשר להתקשר אלינו.',
+    'form.success.title': 'הבקשה נשלחה',
+    'form.success.body': 'הבקשה הגיעה לרופא. נחזור אליכם בהקדם. אם העניין דחוף, אפשר להתקשר.',
+    'form.success.waTitle': 'וואטסאפ נפתח',
+    'form.success.waBody': 'ההודעה מוכנה בוואטסאפ — בדקו אותה ולחצו שליחה. אם לא נפתח, אפשר להתקשר אלינו.',
 
     'privacy.notice.title': 'מה קורה עם הפרטים שלכם',
     'privacy.notice.body':
@@ -245,7 +247,7 @@ export const ui = {
     'contact.emailLabel': 'البريد الإلكتروني',
 
     'form.title': 'طلب موعد',
-    'form.intro': 'املأوا التفاصيل وسيصل الطلب مباشرة إلى الطبيب عبر واتساب. لا حاجة لأي تفاصيل طبية.',
+    'form.intro': 'املأوا التفاصيل وسيصل الطلب مباشرة إلى الطبيب. لا حاجة لأي تفاصيل طبية.',
     'form.name': 'الاسم الكامل',
     'form.phone': 'رقم الهاتف',
     'form.contactMethod': 'كيف تفضّلون أن نتواصل معكم؟',
@@ -264,8 +266,8 @@ export const ui = {
     'form.required': 'حقل إلزامي',
     'form.consent': 'أوافق على أن تتواصلوا معي بخصوص هذا الطلب. ستُستخدم التفاصيل لهذا الغرض فقط.',
     'form.marketingOptIn': 'أرغب في تلقّي تحديثات من العيادة (اختياري)',
-    'form.submit': 'إرسال عبر واتساب',
-    'form.submitting': 'جارٍ فتح واتساب…',
+    'form.submit': 'إرسال الطلب',
+    'form.submitting': 'جارٍ الإرسال…',
     'form.handoffNote': 'لا يحفظ الموقع تفاصيلكم. الضغط على إرسال يفتح واتساب برسالة جاهزة — يمكنكم قراءتها وإرسالها بأنفسكم.',
     'form.noJs': 'لإرسال طلب عبر النموذج يلزم تفعيل JavaScript. يمكنكم ببساطة الاتصال أو المراسلة عبر واتساب:',
     'form.messageHeading': 'طلب موعد من الموقع',
@@ -282,8 +284,10 @@ export const ui = {
     'form.error.generic': 'فشل الإرسال. حاولوا مجددًا أو اتصلوا بنا.',
     'form.error.summaryTitle': 'يُرجى تصحيح التفاصيل التالية',
 
-    'form.success.title': 'تم فتح واتساب',
-    'form.success.body': 'الرسالة جاهزة في واتساب — راجعوها واضغطوا إرسال. إذا لم يُفتح، يمكنكم الاتصال بنا.',
+    'form.success.title': 'تم إرسال الطلب',
+    'form.success.body': 'وصل الطلب إلى الطبيب. سنعاود التواصل معكم قريبًا. وإذا كان الأمر عاجلًا يمكنكم الاتصال.',
+    'form.success.waTitle': 'تم فتح واتساب',
+    'form.success.waBody': 'الرسالة جاهزة في واتساب — راجعوها واضغطوا إرسال. إذا لم يُفتح، يمكنكم الاتصال بنا.',
 
     'privacy.notice.title': 'ماذا يحدث لتفاصيلكم',
     'privacy.notice.body':
@@ -404,7 +408,7 @@ export const ui = {
     'contact.emailLabel': 'Email',
 
     'form.title': 'Request an appointment',
-    'form.intro': 'Fill in your details and the request goes straight to the dentist on WhatsApp. No medical details needed.',
+    'form.intro': 'Fill in your details and the request goes straight to the dentist. No medical details needed.',
     'form.name': 'Full name',
     'form.phone': 'Phone number',
     'form.contactMethod': 'How would you prefer we reply?',
@@ -424,8 +428,8 @@ export const ui = {
     'form.consent':
       'I agree to be contacted about this enquiry. My details will be used for that purpose only.',
     'form.marketingOptIn': 'I would like updates from the clinic (optional)',
-    'form.submit': 'Send on WhatsApp',
-    'form.submitting': 'Opening WhatsApp…',
+    'form.submit': 'Send request',
+    'form.submitting': 'Sending…',
     'form.handoffNote': 'This site does not store your details. Pressing send opens WhatsApp with a ready-written message — you can read it and send it yourself.',
     'form.noJs': 'Sending through the form needs JavaScript. You can simply call or message us on WhatsApp instead:',
     'form.messageHeading': 'Appointment request from the website',
@@ -442,8 +446,10 @@ export const ui = {
     'form.error.generic': 'Sending failed. Please try again, or call us.',
     'form.error.summaryTitle': 'There is a problem',
 
-    'form.success.title': 'WhatsApp opened',
-    'form.success.body': 'Your message is ready in WhatsApp — review it and press send. If it did not open, please call us.',
+    'form.success.title': 'Request sent',
+    'form.success.body': 'Your request has reached the dentist. We will get back to you shortly. If it is urgent, please call.',
+    'form.success.waTitle': 'WhatsApp opened',
+    'form.success.waBody': 'Your message is ready in WhatsApp — review it and press send. If it did not open, please call us.',
 
     'privacy.notice.title': 'What happens to your details',
     'privacy.notice.body':

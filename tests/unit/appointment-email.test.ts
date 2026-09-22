@@ -285,6 +285,43 @@ describe('site wiring', () => {
     );
   });
 
+  test('the form does not advertise WhatsApp as the delivery channel', async () => {
+    // Regression guard. The relay shipped while every string still said
+    // "Send on WhatsApp" / "WhatsApp opened / press send", so the form emailed
+    // the request and then told the patient to go press send somewhere else.
+    // A patient following that instruction would think nothing was submitted.
+    const ui = await readFile(new URL('../../src/i18n/ui.ts', import.meta.url), 'utf8');
+    const line = (key: string) =>
+      [...ui.matchAll(new RegExp(`'${key}':\\s*'([^']*)'`, 'g'))].map((m) => m[1]);
+
+    const WHATSAPP = /whatsapp|וואטסאפ|واتساب/i;
+    for (const key of ['form.submit', 'form.submitting', 'form.intro', 'form.success.title', 'form.success.body']) {
+      const values = line(key);
+      assert.ok(values.length >= 3, `${key}: expected all three locales`);
+      for (const value of values) {
+        assert.doesNotMatch(value, WHATSAPP, `${key} still names WhatsApp: "${value}"`);
+      }
+    }
+    // The fallback wording must still exist — it is correct for that path.
+    for (const key of ['form.success.waTitle', 'form.success.waBody']) {
+      assert.equal(line(key).length, 3, `${key}: fallback wording missing`);
+    }
+  });
+
+  test('the success panel states which channel actually delivered', async () => {
+    const src = await readFile(
+      new URL('../../src/components/islands/AppointmentForm.astro', import.meta.url),
+      'utf8',
+    );
+    assert.match(src, /showSuccess\(via: 'email' \| 'whatsapp'\)/, 'success must be told the path');
+    assert.match(src, /showSuccess\('email'\)/, 'the relay path must report email');
+    assert.equal(
+      [...src.matchAll(/showSuccess\('whatsapp'\)/g)].length,
+      2,
+      'both fallback branches must report WhatsApp',
+    );
+  });
+
   test('the destination inbox is never exposed to the browser', () => {
     // requestEndpoint ships in the page source. It must address the relay and
     // nothing else -- the recipient stays a Worker secret.
@@ -301,7 +338,7 @@ describe('site wiring', () => {
       new URL('../../src/components/islands/AppointmentForm.astro', import.meta.url),
       'utf8',
     );
-    assert.match(src, /if \(!endpoint\) \{\s*\n\s*if \(handOffToWhatsApp\(\)\) showSuccess\(\);/);
+    assert.match(src, /if \(!endpoint\) \{\s*\n\s*if \(handOffToWhatsApp\(\)\) showSuccess\('whatsapp'\);/);
   });
 
   test('a duplicate submission cannot be fired by a double click', async () => {
