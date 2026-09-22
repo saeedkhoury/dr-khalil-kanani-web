@@ -70,6 +70,43 @@ writeFileSync(mediaPath, substitute(
   `export const treatmentWork: TreatmentWorkPhotograph[] = ${JSON.stringify(assets)};`,
   'treatmentWork collection',
 ));
+/**
+ * The JSON manifests are OVERWRITTEN, not copied.
+ *
+ * Same reason treatmentWork is substituted above: these files are copied from
+ * src/, so once the owner adds real clinic photographs the fixture would serve
+ * them — real images of a real clinic, in a build whose whole premise is that
+ * it contains no real content. The fixture must declare its own data.
+ *
+ * Writing JSON is also why this no longer needs a regex. A pattern that stops
+ * matching after a rename is the failure this script already had once; there
+ * is nothing to mismatch in a file that is simply replaced.
+ */
+writeFileSync(
+  join(fixture, 'src/data/clinic-photography.json'),
+  // Empty on purpose. The homepage renders the 'work' gallery, fixtured
+  // above; a populated clinic gallery here would assert nothing and would
+  // only add a second source for the tile count.
+  JSON.stringify([], null, 2) + '\n',
+);
+
+writeFileSync(
+  join(fixture, 'src/data/hours.json'),
+  // Populated, unlike production — the point of this fixture build is to
+  // render the states the real site cannot yet reach, the way it already
+  // fixtures a rating and a Google profile. hasHours() turns the block on.
+  JSON.stringify(
+    ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day) => ({
+      day,
+      opens: day === 'Saturday' ? '' : '09:00',
+      closes: day === 'Saturday' ? '' : '17:00',
+      closed: day === 'Saturday',
+    })),
+    null,
+    2,
+  ) + '\n',
+);
+
 const clinicPath = join(fixture, 'src/data/clinic.ts');
 const clinicSource = readFileSync(clinicPath, 'utf8');
 let clinicFixture = substitute(clinicSource, /geo: \{ lat: [\d.-]+, lng: [\d.-]+ \}/, 'geo: { lat: 1, lng: 1 }', 'map pin');

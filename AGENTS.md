@@ -179,9 +179,14 @@ it: `<details>` for accordions and menus, `<dialog>` for modals, a real
 which cost 85KB of browser JS. Import from `src/lib/phone.ts` instead.
 
 ### Never hardcode clinic data
-Phone numbers, addresses and hours come from `src/data/clinic.ts`. Both
-reference clinics studied during discovery shipped three different phone
-numbers across their own sites, and one linked Waze to the wrong street.
+Phone numbers and addresses come from `src/data/clinic.ts`. Both reference
+clinics studied during discovery shipped three different phone numbers across
+their own sites, and one linked Waze to the wrong street.
+
+Hours are the exception to the "one file" rule: they live in
+`src/data/hours.json` because they are the one fact the owner edits himself.
+Read them through `clinic.hours` as before — the import is validated on load,
+so a malformed edit fails the build rather than rendering a wrong hour.
 
 ---
 
