@@ -96,18 +96,50 @@ export function parseAllowedEmails(raw: string | undefined): ReadonlySet<string>
   );
 }
 
-/** `https://<team>.cloudflareaccess.com` */
-export function issuerFor(env: Env): string {
-  return `https://${env.ACCESS_TEAM_DOMAIN}`;
+/**
+ * The Access settings, or null if they are not usable.
+ *
+ * ── WHY THIS EXISTS ───────────────────────────────────────────────────────
+ * Two ways an unconfigured deployment used to fail OPEN rather than closed:
+ *
+ *  1. `jwtVerify` treats an UNDEFINED `audience` as "do not check the
+ *     audience". Cloudflare signs every application's token with the same
+ *     team key and issuer, so with ACCESS_AUD unbound a token minted for any
+ *     other Access application in the account would have authenticated here.
+ *
+ *  2. An EMPTY team domain does not produce an error. `https:///cdn-cgi/...`
+ *     silently normalises to `https://cdn-cgi/...` — a different host
+ *     entirely — so the Worker would have asked an unintended server for the
+ *     keys it verifies against.
+ *
+ * Neither is a value we can safely default. There is no default audience, no
+ * default team domain and no fallback Access application: unusable
+ * configuration refuses every request.
+ */
+export interface AccessConfig {
+  issuer: string;
+  audience: string;
+  jwksUrl: URL;
 }
 
-/**
- * Derived from the issuer rather than configured separately. Two values could
- * drift, and a JWKS URL pointing at a different team than the issuer check is
- * a real vulnerability rather than a tidiness problem.
- */
-export function jwksUrlFor(env: Env): URL {
-  return new URL(`${issuerFor(env)}/cdn-cgi/access/certs`);
+const usable = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim() !== '';
+
+export function accessConfig(env: Env): AccessConfig | null {
+  if (!usable(env.ACCESS_TEAM_DOMAIN) || !usable(env.ACCESS_AUD)) return null;
+
+  const team = env.ACCESS_TEAM_DOMAIN.trim();
+  const audience = env.ACCESS_AUD.trim();
+
+  // A team domain is a hostname. Anything that could carry a path, a port, a
+  // scheme or credentials is refused rather than normalised.
+  if (!/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/i.test(team)) return null;
+
+  const issuer = `https://${team}`;
+  // Derived from the issuer, never configured separately: a JWKS URL pointing
+  // at a different team than the issuer check is a real vulnerability rather
+  // than a tidiness problem.
+  return { issuer, audience, jwksUrl: new URL(`${issuer}/cdn-cgi/access/certs`) };
 }
 
 /**
@@ -120,12 +152,11 @@ export function jwksUrlFor(env: Env): URL {
  */
 const remoteKeySets = new Map<string, JWTVerifyGetKey>();
 
-function remoteKeys(env: Env): JWTVerifyGetKey {
-  const url = jwksUrlFor(env);
-  const cached = remoteKeySets.get(url.href);
+function remoteKeys(jwksUrl: URL): JWTVerifyGetKey {
+  const cached = remoteKeySets.get(jwksUrl.href);
   if (cached) return cached;
-  const keys = createRemoteJWKSet(url);
-  remoteKeySets.set(url.href, keys);
+  const keys = createRemoteJWKSet(jwksUrl);
+  remoteKeySets.set(jwksUrl.href, keys);
   return keys;
 }
 
@@ -140,7 +171,7 @@ function remoteKeys(env: Env): JWTVerifyGetKey {
 export async function authenticate(
   request: Request,
   env: Env,
-  keys: JWTVerifyGetKey = remoteKeys(env),
+  keys?: JWTVerifyGetKey,
 ): Promise<AuthResult> {
   // An absent header and a present-but-empty one are the same thing: no
   // credential was offered. Reporting the empty case as "invalid" would
@@ -151,6 +182,16 @@ export async function authenticate(
     return { ok: false, code: 'AUTH_REQUIRED', reason: 'no assertion header' };
   }
 
+  // Checked AFTER the token so an unauthenticated caller cannot tell a
+  // misconfigured deployment from a rejected credential, and BEFORE any key
+  // is resolved so an empty team domain cannot send us to another host.
+  const config = accessConfig(env);
+  if (config === null) {
+    return { ok: false, code: 'AUTH_INVALID', reason: 'access configuration unusable' };
+  }
+
+  const keySet = keys ?? remoteKeys(config.jwksUrl);
+
   let payload: JWTPayload;
   try {
     // `algorithms` pins RS256 here, in OUR configuration. The token's own
@@ -159,10 +200,11 @@ export async function authenticate(
     // impossible. jose resolves the key by `kid` from the key set and
     // validates iss, aud, exp and nbf as part of this single call; any
     // failure throws.
-    ({ payload } = await jwtVerify(token, keys, {
+    ({ payload } = await jwtVerify(token, keySet, {
       algorithms: [...ALGORITHMS],
-      issuer: issuerFor(env),
-      audience: env.ACCESS_AUD,
+      issuer: config.issuer,
+      // Never env.ACCESS_AUD directly: undefined here means "skip the check".
+      audience: config.audience,
       clockTolerance: CLOCK_TOLERANCE_SECONDS,
     }));
   } catch (error) {

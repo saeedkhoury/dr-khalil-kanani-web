@@ -286,11 +286,105 @@ describe('failures are externally indistinguishable', () => {
 
 describe('configuration derivation', () => {
   test('30. the JWKS URL is derived from the issuer, so they cannot disagree', async () => {
-    const { issuerFor, jwksUrlFor } = await import('../../workers/admin/src/auth.ts');
-    const e = env('');
-    assert.equal(issuerFor(e), `https://${TEAM_DOMAIN}`);
-    assert.equal(jwksUrlFor(e).href, `https://${TEAM_DOMAIN}/cdn-cgi/access/certs`);
-    assert.ok(jwksUrlFor(e).href.startsWith(issuerFor(e)), 'JWKS must live under the issuer');
-    assert.equal(ISSUER, issuerFor(e));
+    const { accessConfig } = await import('../../workers/admin/src/auth.ts');
+    const config = accessConfig(env(''));
+    assert.ok(config);
+    assert.equal(config.issuer, `https://${TEAM_DOMAIN}`);
+    assert.equal(config.jwksUrl.href, `https://${TEAM_DOMAIN}/cdn-cgi/access/certs`);
+    assert.ok(config.jwksUrl.href.startsWith(config.issuer), 'JWKS must live under the issuer');
+    assert.equal(ISSUER, config.issuer);
+  });
+});
+
+/* ────────────────────────────────────────────────────────────────────────────
+   H-3: unusable Access configuration must fail CLOSED.
+
+   Two ways this used to fail open:
+     · jwtVerify treats an UNDEFINED audience as "do not check the audience",
+       so a token for any other Access application in the same Cloudflare
+       account would have been accepted.
+     · An EMPTY team domain is not an error — `https:///cdn-cgi/...` silently
+       normalises to `https://cdn-cgi/...`, a different host, so the Worker
+       would have asked an unintended server for its verification keys.
+   ──────────────────────────────────────────────────────────────────────── */
+
+describe('unusable Access configuration fails closed', () => {
+  const unusable = [undefined, '', '   ', '\t\n'];
+
+  test('31. an unusable ACCESS_AUD refuses a perfectly valid token', async () => {
+    for (const value of unusable) {
+      const e = { ...CONFIGURED, ACCESS_AUD: value } as unknown as Env;
+      const result = await auth(requestWithToken(await makeToken({ email: DOCTOR })), e);
+      assert.equal(result.ok, false, `accepted with ACCESS_AUD=${JSON.stringify(value)}`);
+      assert.equal(result.ok === false && result.code, 'AUTH_INVALID');
+    }
+  });
+
+  test('32. an unusable ACCESS_TEAM_DOMAIN refuses a perfectly valid token', async () => {
+    for (const value of unusable) {
+      const e = { ...CONFIGURED, ACCESS_TEAM_DOMAIN: value } as unknown as Env;
+      const result = await auth(requestWithToken(await makeToken({ email: DOCTOR })), e);
+      assert.equal(result.ok, false, `accepted with ACCESS_TEAM_DOMAIN=${JSON.stringify(value)}`);
+      assert.equal(result.ok === false && result.code, 'AUTH_INVALID');
+    }
+  });
+
+  test('33. a token for ANOTHER Access application is refused when aud is unbound', async () => {
+    // The specific escalation: same team, same issuer, different application.
+    const e = { ...CONFIGURED, ACCESS_AUD: undefined } as unknown as Env;
+    const foreign = await makeToken({ email: DOCTOR, audience: 'aud-of-another-access-app' });
+    const result = await auth(requestWithToken(foreign), e);
+    assert.equal(result.ok, false);
+  });
+
+  test('34. a team domain that is not a bare hostname is refused', async () => {
+    // It becomes a URL, so anything carrying a path, port, scheme, credentials
+    // or whitespace is refused rather than normalised into another host.
+    for (const bad of [
+      'team.cloudflareaccess.test/evil', 'team.cloudflareaccess.test:8443',
+      'https://team.cloudflareaccess.test', 'user@evil.test', 'team',
+      'team..test', '-team.test', 'team.test-', 'cdn-cgi', '../team.test',
+      'team.test/../..', 'team .test',
+    ]) {
+      const e = { ...CONFIGURED, ACCESS_TEAM_DOMAIN: bad } as unknown as Env;
+      const result = await auth(requestWithToken(await makeToken({ email: DOCTOR })), e);
+      assert.equal(result.ok, false, `accepted team domain ${JSON.stringify(bad)}`);
+    }
+  });
+
+  test('35. accessConfig returns null rather than a half-built configuration', async () => {
+    const { accessConfig } = await import('../../workers/admin/src/auth.ts');
+    for (const value of unusable) {
+      assert.equal(accessConfig({ ...CONFIGURED, ACCESS_AUD: value } as unknown as Env), null);
+      assert.equal(accessConfig({ ...CONFIGURED, ACCESS_TEAM_DOMAIN: value } as unknown as Env), null);
+    }
+    assert.ok(accessConfig(CONFIGURED), 'a usable configuration must still work');
+  });
+
+  test('35b. whitespace-padded configuration is trimmed, not rejected', async () => {
+    // The guard only proves the values are non-empty. The TRIMMED values must
+    // be what reaches jose, or a deployment whose secret carries a trailing
+    // newline would refuse every valid token and look like an auth outage.
+    const padded = {
+      ...CONFIGURED,
+      ACCESS_AUD: `  ${AUDIENCE}\n`,
+      ACCESS_TEAM_DOMAIN: ` ${TEAM_DOMAIN} `,
+    } as unknown as Env;
+    const result = await auth(requestWithToken(await makeToken({ email: DOCTOR })), padded);
+    assert.equal(result.ok, true, 'padded configuration must still authenticate');
+  });
+
+  test('36. misconfiguration is indistinguishable from a bad credential', async () => {
+    // An unauthenticated caller must not learn that the deployment is
+    // misconfigured, so this reuses the ordinary verification-failure answer.
+    const misconfigured = await auth(
+      requestWithToken(await makeToken({ email: DOCTOR })),
+      { ...CONFIGURED, ACCESS_AUD: '' } as unknown as Env,
+    );
+    const badToken = await auth(requestWithToken('not.a.jwt'));
+    assert.equal(
+      misconfigured.ok === false && misconfigured.code,
+      badToken.ok === false && badToken.code,
+    );
   });
 });
