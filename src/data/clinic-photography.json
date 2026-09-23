@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "file": "doctor-working-01.png",
+    "category": "doctor-working",
+    "width": 1122,
+    "height": 1402,
+    "status": "published",
+    "needsEnglishReview": true,
+    "alt": {
+      "he": "טיפול",
+      "ar": "‏عناية بالأسنان",
+      "en": "‏عناية بالأسنان"
+    }
+  }
+]
