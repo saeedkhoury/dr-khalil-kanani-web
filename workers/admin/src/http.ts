@@ -30,6 +30,25 @@ export interface Env {
    * let the compiler imply a guarantee the deployment does not make.
    */
   ALLOWED_EMAILS?: string;
+
+  /**
+   * Fine-grained GitHub PAT: ONE repository, `Contents: Read and write`, and
+   * nothing else. No workflow, actions, packages, account or org scope.
+   *
+   * Optional in the type because unset is a real deployment state and must be
+   * handled by refusing, not by assuming. Used only to build an Authorization
+   * header — never returned, never logged, never put in a message.
+   */
+  GITHUB_TOKEN?: string;
+
+  /**
+   * Branch the CMS commits to.
+   *
+   * DELIBERATELY HAS NO DEFAULT. Defaulting to `main` would mean a
+   * misconfigured deployment publishes straight to the live website. Unset
+   * means refuse.
+   */
+  CONTENT_BRANCH?: string;
 }
 
 /**
