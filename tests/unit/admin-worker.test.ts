@@ -321,6 +321,7 @@ describe('/api/session contract', () => {
     assert.deepEqual(paths, [
       '/api/session', '/api/hours', '/api/photos',
       '/api/photos/publish', '/api/photos/unpublish', '/api/photos/delete',
+      '/api/status', '/api/status/latest',
     ]);
   });
 

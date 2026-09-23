@@ -278,6 +278,59 @@ function toBase64(content: string | Uint8Array): string {
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Read-only queries                                                          */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The complete set of non-content endpoints this Worker may query.
+ *
+ * Same rule as WriteTarget: a caller names a KIND, never a URL. The only
+ * caller-supplied value is a commit SHA, and it is validated before it can
+ * reach a query string.
+ */
+export type ReadQuery =
+  | { kind: 'runs'; headSha: string }
+  | { kind: 'commits' };
+
+/** A git object name. Hex only, so it cannot carry a path or a parameter. */
+const SHA = /^[0-9a-f]{7,40}$/;
+
+function queryUrl(query: ReadQuery, branch: string): string | null {
+  const base = `${API}/repos/${OWNER}/${REPO}`;
+  switch (query.kind) {
+    case 'runs': {
+      if (typeof query.headSha !== 'string' || !SHA.test(query.headSha)) return null;
+      return `${base}/actions/runs?head_sha=${query.headSha}&per_page=20`;
+    }
+    case 'commits':
+      return `${base}/commits?sha=${encodeURIComponent(branch)}&per_page=20`;
+    default:
+      return null;
+  }
+}
+
+/** Authenticated GET against one of the endpoints above. Never writes. */
+export async function query<T>(env: Env, request: ReadQuery): Promise<Result<T>> {
+  const config = configure(env);
+  if (config === null) return refuse('not_configured');
+
+  const url = queryUrl(request, config.branch);
+  if (url === null) return refuse('refused');
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${config.token}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': USER_AGENT,
+    },
+  });
+  if (!response.ok) return refuse(classify(response.status));
+  return { ok: true, data: (await response.json()) as T };
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Operations                                                                 */
 /* -------------------------------------------------------------------------- */
 

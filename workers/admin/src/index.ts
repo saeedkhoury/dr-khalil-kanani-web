@@ -18,6 +18,7 @@ import {
   MAX_IMAGE_BYTES,
 } from './media.ts';
 import { deleteFile, readFile, writeFile, type CommitVerb } from './github.ts';
+import { latestStatus, statusForSha } from './status.ts';
 
 /** Hours are seven short rows. Anything larger is not a week. */
 const MAX_HOURS_BODY = 8 * 1024;
@@ -284,6 +285,28 @@ async function photoAction(
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Publication status                                                         */
+/* -------------------------------------------------------------------------- */
+
+async function getStatus({ request, env }: Context): Promise<Response> {
+  const sha = new URL(request.url).searchParams.get('sha');
+  // Validated here as well as in the client, because a query parameter is the
+  // one place in this Worker where caller text reaches a GitHub URL.
+  if (sha === null || !/^[0-9a-f]{7,40}$/.test(sha)) return fail('BAD_REQUEST');
+
+  const result = await statusForSha(env, sha);
+  if (!result.ok) return upstream(result.reason);
+  return ok(result.data);
+}
+
+async function getLatestStatus({ env }: Context): Promise<Response> {
+  const result = await latestStatus(env);
+  if (!result.ok) return upstream(result.reason);
+  // null means no CMS commit has ever been made — a clean panel, not an error.
+  return ok(result.data);
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Routes                                                                     */
 /* -------------------------------------------------------------------------- */
 
@@ -323,6 +346,17 @@ const ROUTES: Readonly<Record<string, Route>> = Object.freeze({
   '/api/photos/delete': {
     methods: ['POST'],
     handle: (context) => photoAction(context, 'delete'),
+  },
+  '/api/status': {
+    methods: ['GET'],
+    handle: getStatus,
+  },
+  // Asked when the browser has no stored SHA — a new device, a cleared
+  // browser. The doctor should always be able to see where his last change
+  // got to, so browser state is a convenience and never the mechanism.
+  '/api/status/latest': {
+    methods: ['GET'],
+    handle: getLatestStatus,
   },
 });
 
