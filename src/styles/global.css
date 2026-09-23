@@ -1,5 +1,15 @@
 @import 'tailwindcss';
 
+/* The admin Worker is not part of this site.
+   Tailwind scans the project for class names, and `workers/admin/src/ui/`
+   mentions token names like `--text-base` and `--ease-out` inside its own
+   CSS. Without this exclusion Tailwind reads those strings as class usage
+   and emits `.text-base`, `.ease-out` and friends into the PUBLIC
+   stylesheet — 715 bytes of rules no page uses, and a changed file hash on
+   all 47 pages. The panel ships its own stylesheet and needs nothing from
+   here. */
+@source not "../../workers";
+
 /* ==========================================================================
    DR. KHALIL KANANI — DESIGN SYSTEM
    "Mediterranean daylight on clinical porcelain"

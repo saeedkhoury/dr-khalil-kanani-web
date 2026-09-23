@@ -11,11 +11,11 @@ import assert from 'node:assert/strict';
 
 import { ok, fail, SECURITY_HEADERS, type ErrorCode } from '../../workers/admin/src/http.ts';
 
-const ALL_CODES: ErrorCode[] = [
-  'AUTH_REQUIRED', 'AUTH_INVALID', 'FORBIDDEN',
-  'NOT_FOUND', 'METHOD_NOT_ALLOWED', 'SERVER_ERROR',
-];
-
+/**
+ * Every code, with its status. Typed as Record<ErrorCode, number>, so adding
+ * a code to the union without adding it here fails the typecheck — which is
+ * how this list stays exhaustive rather than merely long.
+ */
 const EXPECTED_STATUS: Record<ErrorCode, number> = {
   AUTH_REQUIRED: 401,
   AUTH_INVALID: 401,
@@ -23,7 +23,15 @@ const EXPECTED_STATUS: Record<ErrorCode, number> = {
   NOT_FOUND: 404,
   METHOD_NOT_ALLOWED: 405,
   SERVER_ERROR: 500,
+  BAD_REQUEST: 400,
+  INVALID: 422,
+  PAYLOAD_TOO_LARGE: 413,
+  CONFLICT: 409,
+  UPSTREAM_UNAVAILABLE: 502,
+  NOT_CONFIGURED: 503,
 };
+
+const ALL_CODES = Object.keys(EXPECTED_STATUS) as ErrorCode[];
 
 describe('admin transport layer', () => {
   test('a success carries ok:true and the data, nothing else', async () => {
@@ -60,7 +68,7 @@ describe('admin transport layer', () => {
 
   test('responses are never cached', () => {
     // Per-identity data. A cached copy on a shared device is an identity leak.
-    for (const response of [ok({}), ...ALL_CODES.map(fail)]) {
+    for (const response of [ok({}), ...ALL_CODES.map((code) => fail(code))]) {
       assert.equal(response.headers.get('Cache-Control'), 'no-store');
     }
   });
@@ -68,7 +76,7 @@ describe('admin transport layer', () => {
   test('no CORS header is ever emitted', () => {
     // The admin UI is same-origin. The ABSENCE of these headers is what
     // refuses a cross-origin caller, so their absence is a tested guarantee.
-    for (const response of [ok({}), ...ALL_CODES.map(fail)]) {
+    for (const response of [ok({}), ...ALL_CODES.map((code) => fail(code))]) {
       for (const header of [
         'Access-Control-Allow-Origin',
         'Access-Control-Allow-Credentials',

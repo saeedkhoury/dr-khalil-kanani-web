@@ -169,7 +169,7 @@ describe('GET /api/status/latest', () => {
         state: 'failed', completedAt: '2026-09-23T10:00:00Z', reason: 'checks_failed',
       },
     });
-    assert.match(calls[0].url, /\/commits\?sha=cms-test-branch&per_page=20$/);
+    assert.equal(calls[0].url, `${COMMITS}?sha=cms-test-branch&per_page=20`);
   });
 
   test('a repository with no CMS commit returns null, not an error', async () => {

@@ -39,6 +39,16 @@ describe('one design system, proven not assumed', () => {
     }
   });
 
+  test('the panel cannot leak utilities into the public stylesheet', () => {
+    // This happened: Tailwind scans the project for class names, saw
+    // `--text-base` and `--ease-out` inside the panel's own CSS, and emitted
+    // `.text-base`, `.ease-out` and friends into the PUBLIC stylesheet — 715
+    // bytes no page used, and a changed file hash on all 47 pages.
+    //
+    // The admin Worker must be invisible to the site's build.
+    assert.match(globalCss, /@source not ["']\.\.\/\.\.\/workers["']/);
+  });
+
   test('the panel invents no colour of its own', () => {
     // Any raw hex outside the token block would be a second palette.
     const body = STYLES.slice(STYLES.indexOf('}') + 1);
