@@ -166,6 +166,22 @@ Verification is by mocked GitHub only — local tests prove the exact request
 that *would* be sent without sending it.
 **BLOCKED — REQUIRES APPROVED INTEGRATION TEST CONFIGURATION.**
 
+### Known: the public stylesheet carries 467 bytes from documentation
+
+Tailwind scans the whole repository for class names and cannot tell a class
+from a token name written in prose. Four utilities in the live stylesheet —
+`border-be`, `border-bs`, `ring`, `uppercase` — are generated from
+`docs/**.md` and `.claude/skills/**.md`, and are used by **no page**.
+
+`workers/` and `tests/` are excluded so the CMS cannot add to this, and a test
+enforces it. The stricter fix is `@import 'tailwindcss' source(none)` plus an
+explicit `@source "../"`, which drops all four and shrinks the public
+stylesheet by 467 bytes.
+
+**Not done deliberately.** It changes the public site's CSS and every page
+hash, which is a reviewed change of its own rather than something to smuggle
+in with the CMS. Predates the CMS entirely.
+
 ### Phase 3 — GitHub client + path allow-list (`3ab0773`)
 
 `workers/admin/src/github.ts`: the only code that can change the website.

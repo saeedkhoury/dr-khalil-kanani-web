@@ -1,14 +1,21 @@
-@import 'tailwindcss';
+/* KEEP THE ADMIN CMS OUT OF THE PUBLIC STYLESHEET.
 
-/* The admin Worker is not part of this site.
-   Tailwind scans the project for class names, and `workers/admin/src/ui/`
-   mentions token names like `--text-base` and `--ease-out` inside its own
-   CSS. Without this exclusion Tailwind reads those strings as class usage
-   and emits `.text-base`, `.ease-out` and friends into the PUBLIC
-   stylesheet — 715 bytes of rules no page uses, and a changed file hash on
-   all 47 pages. The panel ships its own stylesheet and needs nothing from
-   here. */
+   Tailwind scans the project for class names and cannot tell a class from a
+   token name in prose. `var(--text-base)` inside the admin Worker's own
+   stylesheet, and `--ease-out` quoted in a test assertion, were both read as
+   class usage — emitting `.text-base` and `.ease-out` into THIS stylesheet,
+   which no page uses, and changing the file hash on all 47 pages.
+
+   These two directories are excluded because this phase added them. A
+   stricter `source(none)` allow-list would be better still, but it also drops
+   four utilities the current stylesheet carries from documentation prose
+   (`border-be`, `border-bs`, `ring`, `uppercase` — used in docs/ and
+   .claude/skills/, not on any page). That is a real 467-byte cleanup of the
+   PUBLIC site and belongs in its own reviewed change, not smuggled in with
+   the CMS. See HANDOFF.md. */
+@import 'tailwindcss';
 @source not "../../workers";
+@source not "../../tests";
 
 /* ==========================================================================
    DR. KHALIL KANANI — DESIGN SYSTEM

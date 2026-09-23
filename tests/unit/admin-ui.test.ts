@@ -47,6 +47,9 @@ describe('one design system, proven not assumed', () => {
     //
     // The admin Worker must be invisible to the site's build.
     assert.match(globalCss, /@source not ["']\.\.\/\.\.\/workers["']/);
+    // tests/ too: a test quoting a token name did exactly the same thing the
+    // day after workers/ was excluded.
+    assert.match(globalCss, /@source not ["']\.\.\/\.\.\/tests["']/);
   });
 
   test('the panel invents no colour of its own', () => {
