@@ -1,8 +1,9 @@
 # Admin CMS recovery and local re-audit
 
 Date: 2026-09-24. Branch: `feat/admin-cms`. The original remediation result
-was **PASS** at `3da2328`; the current strict local audit result is **FAIL**
-for the public-output reproducibility gate described below.
+was **PASS** at `3da2328`; after post-audit image and font hardening, the
+current strict local audit result is **PASS**. The seven infrastructure rows
+remain BLOCKED.
 No push, merge, deployment, remote mutation, real credential use, or infrastructure configuration was performed.
 
 ## Post-audit pre-production hardening — 2026-09-24
@@ -60,14 +61,71 @@ cold-build zero-difference check is **FAIL**, even though the CMS change does
 not alter public rendering with a constant dependency. Stabilizing that fetch
 is outside this owner's narrow hardening authorization.
 
-The current reconstructed matrix is **53 PASS / 1 FAIL / 7 BLOCKED**: R54 is
+At this earlier hardening point, the reconstructed matrix was **53 PASS / 1 FAIL / 7 BLOCKED**: R54 was
 the cold-build public-output failure. N-3 is recorded separately because it
 was discovered after the original audit and is now corrected. The seven
 infrastructure rows remain BLOCKED; no mock has converted them to PASS.
-**LOCAL CODE AUDIT: FAIL** under the owner's strict byte-identical acceptance
+**LOCAL CODE AUDIT: FAIL at the image-hardening handoff** under the owner's strict byte-identical acceptance
 gate. The remaining failure is the pre-existing font-fetch reproducibility
 issue, not an unresolved image-validation defect. No production-readiness
 claim is made.
+
+## Post-audit deterministic-font remediation — 2026-09-24
+
+Commit `3943e50` replaces Astro's Google font provider with its local provider
+for Noto Sans Hebrew, Noto Sans Arabic, and Noto Sans. The four checked-in WOFF2
+payloads are byte-for-byte identical to the four font files in the preserved
+accepted output and to the recorded Google Fonts CDN responses. They cover the
+same scripts and the existing 300/400/600/700 normal weights. Source URLs,
+SHA-256 hashes, and the three bundled SIL OFL 1.1 licenses are in
+`docs/FONTS.md`. No other external build-time asset fetch was found in the
+site config or source. There is no external font request in the new config.
+
+The production build succeeded after clearing Astro's font cache while a macOS
+sandbox denied outbound network except localhost (needed by Astro's internal
+font server). A control request to `fonts.gstatic.com` failed inside the same
+sandbox. This proves the build does not require the external font service.
+
+Two independent detached clean worktrees at `3943e50` each ran `npm ci` from
+the same lockfile, with separate `node_modules`, empty Astro caches, and the
+same production `ASTRO_SITE` and exact three-field `ACK_UNVERIFIED`. Each built
+47 pages and 128 output files. Complete SHA-256 manifests were compared:
+
+| Build | Files | SHA-256 output-tree digest |
+|---|---:|---|
+| Clean A | 128 | `5a2ebe4065e878b6e8f3953fab969bc2f23d8ded60598bca8cf7ef620c395ab6` |
+| Clean B | 128 | `5a2ebe4065e878b6e8f3953fab969bc2f23d8ded60598bca8cf7ef620c395ab6` |
+
+A vs B: **0 added, 0 removed, 0 changed**. The tree digest hashes sorted
+`relative-path`, NUL, file SHA-256, newline records. The accepted baseline
+remains unchanged and has digest
+`097f813cbfa50f58d0bfbb00acef81baf7b49dad5390addb809d650c1f44c5ea`.
+Baseline vs A: **4 generated font paths added, 4 removed, 47 HTML files
+changed**, with 128 files in each tree. The four new font payloads each match
+one removed baseline font payload byte-for-byte. All 47 HTML files are
+byte-identical after removing only Astro's inline font style and font-preload
+elements. The one-time difference is the local provider's generated names and
+more compact variable-weight font CSS, not site content or font glyphs. The
+baseline was **not** rewritten or accepted by substitution.
+
+Chromium screenshots of the homepage at 375px and 1440px in Hebrew, Arabic,
+and English were pixel-identical between baseline and local-font builds;
+representative About pages were also compared at both widths. The actual
+Noto font loaded in every locale; `lang` and RTL/LTR `dir` values remained
+correct. Preload counts stayed two for Hebrew and one each for Arabic and
+English; no duplicate font payloads were emitted.
+
+Full regression from clean worktree A passed `lint:data`, `lint:claims`, the
+17-media full asset guard, `npm run check`, `npm run verify`, and the production
+build without `VERIFY_RELAX`; Astro reported zero diagnostics. Unit tests:
+**422/422** (70 suites), including the new local-font hash/provider regression
+and the previously fixed malformed-image tests. The Admin Worker subset passed
+**260/260**; appointment Worker subset **37/37**. Playwright passed **52/52**
+with axe checks; the built-HTML accessibility audit passed **47/47** pages.
+
+R54 is now **PASS** for deterministic builds. The seven infrastructure rows
+remain **BLOCKED** and were not simulated into PASS. **LOCAL CODE AUDIT: PASS**
+for the local repository; production readiness is not claimed.
 
 ## Recovery evidence
 
@@ -265,10 +323,10 @@ imply seven original failed requirement rows.
 | R48 | Status restores after browser reload | existing admin browser tests | PASS |
 | R49 | Both workflows explicitly validate CMS data early | M-3 workflow contracts | PASS |
 | R50 | Asset guard covers both manifests | full guard + asset regression tests | PASS |
-| R51 | Types and complete unit suite pass | clean verify / 418 tests at original remediation; 421 after N-3 | PASS |
+| R51 | Types and complete unit suite pass | clean verify / 418 tests at original remediation; 421 after N-3; 422 after local-font test | PASS |
 | R52 | Built headings/accessibility and browser axe pass | 47-page audit + Playwright | PASS |
 | R53 | Admin Hebrew RTL, keyboard and phone UI | admin browser tests | PASS |
-| R54 | Current public output remains identical in a cold build | Final clean build: 0 / 128 changed; another clean build of identical source: 2 font files added, 2 removed, 17 HTML changed | FAIL |
+| R54 | Current public output remains identical in independent cold builds | A vs B: 128 files each, 0 differences, identical tree digest; one-time provider migration vs preserved baseline documented above | PASS |
 | R55 | Actual Cloudflare Access application and OTP policy | Not configured/tested | BLOCKED |
 | R56 | Real allowlisted identities accepted; outsiders refused | No real identities used | BLOCKED |
 | R57 | Real scoped PAT and approved content-branch mutation | Mock GitHub only | BLOCKED |
@@ -277,7 +335,7 @@ imply seven original failed requirement rows.
 | R60 | Actual publication workflow/permissions/propagation | Local responses only | BLOCKED |
 | R61 | Supervised owner phone workflow on real deployment | Requires configured integration and owner | BLOCKED |
 
-**Current reconstructed totals: 53 PASS, 1 FAIL, 7 BLOCKED, 0 NOT APPLICABLE.**
+**Current reconstructed totals: 54 PASS, 0 FAIL, 7 BLOCKED, 0 NOT APPLICABLE.**
 Every blocked row means **BLOCKED — REQUIRES PRODUCTION/INTEGRATION CONFIGURATION**.
 Mocks do not change those statuses. Native-language review, real devices,
 VoiceOver and legal review from the existing site handoff remain unperformed.

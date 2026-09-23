@@ -76,9 +76,9 @@ each option, and the order to do them in are in
 [docs/GIT-HISTORY-REMEDIATION.md](docs/GIT-HISTORY-REMEDIATION.md). It needs the
 owner's decision, and probably a lawyer's.
 
-### Branch `feat/admin-cms` — image hardening complete, unmerged
+### Branch `feat/admin-cms` — local audit complete, unmerged
 
-**LOCAL CODE AUDIT: FAIL under the strict cold-build byte-comparison gate.**
+**LOCAL CODE AUDIT: PASS for local code and reproducible builds.**
 The seven supplied CMS findings are resolved and
 re-proved. Two additional findings were separately recorded and fixed:
 publication status accepted unrelated workflow success, and hours could
@@ -91,10 +91,16 @@ CRCs; it does not decode compressed pixels. GitHub token documentation now
 requires `Contents: Read and write` plus `Actions: Read` for authenticated
 deployment status, still pending real-token verification.
 
+Commit `3943e50` vendors the exact four Noto WOFF2 payloads from the accepted
+public baseline and uses Astro's local font provider. [Font provenance and
+licenses](docs/FONTS.md) records the upstream CDN responses, byte hashes,
+and bundled SIL OFL 1.1 licenses. A cache-cleared production build passed
+with outbound network denied except localhost, which Astro needs internally.
+
 The original 61-row matrix was not supplied; the current reconstructed matrix
-has **53 PASS / 1 FAIL / 7 BLOCKED**. R54 fails because an unpinned external
-Google Hebrew font response can change a cold build even with unchanged site
-source. The CMS image-validation defect is corrected. The matrix does not
+has **54 PASS / 0 FAIL / 7 BLOCKED**. R54 now passes because two independent
+clean installs produced identical 128-file output trees. The CMS
+image-validation defect is corrected. The matrix does not
 claim original row identities.
 Production/integration rows remain blocked, with no real infrastructure test.
 
@@ -117,18 +123,21 @@ No real credential was used and `.agents/` remains untracked.
 Verification from a clean detached worktree with a fresh lockfile install:
 
 - `npm run verify`: all gates pass; Astro reports zero diagnostics.
-- Unit suite: **421 passed**, including **260 admin Worker** and **37 appointment
+- Unit suite: **422 passed**, including **260 admin Worker** and **37 appointment
   Worker** tests, also run separately.
 - Playwright: **52 passed**; tested axe states have zero violations.
 - Production build with the existing exact three-field acknowledgement passes;
   built-HTML accessibility audit passes **47 pages**.
-- Preserved baseline: **128 public files**. The final fresh build at this HEAD
-  matched all 128 files byte-for-byte. Another cold build of identical source
-  had two font files added, two removed, and 17 font-referencing HTML files
-  changed. The font fetch is not pinned, so the unconditional cold-build gate
-  remains FAIL.
-  The baseline was not updated. The earlier all-unpublished fixture was
-  byte-identical.
+- Independent clean builds A and B: **128 files each, zero differences**, same
+  SHA-256 tree digest (`5a2ebe4065e878b6e8f3953fab969bc2f23d8ded60598bca8cf7ef620c395ab6`).
+  Against the unchanged accepted baseline, the local-provider migration has
+  four generated font paths added, four removed, and 47 HTML font-markup
+  changes. The four font payloads are byte-identical to the baseline; stripping
+  only font markup leaves all 47 HTML files identical. The earlier
+  all-unpublished fixture was byte-identical before this migration.
+- Homepage and About screenshots at 375px and 1440px in he/ar/en are
+  pixel-identical to the accepted baseline; the Noto faces load and directions
+  remain correct.
 - Six populated clinic-gallery screenshots were opened: he/ar/en at 375/1440.
 - Access guard mutations fail their tests; current-tree credential-pattern
   scan found no matches. Existing public media history is unchanged.
@@ -175,7 +184,7 @@ quick contact. The browser suite now contains 34 tests.
 | Mixed-script (homoglyph) linter | `npm run lint:scripts` | verify + CI |
 | Asset guard (unregistered media) | `npm run lint:assets` | **pre-commit** + CI |
 | Accessibility audit of built HTML | `npm run lint:a11y` | preview + deploy |
-| Unit tests (421) | `npm test` | CI |
+| Unit tests (422) | `npm test` | CI |
 | Type/template check | `npm run check` | verify + CI |
 | Chromium + axe browser QA (52 tests) | `npm run test:e2e` | preview + deploy |
 

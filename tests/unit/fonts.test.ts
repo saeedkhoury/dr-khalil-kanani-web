@@ -13,11 +13,12 @@ const expected = new Map([
 test('production font families resolve only the reviewed local WOFF2 bytes', () => {
   const config = readFileSync(new URL('../../astro.config.mjs', import.meta.url), 'utf8');
   assert.equal((config.match(/provider: fontProviders\.local\(\)/g) ?? []).length, 3);
-  assert.doesNotMatch(config, /provider: fontProviders\.(?:google|fontsource|npm)\(/);
+  assert.equal((config.match(/provider: fontProviders\./g) ?? []).length, 3);
   const sources = [...config.matchAll(/src: \['(\.\/src\/assets\/fonts\/[a-z-]+\.woff2)'\]/g)]
     .map((match) => match[1]);
 
   assert.equal(sources.length, expected.size);
+  assert.equal(new Set(sources).size, expected.size);
   for (const src of sources) {
     const name = src.split('/').at(-1);
     assert.ok(name && expected.has(name), `unexpected font source: ${src}`);
