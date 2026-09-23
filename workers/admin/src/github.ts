@@ -145,6 +145,16 @@ export function commitMessage(
   verb: CommitVerb,
   actor: string,
   subject?: string,
+  /**
+   * Records that the patient-content confirmation was ticked.
+   *
+   * A boolean selecting a FIXED string — not user text, so the guarantee that
+   * no user-controlled content reaches a commit message is unchanged. It
+   * exists so the audit trail shows the confirmation was made at the moment
+   * the photograph entered the repository, where `git log` still shows it
+   * years later.
+   */
+  patientContentConfirmed?: boolean,
 ): string | null {
   // Object.hasOwn, NOT `verb in SCOPE`: `in` walks the prototype chain, so
   // 'toString', 'constructor' and friends would pass and produce a commit
@@ -154,7 +164,8 @@ export function commitMessage(
   if (subject !== undefined && !IMAGE_FILE.test(subject)) return null;
 
   const headline = subject === undefined ? verb : `${verb} ${subject}`;
-  return `cms(${SCOPE[verb]}): ${headline}\n\nChanged by: ${actor}\n`;
+  const confirmation = patientContentConfirmed === true ? 'Patient-content confirmed: yes\n' : '';
+  return `cms(${SCOPE[verb]}): ${headline}\n\nChanged by: ${actor}\n${confirmation}`;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -299,6 +310,8 @@ export interface WriteRequest {
   actor: string;
   /** Filename for media verbs. Validated against IMAGE_FILE. */
   subject?: string;
+  /** Records the patient-content confirmation in the commit message. */
+  patientContentConfirmed?: boolean;
   /** Blob SHA being replaced. Omit to create. */
   sha?: string;
   /**
@@ -317,7 +330,9 @@ export async function writeFile(env: Env, request: WriteRequest): Promise<Result
   const path = pathFor(request.target);
   if (path === null) return refuse('refused');
 
-  const message = commitMessage(request.verb, request.actor, request.subject);
+  const message = commitMessage(
+    request.verb, request.actor, request.subject, request.patientContentConfirmed,
+  );
   if (message === null) return refuse('refused');
 
   const config = configure(env);

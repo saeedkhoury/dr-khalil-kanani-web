@@ -13,10 +13,24 @@
 import { authenticate, type AccessIdentity } from './auth.ts';
 import { fail, ok, readJson, sameOrigin, type Env } from './http.ts';
 import { parseHours, serialiseHours, validateHoursPayload } from './hours.ts';
-import { readFile, writeFile } from './github.ts';
+import {
+  addRecord, parseRecords, removeRecord, serialiseRecords, setStatus, validateUpload,
+  MAX_IMAGE_BYTES,
+} from './media.ts';
+import { deleteFile, readFile, writeFile, type CommitVerb } from './github.ts';
 
 /** Hours are seven short rows. Anything larger is not a week. */
 const MAX_HOURS_BODY = 8 * 1024;
+
+/**
+ * An 8 MB image is ~10.7 MB once base64-encoded, plus the descriptions.
+ * The real cap is on the DECODED bytes in validateUpload; this only stops an
+ * absurd body before it is parsed.
+ */
+const MAX_PHOTO_BODY = 12 * 1024 * 1024;
+
+/** A file name plus an action. Nothing here is large. */
+const MAX_ACTION_BODY = 4 * 1024;
 
 interface Context {
   request: Request;
@@ -94,6 +108,182 @@ async function putHours({ request, env, identity }: Context): Promise<Response> 
 }
 
 /* -------------------------------------------------------------------------- */
+/*  Clinic photography                                                         */
+/* -------------------------------------------------------------------------- */
+
+/** Read the manifest, or produce the response explaining why we could not. */
+async function loadRecords(env: Env) {
+  const file = await readFile(env, { kind: 'photography' });
+  if (!file.ok) return { ok: false as const, response: upstream(file.reason) };
+  const records = parseRecords(file.data.text);
+  // A hand-edited manifest the build would reject is a real state, and the
+  // panel must say so rather than silently offer to overwrite it.
+  if (records === null) return { ok: false as const, response: fail('UPSTREAM_UNAVAILABLE') };
+  return { ok: true as const, records, sha: file.data.sha };
+}
+
+async function getPhotos({ env }: Context): Promise<Response> {
+  const loaded = await loadRecords(env);
+  if (!loaded.ok) return loaded.response;
+  return ok({ records: loaded.records, sha: loaded.sha });
+}
+
+/**
+ * Decode base64 image bytes from the request.
+ *
+ * Returns null on anything that is not valid base64, rather than throwing —
+ * a malformed upload is a 400, not a 500.
+ */
+function decodeBase64(value: unknown): Uint8Array | null {
+  if (typeof value !== 'string' || value === '') return null;
+  // Reject anything outside the base64 alphabet before atob, which is lenient
+  // about some invalid input.
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(value)) return null;
+  try {
+    const binary = atob(value);
+    return Uint8Array.from(binary, (c) => c.charCodeAt(0));
+  } catch {
+    return null;
+  }
+}
+
+interface UploadBody {
+  category?: unknown;
+  contentBase64?: unknown;
+  altHe?: unknown;
+  altAr?: unknown;
+  confirmed?: unknown;
+}
+
+async function postPhoto({ request, env, identity }: Context): Promise<Response> {
+  if (!sameOrigin(request, env)) return fail('FORBIDDEN');
+
+  const body = await readJson<UploadBody>(request, MAX_PHOTO_BODY);
+  if (!body.ok) return fail(body.code);
+
+  const bytes = decodeBase64(body.body?.contentBase64);
+  if (bytes === null) return fail('INVALID', ['file_required']);
+  if (bytes.length > MAX_IMAGE_BYTES) return fail('INVALID', ['file_too_large']);
+
+  const loaded = await loadRecords(env);
+  if (!loaded.ok) return loaded.response;
+
+  const validated = validateUpload(
+    {
+      category: body.body?.category,
+      bytes,
+      altHe: body.body?.altHe,
+      altAr: body.body?.altAr,
+      confirmed: body.body?.confirmed,
+    },
+    loaded.records.map((r) => r.file),
+  );
+  if (!validated.ok) return fail('INVALID', validated.issues);
+
+  const updated = addRecord(loaded.records, validated.record);
+  if (updated === null) return fail('CONFLICT');
+
+  // ── ORDER MATTERS ──
+  // The IMAGE is committed first, then the manifest that references it. If the
+  // second commit fails, the repository holds an unreferenced file — which
+  // renders nothing and breaks nothing. The reverse order would publish a
+  // manifest pointing at a file that does not exist, and the build's asset
+  // guard would then fail every subsequent deployment.
+  const image = await writeFile(env, {
+    target: { kind: 'image', file: validated.record.file },
+    content: bytes,
+    verb: 'add clinic photo',
+    actor: identity.email,
+    subject: validated.record.file,
+    patientContentConfirmed: true,
+    // NEVER retried: an append is not idempotent and a retry could double-add.
+  });
+  if (!image.ok) return upstream(image.reason);
+
+  const manifest = await writeFile(env, {
+    target: { kind: 'photography' },
+    content: serialiseRecords(updated),
+    verb: 'add clinic photo',
+    actor: identity.email,
+    subject: validated.record.file,
+    patientContentConfirmed: true,
+    sha: loaded.sha,
+  });
+  if (!manifest.ok) return upstream(manifest.reason);
+
+  return ok({ sha: manifest.data.commit, file: validated.record.file });
+}
+
+/** publish / unpublish / delete all name one existing file. */
+async function photoAction(
+  { request, env, identity }: Context,
+  action: 'publish' | 'unpublish' | 'delete',
+): Promise<Response> {
+  if (!sameOrigin(request, env)) return fail('FORBIDDEN');
+
+  const body = await readJson<{ file?: unknown }>(request, MAX_ACTION_BODY);
+  if (!body.ok) return fail(body.code);
+
+  const file = body.body?.file;
+  if (typeof file !== 'string' || file === '') return fail('INVALID', ['file_required']);
+
+  const loaded = await loadRecords(env);
+  if (!loaded.ok) return loaded.response;
+
+  const verb: CommitVerb =
+    action === 'publish' ? 'publish clinic photo'
+    : action === 'unpublish' ? 'unpublish clinic photo'
+    : 'delete clinic photo';
+
+  const updated =
+    action === 'delete'
+      ? removeRecord(loaded.records, file)
+      : setStatus(loaded.records, file, action === 'publish' ? 'published' : 'unpublished');
+
+  // null covers both "no such photograph" and "delete refused because it is
+  // still published" — deleting is reachable only from the unpublished state,
+  // so a photograph can never be destroyed in a single click.
+  if (updated === null) return fail('INVALID', ['photo_not_actionable']);
+
+  const manifest = await writeFile(env, {
+    target: { kind: 'photography' },
+    content: serialiseRecords(updated),
+    verb,
+    actor: identity.email,
+    subject: file,
+    sha: loaded.sha,
+  });
+  if (!manifest.ok) return upstream(manifest.reason);
+
+  if (action !== 'delete') return ok({ sha: manifest.data.commit, file });
+
+  // ── ORDER MATTERS, mirrored ──
+  // The reference is removed first, then the file. If this second commit
+  // fails the repository holds an orphan image, which renders nothing. The
+  // reverse would leave the manifest pointing at a deleted file and break the
+  // build for everyone.
+  const current = await readFile(env, { kind: 'image', file });
+  if (!current.ok) {
+    // The record is already gone, which is the part that matters. Report
+    // success and let the orphan be cleaned up by a developer.
+    console.warn(JSON.stringify({ event: 'orphan_image', file, reason: current.reason }));
+    return ok({ sha: manifest.data.commit, file });
+  }
+
+  const removed = await deleteFile(env, {
+    target: { kind: 'image', file },
+    verb: 'delete clinic photo',
+    actor: identity.email,
+    subject: file,
+    sha: current.data.sha,
+  });
+  if (!removed.ok) {
+    console.warn(JSON.stringify({ event: 'orphan_image', file, reason: removed.reason }));
+  }
+  return ok({ sha: manifest.data.commit, file });
+}
+
+/* -------------------------------------------------------------------------- */
 /*  Routes                                                                     */
 /* -------------------------------------------------------------------------- */
 
@@ -114,6 +304,25 @@ const ROUTES: Readonly<Record<string, Route>> = Object.freeze({
   '/api/hours': {
     methods: ['GET', 'PUT'],
     handle: (context) => (context.request.method === 'GET' ? getHours(context) : putHours(context)),
+  },
+  '/api/photos': {
+    methods: ['GET', 'POST'],
+    handle: (context) => (context.request.method === 'GET' ? getPhotos(context) : postPhoto(context)),
+  },
+  // Separate exact paths rather than one endpoint taking an action name, so
+  // the router keeps its no-pattern-matching property and each verb has its
+  // own method allow-list.
+  '/api/photos/publish': {
+    methods: ['POST'],
+    handle: (context) => photoAction(context, 'publish'),
+  },
+  '/api/photos/unpublish': {
+    methods: ['POST'],
+    handle: (context) => photoAction(context, 'unpublish'),
+  },
+  '/api/photos/delete': {
+    methods: ['POST'],
+    handle: (context) => photoAction(context, 'delete'),
   },
 });
 

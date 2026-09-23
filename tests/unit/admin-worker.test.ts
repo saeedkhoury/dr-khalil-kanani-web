@@ -318,7 +318,10 @@ describe('/api/session contract', () => {
     // update this list deliberately.
     const code = await codeOf('index.ts');
     const paths = [...code.matchAll(/^\s*'(\/[^']*)':\s*\{/gm)].map((m) => m[1]);
-    assert.deepEqual(paths, ['/api/session', '/api/hours']);
+    assert.deepEqual(paths, [
+      '/api/session', '/api/hours', '/api/photos',
+      '/api/photos/publish', '/api/photos/unpublish', '/api/photos/delete',
+    ]);
   });
 
   test('the session handler returns only authenticated and email', async () => {
