@@ -13,12 +13,12 @@ import { classifyRuns, findLatestCmsCommit } from '../../workers/admin/src/statu
 import { adminEnv, adminRequest, callAdmin, REPO_CONTENTS } from '../helpers/admin-api.ts';
 import type { Env } from '../../workers/admin/src/http.ts';
 
-const RUNS = 'https://api.github.com/repos/saeedkhoury/dr-khalil-kanani-web/actions/runs';
+const RUNS = 'https://api.github.com/repos/saeedkhoury/dr-khalil-kanani-web/actions/workflows/deploy.yml/runs';
 const COMMITS = 'https://api.github.com/repos/saeedkhoury/dr-khalil-kanani-web/commits';
 const SHA = 'a'.repeat(40);
 
 const run = (status: string, conclusion: string | null, updated = '2026-09-23T10:00:00Z') =>
-  ({ status, conclusion, updated_at: updated });
+  ({ status, conclusion, updated_at: updated, head_sha: SHA });
 
 describe('a commit is not a publication', () => {
   test('no run yet is committed, never published or failed', () => {
@@ -119,7 +119,7 @@ describe('GET /api/status', () => {
       ok: true,
       data: { state: 'published', completedAt: '2026-09-23T10:00:00Z', reason: null },
     });
-    assert.equal(calls[0].url, `${RUNS}?head_sha=${SHA}&per_page=20`);
+    assert.equal(calls[0].url, `${RUNS}?head_sha=${SHA}&branch=cms-test-branch&per_page=100`);
     assert.equal(calls[0].method, 'GET');
   });
 
@@ -169,7 +169,7 @@ describe('GET /api/status/latest', () => {
         state: 'failed', completedAt: '2026-09-23T10:00:00Z', reason: 'checks_failed',
       },
     });
-    assert.equal(calls[0].url, `${COMMITS}?sha=cms-test-branch&per_page=20`);
+    assert.equal(calls[0].url, `${COMMITS}?sha=cms-test-branch&path=src%2Fdata&per_page=100&page=1`);
   });
 
   test('a repository with no CMS commit returns null, not an error', async () => {
@@ -212,5 +212,54 @@ describe('GET /api/status/latest', () => {
     );
     assert.equal(response.status, 503);
     assert.deepEqual(calls, []);
+  });
+});
+
+describe('exact commit status beyond the old history window [M-2]', () => {
+  test('101 newer unrelated commits cannot hide the latest CMS commit', async () => {
+    const newer = Array.from({ length: 100 }, (_, i) => ({ sha: i.toString(16).padStart(40, 'b'), commit: { message: 'chore: unrelated' } }));
+    const { response, calls } = await callAdmin(await adminRequest('/api/status/latest'), [
+      { status: 200, body: newer },
+      { status: 200, body: [newer[0], { sha: SHA, commit: { message: 'cms(hours): update opening hours' } }] },
+      { status: 200, body: { workflow_runs: [run('completed', 'failure')] } },
+    ]);
+    assert.equal(response.status, 200);
+    assert.equal((await response.json() as { data: { state: string } }).data.state, 'failed');
+    assert.ok(calls[1].url.includes(`sha=${newer[0].sha}`));
+    assert.ok(calls[1].url.endsWith('page=2'));
+    assert.ok(calls[2].url.includes(`head_sha=${SHA}`));
+  });
+  test('known SHA needs no history lookup, even with thousands of newer commits', async () => {
+    const { response, calls } = await callAdmin(await adminRequest(`/api/status?sha=${SHA}`), [
+      { status: 200, body: { workflow_runs: [run('completed', 'success')] } },
+    ]);
+    assert.equal(response.status, 200);
+    assert.equal(calls.length, 1);
+    assert.ok(calls[0].url.startsWith(`${RUNS}?head_sha=${SHA}`));
+  });
+  test('old success cannot publish a newer commit, and unknown conclusions fail', async () => {
+    for (const [runs, expected] of [
+      [[{ ...run('completed', 'success'), head_sha: 'b'.repeat(40) }], 502],
+      [[run('completed', 'unknown_future_value')], 200],
+    ] as const) {
+      const { response } = await callAdmin(await adminRequest(`/api/status?sha=${SHA}`), [{ status: 200, body: { workflow_runs: runs } }]);
+      assert.equal(response.status, expected);
+      assert.ok(!JSON.stringify(await response.json()).includes('published'));
+    }
+  });
+  test('API failures, malformed and truncated responses never become success', async () => {
+    for (const reply of [
+      { status: 503, body: {} }, { status: 200, body: {} },
+      { status: 200, body: { workflow_runs: Array.from({ length: 100 }, () => run('completed', 'success')) } },
+    ]) {
+      const { response } = await callAdmin(await adminRequest(`/api/status?sha=${SHA}`), [reply]);
+      assert.equal(response.status, 502);
+    }
+  });
+  test('discovery budget exhaustion reports unavailable, never no CMS change', async () => {
+    const fullPage = Array.from({ length: 100 }, () => ({ sha: SHA, commit: { message: 'chore: data edit' } }));
+    const { response, calls } = await callAdmin(await adminRequest('/api/status/latest'), [{ status: 200, body: fullPage }]);
+    assert.equal(response.status, 502);
+    assert.equal(calls.length, 10);
   });
 });

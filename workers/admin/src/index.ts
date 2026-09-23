@@ -15,9 +15,9 @@ import { fail, ok, readJson, sameOrigin, type Env } from './http.ts';
 import { parseHours, serialiseHours, validateHoursPayload } from './hours.ts';
 import {
   addRecord, parseRecords, removeRecord, serialiseRecords, setStatus, validateUpload,
-  MAX_IMAGE_BYTES,
+  MAX_IMAGE_BYTES, nextFilename,
 } from './media.ts';
-import { deleteFile, readFile, writeFile, type CommitVerb } from './github.ts';
+import { deleteFile, listImageFiles, readFile, writeFile, type CommitVerb } from './github.ts';
 import { latestStatus, statusForSha } from './status.ts';
 import { renderPanel } from './ui/page.ts';
 import { CLIENT } from './ui/client.ts';
@@ -185,7 +185,13 @@ async function postPhoto({ request, env, identity }: Context): Promise<Response>
   );
   if (!validated.ok) return fail('INVALID', validated.issues);
 
-  const updated = addRecord(loaded.records, validated.record);
+  const inventory = await listImageFiles(env);
+  if (!inventory.ok) return upstream(inventory.reason);
+  const filename = nextFilename(validated.record.category,
+    [...loaded.records.map((r) => r.file), ...inventory.data], validated.image.extension);
+  if (filename === null) return fail('INVALID', ['category_full']);
+  const record = { ...validated.record, file: filename };
+  const updated = addRecord(loaded.records, record);
   if (updated === null) return fail('CONFLICT');
 
   // ── ORDER MATTERS ──
@@ -195,11 +201,11 @@ async function postPhoto({ request, env, identity }: Context): Promise<Response>
   // manifest pointing at a file that does not exist, and the build's asset
   // guard would then fail every subsequent deployment.
   const image = await writeFile(env, {
-    target: { kind: 'image', file: validated.record.file },
+    target: { kind: 'image', file: record.file },
     content: bytes,
     verb: 'add clinic photo',
     actor: identity.email,
-    subject: validated.record.file,
+    subject: record.file,
     patientContentConfirmed: true,
     // NEVER retried: an append is not idempotent and a retry could double-add.
   });
@@ -210,13 +216,13 @@ async function postPhoto({ request, env, identity }: Context): Promise<Response>
     content: serialiseRecords(updated),
     verb: 'add clinic photo',
     actor: identity.email,
-    subject: validated.record.file,
+    subject: record.file,
     patientContentConfirmed: true,
     sha: loaded.sha,
   });
   if (!manifest.ok) return upstream(manifest.reason);
 
-  return ok({ sha: manifest.data.commit, file: validated.record.file });
+  return ok({ sha: manifest.data.commit, file: record.file });
 }
 
 /** publish / unpublish / delete all name one existing file. */

@@ -306,7 +306,7 @@ function toBase64(content: string | Uint8Array): string {
  */
 export type ReadQuery =
   | { kind: 'runs'; headSha: string }
-  | { kind: 'commits' };
+  | { kind: 'commits'; page?: number; headSha?: string };
 
 /** A git object name. Hex only, so it cannot carry a path or a parameter. */
 const SHA = /^[0-9a-f]{7,40}$/;
@@ -316,10 +316,14 @@ function queryUrl(query: ReadQuery, branch: string): string | null {
   switch (query.kind) {
     case 'runs': {
       if (typeof query.headSha !== 'string' || !SHA.test(query.headSha)) return null;
-      return `${base}/actions/runs?head_sha=${query.headSha}&per_page=20`;
+      return `${base}/actions/workflows/deploy.yml/runs?head_sha=${query.headSha}&branch=${encodeURIComponent(branch)}&per_page=100`;
     }
-    case 'commits':
-      return `${base}/commits?sha=${encodeURIComponent(branch)}&per_page=20`;
+    case 'commits': {
+      const page = query.page ?? 1;
+      if (!Number.isInteger(page) || page < 1 || page > 10) return null;
+      if (query.headSha !== undefined && !SHA.test(query.headSha)) return null;
+      return `${base}/commits?sha=${encodeURIComponent(query.headSha ?? branch)}&path=src%2Fdata&per_page=100&page=${page}`;
+    }
     default:
       return null;
   }
@@ -349,6 +353,21 @@ export async function query<T>(env: Env, request: ReadQuery): Promise<Result<T>>
 /* -------------------------------------------------------------------------- */
 /*  Operations                                                                 */
 /* -------------------------------------------------------------------------- */
+
+/** Inventory the fixed image directory, including files absent from the manifest. */
+export async function listImageFiles(env: Env): Promise<Result<string[]>> {
+  const config = configure(env);
+  if (config === null) return refuse('not_configured');
+  const response = await call(config, IMAGE_DIR, { method: 'GET', ref: config.branch });
+  if (!response.ok) return refuse(classify(response.status));
+  const body: unknown = await response.json();
+  // Contents directory responses cap at 1,000 entries. Never allocate from
+  // a potentially truncated inventory or from an unexpected API response.
+  if (!Array.isArray(body) || body.length >= 1000 || body.some((entry: unknown) =>
+    entry === null || typeof entry !== 'object' || !('name' in entry) || typeof entry.name !== 'string'
+  )) return refuse('unavailable');
+  return { ok: true, data: body.map((entry: { name: string }) => entry.name) };
+}
 
 /** Read a file. `not_found` is a normal answer, not an error. */
 export async function readFile(env: Env, target: WriteTarget): Promise<Result<FileContents>> {

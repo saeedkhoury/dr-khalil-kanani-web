@@ -18,7 +18,7 @@
  * change is not live, and the previous version is still being served.
  */
 
-import { query } from './github.ts';
+import { query, type Result } from './github.ts';
 
 export type PublishState = 'committed' | 'published' | 'failed';
 
@@ -91,10 +91,14 @@ export function classifyRuns(runs: readonly WorkflowRun[]): PublishStatus {
 }
 
 /** Status for one commit. */
-export async function statusForSha(env: Parameters<typeof query>[0], sha: string) {
+export async function statusForSha(env: Parameters<typeof query>[0], sha: string): Promise<Result<PublishStatus>> {
   const result = await query<{ workflow_runs?: WorkflowRun[] }>(env, { kind: 'runs', headSha: sha });
   if (!result.ok) return result;
-  return { ok: true as const, data: classifyRuns(result.data.workflow_runs ?? []) };
+  const runs = result.data?.workflow_runs;
+  if (!Array.isArray(runs) || runs.length >= 100 || runs.some((run) =>
+    run === null || typeof run !== 'object' || run.head_sha !== sha
+  )) return { ok: false, reason: 'unavailable' };
+  return { ok: true, data: classifyRuns(runs) };
 }
 
 interface Commit {
@@ -122,16 +126,29 @@ export function findLatestCmsCommit(commits: readonly Commit[]): { sha: string; 
   return null;
 }
 
-export async function latestStatus(env: Parameters<typeof query>[0]) {
-  const commits = await query<Commit[]>(env, { kind: 'commits' });
-  if (!commits.ok) return commits;
-
-  const latest = findLatestCmsCommit(Array.isArray(commits.data) ? commits.data : []);
-  // No CMS commit has ever been made. That is not an error — it is a clean
-  // panel on a repository nobody has edited yet.
-  if (latest === null) return { ok: true as const, data: null };
-
-  const status = await statusForSha(env, latest.sha);
-  if (!status.ok) return status;
-  return { ok: true as const, data: { sha: latest.sha, committedAt: latest.at, ...status.data } };
+export async function latestStatus(env: Parameters<typeof query>[0]): Promise<Result<
+  (PublishStatus & { sha: string; committedAt: string | null }) | null
+>> {
+  // Narrow discovery to data history, then page against a fixed commit so
+  // concurrent pushes cannot move the pagination window. Tracking a known
+  // SHA goes straight to the deployment workflow and never scans history.
+  let headSha: string | undefined;
+  for (let page = 1; page <= 10; page += 1) {
+    const commits = await query<Commit[]>(env, { kind: 'commits', page, headSha });
+    if (!commits.ok) return commits;
+    if (!Array.isArray(commits.data) || commits.data.some((entry) =>
+      !entry || typeof entry.sha !== 'string' || !/^[0-9a-f]{40}$/.test(entry.sha) ||
+      typeof entry.commit?.message !== 'string'
+    )) return { ok: false, reason: 'unavailable' };
+    headSha ??= commits.data[0]?.sha;
+    const latest = findLatestCmsCommit(commits.data);
+    if (latest !== null) {
+      const status = await statusForSha(env, latest.sha);
+      if (!status.ok) return status;
+      return { ok: true, data: { sha: latest.sha, committedAt: latest.at, ...status.data } };
+    }
+    if (commits.data.length < 100) return { ok: true, data: null };
+  }
+  // Bound Worker work, but never turn incomplete history into "no change".
+  return { ok: false, reason: 'unavailable' };
 }

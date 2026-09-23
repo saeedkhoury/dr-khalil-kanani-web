@@ -77,8 +77,8 @@ function mockGitHub(url: string, init?: RequestInit): Response {
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
-  if (url.includes('/actions/runs')) {
-    return json({ workflow_runs: [{ status: 'completed', conclusion: 'success', updated_at: new Date().toISOString() }] });
+  if (url.includes('/actions/workflows/deploy.yml/runs')) {
+    return json({ workflow_runs: [{ head_sha: new URL(url).searchParams.get('head_sha'), status: 'completed', conclusion: 'success', updated_at: new Date().toISOString() }] });
   }
   if (url.includes('/commits?')) {
     return json([{ sha: 'a'.repeat(40), commit: { message: 'cms(hours): update opening hours', author: { date: new Date().toISOString() } } }]);
@@ -101,6 +101,9 @@ function mockGitHub(url: string, init?: RequestInit): Response {
   }
   if (url.includes('clinic-photography.json')) {
     return json({ content: encode(`${JSON.stringify(store.photos, null, 2)}\n`), encoding: 'base64', sha: 'photos-sha' });
+  }
+  if (new URL(url).pathname.endsWith('/contents/src/assets/images')) {
+    return json(store.photos.map((record) => ({ name: record.file })));
   }
   if (url.includes('/contents/src/assets/images/')) {
     return json({ content: encode('image'), encoding: 'base64', sha: 'image-sha' });

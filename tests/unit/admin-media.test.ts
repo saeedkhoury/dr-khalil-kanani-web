@@ -332,16 +332,17 @@ describe('POST /api/photos — the exact requests that would be sent', () => {
   test('commits the image first, then the manifest referencing it', async () => {
     const { response, calls } = await callAdmin(
       await adminRequest('/api/photos', { method: 'POST', body: uploadBody() }),
-      [manifestRead(), asCommit('image-commit'), asCommit('manifest-commit')],
+      [manifestRead(), { status: 200, body: [] }, asCommit('image-commit'), asCommit('manifest-commit')],
     );
 
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), {
       ok: true, data: { sha: 'manifest-commit', file: 'exterior-01.jpg' },
     });
-    assert.equal(calls.length, 3, 'expected read, image write, manifest write');
+    assert.equal(calls.length, 4, 'expected manifest read, inventory read, image write, manifest write');
 
-    const [, image, manifest] = calls;
+    const [, inventory, image, manifest] = calls;
+    assert.equal(inventory.url, `${REPO_CONTENTS}/src/assets/images?ref=${CONTENT_BRANCH}`);
 
     // ── the image ──
     assert.equal(image.method, 'PUT');
@@ -376,10 +377,10 @@ describe('POST /api/photos — the exact requests that would be sent', () => {
   test('the image is never retried — an append is not idempotent', async () => {
     const { response, calls } = await callAdmin(
       await adminRequest('/api/photos', { method: 'POST', body: uploadBody() }),
-      [manifestRead(), { status: 409, body: {} }, asCommit('x')],
+      [manifestRead(), { status: 200, body: [] }, { status: 409, body: {} }, asCommit('x')],
     );
     assert.equal(response.status, 409);
-    assert.equal(calls.length, 2, 'a retry could double-add the photograph');
+    assert.equal(calls.length, 3, 'a retry could double-add the photograph');
   });
 
   test('the confirmation is required at the route, not just the form', async () => {
@@ -437,9 +438,9 @@ describe('POST /api/photos — the exact requests that would be sent', () => {
   test('the filename avoids collisions with what is already stored', async () => {
     const { calls } = await callAdmin(
       await adminRequest('/api/photos', { method: 'POST', body: uploadBody({ category: 'reception' }) }),
-      [manifestRead(), asCommit('a'), asCommit('b')],
+      [manifestRead(), { status: 200, body: [] }, asCommit('a'), asCommit('b')],
     );
-    assert.equal(calls[1].url, `${REPO_CONTENTS}/src/assets/images/reception-02.jpg`);
+    assert.equal(calls[2].url, `${REPO_CONTENTS}/src/assets/images/reception-02.jpg`);
   });
 });
 
@@ -589,3 +590,44 @@ for (const [field, claim, issue] of [
     assert.ok(calls.every((call) => call.method === 'GET'));
   });
 }
+
+describe('repository-aware filename allocation [M-1]', () => {
+  for (const [names, expected] of [
+    [[], 'reception-02.jpg'],
+    [['reception-02.jpg'], 'reception-03.jpg'],
+    [['reception-02.png', 'reception-03.jpeg', 'reception-04.jpg'], 'reception-05.jpg'],
+  ] as [string[], string][]) {
+    test(`manifest and orphan slots allocate ${expected}`, async () => {
+      const { response, calls } = await callAdmin(
+        await adminRequest('/api/photos', { method: 'POST', body: uploadBody({ category: 'reception' }) }),
+        [manifestRead(), { status: 200, body: names.map((name) => ({ name })) }, asCommit('a'), asCommit('b')],
+      );
+      assert.equal(response.status, 200);
+      assert.equal(calls[2].url, `${REPO_CONTENTS}/src/assets/images/${expected}`);
+      assert.equal(calls[2].body?.sha, undefined, 'must create, never overwrite an orphan');
+      assert.equal(calls.filter((c) => c.method === 'DELETE').length, 0);
+    });
+  }
+  test('99 occupied slots fail without any write', async () => {
+    const names = Array.from({ length: 99 }, (_, i) => ({ name: `reception-${String(i + 1).padStart(2, '0')}.jpg` }));
+    const { response, calls } = await callAdmin(
+      await adminRequest('/api/photos', { method: 'POST', body: uploadBody({ category: 'reception' }) }),
+      [manifestRead(), { status: 200, body: names }],
+    );
+    assert.equal(response.status, 422);
+    assert.ok(calls.every((c) => c.method === 'GET'));
+  });
+  test('truncated, malformed and unavailable inventory fails closed', async () => {
+    for (const reply of [
+      { status: 200, body: Array.from({ length: 1000 }, () => ({ name: 'x' })) },
+      { status: 200, body: [{}] }, { status: 200, body: {} }, { status: 503, body: {} },
+    ]) {
+      const { response, calls } = await callAdmin(
+        await adminRequest('/api/photos', { method: 'POST', body: uploadBody() }),
+        [manifestRead(), reply],
+      );
+      assert.equal(response.status, 502);
+      assert.ok(calls.every((c) => c.method === 'GET'));
+    }
+  });
+});
