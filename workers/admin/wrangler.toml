@@ -31,3 +31,10 @@ compatibility_date = "2026-09-01"
 ACCESS_TEAM_DOMAIN = ""   # <team>.cloudflareaccess.com -- issuer and JWKS are derived from it
 ACCESS_AUD = ""           # the Access application's AUD tag
 ADMIN_ORIGIN = "https://admin.drkhalilkanani.com"
+
+# The branch the CMS commits to.
+#
+# DELIBERATELY EMPTY. Defaulting to `main` would mean a misconfigured
+# deployment publishes straight to the live website, so an unset branch makes
+# every write refuse instead. Setting this is a conscious act.
+CONTENT_BRANCH = ""
