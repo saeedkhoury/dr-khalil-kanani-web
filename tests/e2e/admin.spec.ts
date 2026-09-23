@@ -161,3 +161,27 @@ test('the panel asks to stay out of search results', async ({ page }) => {
   await page.goto(PANEL);
   await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
 });
+
+test('stale hours report conflict and reload current values without retrying', async ({ page }) => {
+  let writes = 0;
+  let reads = 0;
+  await page.route('**/api/hours', async (route) => {
+    if (route.request().method() === 'GET') {
+      const response = await route.fetch();
+      const body = await response.json();
+      reads += 1;
+      body.data.rows[0].opens = reads === 1 ? '09:00' : '10:00';
+      return route.fulfill({ response, json: body });
+    }
+    writes += 1;
+    expect(route.request().postDataJSON().sha).toBe('hours-sha');
+    return route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ ok: false, error: { code: 'CONFLICT' } }) });
+  });
+  await page.goto(PANEL);
+  await expect(page.locator('[data-opens="0"]')).toHaveValue('09:00');
+  await page.locator('[data-opens="0"]').fill('08:30');
+  await page.locator('#save-hours').click();
+  await expect(page.locator('#status')).toContainText('התוכן השתנה בינתיים');
+  await expect(page.locator('[data-opens="0"]')).toHaveValue('10:00');
+  expect(writes).toBe(1);
+});

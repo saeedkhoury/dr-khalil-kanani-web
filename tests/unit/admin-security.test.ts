@@ -366,35 +366,32 @@ describe('the token stays inside the Worker', () => {
   });
 });
 
-describe('conflicts are retried only where that is safe', () => {
-  test('hours retry once on a stale sha and succeed', async () => {
-    // Hours are replaced wholesale, so re-applying the same content
-    // reproduces exactly what the user asked for.
+describe('conflicts never overwrite a newer revision', () => {
+  test('hours stop on a stale sha', async () => {
+    // Replacing the whole week would discard someone else's newer edit.
     const { result, calls } = await withGitHub(
       [
         { status: 409, body: { message: 'conflict' } },
         { status: 200, body: { content: btoa('[]'), encoding: 'base64', sha: 'fresh-sha' } },
         okWrite,
       ],
-      () => write({ kind: 'hours' }, { sha: 'stale', retryOnConflict: true }),
+      () => write({ kind: 'hours' }, { sha: 'stale' }),
     );
-    assert.equal(result.ok, true);
-    assert.equal(calls.length, 3, 'expected write, re-read, write');
-    assert.equal(calls[2].body?.sha, 'fresh-sha', 'the retry must use the refetched sha');
-    assert.equal(calls[2].body?.message, calls[0].body?.message, 'the retry must re-apply the same intent');
+    assert.equal(result.ok === false && result.reason, 'conflict');
+    assert.equal(calls.length, 1, 'must not re-read or overwrite');
   });
 
-  test('a second conflict stops rather than looping', async () => {
+  test('no retry occurs even if another revision is available', async () => {
     const { result, calls } = await withGitHub(
       [
         { status: 409, body: {} },
         { status: 200, body: { content: btoa('[]'), encoding: 'base64', sha: 'fresh' } },
         { status: 409, body: {} },
       ],
-      () => write({ kind: 'hours' }, { sha: 'stale', retryOnConflict: true }),
+      () => write({ kind: 'hours' }, { sha: 'stale' }),
     );
     assert.equal(result.ok === false && result.reason, 'conflict');
-    assert.equal(calls.length, 3, 'exactly one retry');
+    assert.equal(calls.length, 1, 'no retries');
   });
 
   test('a photo append is NEVER retried', async () => {

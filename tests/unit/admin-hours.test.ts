@@ -254,7 +254,7 @@ describe('GET /api/hours', () => {
 describe('PUT /api/hours — the exact request that would be sent', () => {
   test('reads, then writes the validated week with the sha it read', async () => {
     const { response, calls } = await callApi(
-      await authed('PUT', { rows: SAVE }),
+      await authed('PUT', { rows: SAVE, sha: 'blob-sha-1' }),
       [readReply(), writeReply],
     );
 
@@ -290,12 +290,22 @@ describe('PUT /api/hours — the exact request that would be sent', () => {
     assert.doesNotThrow(() => assertHoursShape(JSON.parse(decoded), 'committed content'));
   });
 
-  test('a client-supplied sha is ignored — the Worker uses what it read', async () => {
-    const { calls } = await callApi(
-      await authed('PUT', { rows: SAVE, sha: 'attacker-chosen-sha' }),
-      [readReply(CURRENT, 'real-sha'), writeReply],
+  test('a stale form revision is rejected before any write', async () => {
+    const { response, calls } = await callApi(
+      await authed('PUT', { rows: SAVE, sha: 'old-form-revision' }),
+      [readReply(CURRENT, 'new-revision'), writeReply],
     );
-    assert.equal(calls[1].body?.sha, 'real-sha');
+    assert.equal(response.status, 409);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].method, 'GET');
+  });
+
+  test('missing or invalid revision cannot perform an unconditional write', async () => {
+    for (const sha of [undefined, null, '', 42, 'a'.repeat(65)]) {
+      const { response, calls } = await callApi(await authed('PUT', { rows: SAVE, sha }), [readReply(), writeReply]);
+      assert.equal(response.status, 409);
+      assert.equal(calls.length, 0);
+    }
   });
 
   test('an invalid week is refused with machine keys and never written', async () => {
@@ -310,30 +320,19 @@ describe('PUT /api/hours — the exact request that would be sent', () => {
     assert.deepEqual(calls, [], 'a refused payload must not reach GitHub');
   });
 
-  test('a stale sha is retried once, because hours are replaced wholesale', async () => {
+  test('a race after the server read returns conflict without retry or overwrite', async () => {
     const { response, calls } = await callApi(
-      await authed('PUT', { rows: SAVE }),
-      [readReply(CURRENT, 'stale'), { status: 409, body: {} }, readReply(CURRENT, 'fresh'), writeReply],
-    );
-    assert.equal(response.status, 200);
-    assert.equal(calls.length, 4, 'read, write(409), re-read, write');
-    assert.equal(calls[3].body?.sha, 'fresh');
-    assert.equal(calls[3].body?.message, calls[1].body?.message, 'the retry re-applies the same intent');
-  });
-
-  test('a second conflict stops and reports it', async () => {
-    const { response } = await callApi(
-      await authed('PUT', { rows: SAVE }),
-      [readReply(CURRENT, 'stale'), { status: 409, body: {} }, readReply(CURRENT, 'fresh'), { status: 409, body: {} }],
+      await authed('PUT', { rows: SAVE, sha: 'blob-sha-1' }),
+      [readReply(), { status: 409, body: {} }, readReply(CURRENT, 'fresh'), writeReply],
     );
     assert.equal(response.status, 409);
-    assert.deepEqual(await response.json(), { ok: false, error: { code: 'CONFLICT' } });
+    assert.equal(calls.length, 2, 'must not re-read and overwrite the new revision');
   });
 
   test('an unconfigured token or branch refuses without calling GitHub', async () => {
     for (const missing of [{ GITHUB_TOKEN: undefined }, { CONTENT_BRANCH: undefined }]) {
       const { response, calls } = await callApi(
-        await authed('PUT', { rows: SAVE }), [readReply(), writeReply],
+        await authed('PUT', { rows: SAVE, sha: 'blob-sha-1' }), [readReply(), writeReply],
         { ...apiEnv, ...missing } as Env,
       );
       assert.equal(response.status, 503, JSON.stringify(missing));
@@ -352,7 +351,7 @@ describe('PUT /api/hours — request hygiene', () => {
         'Content-Type': 'application/json',
         Origin: 'https://evil.test',
       },
-      body: JSON.stringify({ rows: SAVE }),
+      body: JSON.stringify({ rows: SAVE, sha: 'blob-sha-1' }),
     });
     const { response, calls } = await callApi(request, [readReply(), writeReply]);
     assert.equal(response.status, 403);
@@ -366,7 +365,7 @@ describe('PUT /api/hours — request hygiene', () => {
         'Cf-Access-Jwt-Assertion': await makeToken({ email: DOCTOR }),
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ rows: SAVE }),
+      body: JSON.stringify({ rows: SAVE, sha: 'blob-sha-1' }),
     });
     const { response, calls } = await callApi(request, [readReply(), writeReply]);
     assert.equal(response.status, 403);
@@ -381,7 +380,7 @@ describe('PUT /api/hours — request hygiene', () => {
         'Content-Type': 'text/plain',
         Origin: ADMIN_ORIGIN,
       },
-      body: JSON.stringify({ rows: SAVE }),
+      body: JSON.stringify({ rows: SAVE, sha: 'blob-sha-1' }),
     });
     const { response, calls } = await callApi(request, [readReply(), writeReply]);
     assert.equal(response.status, 400);
@@ -420,7 +419,7 @@ describe('PUT /api/hours — request hygiene', () => {
 
   test('the GitHub token never appears in a response', async () => {
     for (const replies of [[readReply(), writeReply], [{ status: 401, body: { message: TOKEN } }]]) {
-      const { response } = await callApi(await authed('PUT', { rows: SAVE }), replies);
+      const { response } = await callApi(await authed('PUT', { rows: SAVE, sha: 'blob-sha-1' }), replies);
       assert.ok(!(await response.text()).includes(TOKEN));
     }
   });

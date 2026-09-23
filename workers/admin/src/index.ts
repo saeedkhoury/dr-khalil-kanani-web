@@ -89,10 +89,17 @@ async function putHours({ request, env, identity }: Context): Promise<Response> 
   const validated = validateHoursPayload(submitted);
   if (!validated.ok) return fail('INVALID', validated.issues);
 
-  // Read-then-write. The SHA comes from the repository, never from the client,
-  // so a caller cannot aim the write at a revision of its choosing.
+  const expectedSha = (body.body as { sha?: unknown })?.sha;
+  if (typeof expectedSha !== 'string' || expectedSha === '' || expectedSha.length > 64) {
+    return fail('CONFLICT');
+  }
+
+  // The client's revision is a precondition, never a path or write target.
+  // Compare it with the server read, then let GitHub enforce the same blob
+  // SHA atomically. A change at either stage must be reviewed, not retried.
   const current = await readFile(env, { kind: 'hours' });
   if (!current.ok) return upstream(current.reason);
+  if (current.data.sha !== expectedSha) return fail('CONFLICT');
 
   const result = await writeFile(env, {
     target: { kind: 'hours' },
@@ -100,10 +107,6 @@ async function putHours({ request, env, identity }: Context): Promise<Response> 
     verb: 'update opening hours',
     actor: identity.email,
     sha: current.data.sha,
-    // Safe: hours are replaced wholesale, so re-applying reproduces exactly
-    // what the doctor asked for. Appending a photograph is not idempotent and
-    // must never set this.
-    retryOnConflict: true,
   });
   if (!result.ok) return upstream(result.reason);
 

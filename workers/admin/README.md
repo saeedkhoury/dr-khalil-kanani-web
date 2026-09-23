@@ -120,10 +120,11 @@ Commit messages come from a closed verb union plus the authenticated address,
 which is shape-checked first — a newline in an email claim would otherwise
 grow a commit body nobody wrote. No user text reaches a commit message.
 
-Conflicts retry **once, and only where re-applying the whole intent is
-idempotent**. Hours are replaced wholesale, so a retry reproduces exactly what
-the user asked for. Appending a photograph is not idempotent and is never
-retried; neither is a delete.
+Conflicts are never retried. Hours saves include the blob SHA loaded by the
+form; a mismatch with the current repository blob returns 409 before writing.
+GitHub also rejects a race after that read. The panel reports the conflict and
+reloads current values for review. Whole-week replacement is idempotent, but
+retrying it against a newer SHA would still destroy another editor’s work.
 
 ## Email matching
 
@@ -260,7 +261,8 @@ refused while the Worker still holds nothing worth reaching. See
 
 ## Opening hours
 
-`PUT /api/hours` replaces all seven rows at once. Because the file contains
+`PUT /api/hours` accepts `{ rows, sha }` and replaces all seven rows at once
+only if the form revision is still current. Because the file contains
 nothing but hours, there is no adjacent content to corrupt — no regex, no AST,
 no dependency.
 

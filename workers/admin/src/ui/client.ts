@@ -118,9 +118,11 @@ for (let i = 0; i < 7; i++) {
   document.querySelector('[data-closed="' + i + '"]').addEventListener('change', () => syncRow(i));
 }
 
+let hoursSha = null;
 async function loadHours() {
   const { body } = await api('/api/hours');
   if (!body || !body.ok) return;
+  hoursSha = body.data.sha;
   body.data.rows.forEach((row, i) => {
     document.querySelector('[data-closed="' + i + '"]').checked = row.closed;
     document.querySelector('[data-opens="' + i + '"]').value = row.opens;
@@ -150,8 +152,15 @@ $('hours-form').addEventListener('submit', async (event) => {
   button.textContent = T.hours.saving;
   showStatus('saving');
   try {
-    const { body } = await api('/api/hours', { method: 'PUT', body: JSON.stringify({ rows }) });
-    if (body && body.ok) { track(body.data.sha); return; }
+    const { body } = await api('/api/hours', { method: 'PUT', body: JSON.stringify({ rows, sha: hoursSha }) });
+    if (body && body.ok) { track(body.data.sha); await loadHours(); return; }
+    if (body && body.error && body.error.code === 'CONFLICT') {
+      stopPolling();
+      showStatus('failed');
+      $('status').textContent = T.errors.CONFLICT;
+      await loadHours();
+      return;
+    }
     // Attach each issue to the row it belongs to, so the doctor is looking at
     // the field that is wrong rather than at a summary.
     const issues = (body && body.error && body.error.issues) || [];

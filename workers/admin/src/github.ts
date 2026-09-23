@@ -402,15 +402,6 @@ export interface WriteRequest {
   patientContentConfirmed?: boolean;
   /** Blob SHA being replaced. Omit to create. */
   sha?: string;
-  /**
-   * Retry ONCE if the SHA is stale.
-   *
-   * Only safe where re-applying the caller's complete intent is idempotent —
-   * hours are replaced wholesale, so a retry reproduces exactly what the user
-   * asked for. Appending a photograph is NOT idempotent and a retry could
-   * double-add, so it must never set this.
-   */
-  retryOnConflict?: boolean;
 }
 
 /** Create or replace a file. Returns the new commit SHA. */
@@ -437,14 +428,7 @@ export async function writeFile(env: Env, request: WriteRequest): Promise<Result
       },
     });
 
-  let response = await send(request.sha);
-
-  if (!response.ok && classify(response.status) === 'conflict' && request.retryOnConflict === true) {
-    // Re-read to learn the current SHA, then re-apply the SAME content once.
-    const current = await readFile(env, request.target);
-    if (!current.ok) return refuse(current.reason === 'not_found' ? 'conflict' : current.reason);
-    response = await send(current.data.sha);
-  }
+  const response = await send(request.sha);
 
   if (!response.ok) return refuse(classify(response.status));
 
