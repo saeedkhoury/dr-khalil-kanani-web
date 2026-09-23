@@ -133,6 +133,24 @@ export const SECURITY_HEADERS: Readonly<Record<string, string>> = Object.freeze(
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
 });
 
+/**
+ * CSP for the PANEL DOCUMENT, as opposed to the JSON API.
+ *
+ * The API's `default-src 'none'` is exactly right for a JSON response and
+ * would block the panel's own stylesheet and script. Rather than loosening it
+ * with 'unsafe-inline', the panel serves its CSS and JS as same-origin files,
+ * so `'self'` is sufficient and no inline execution is ever permitted.
+ *
+ *  · script-src 'self'  — /panel.js only; an injected <script> cannot run
+ *  · style-src  'self'  — /panel.css only; no inline style attribute either
+ *  · img-src    blob:   — the file-picker preview, which is a local object URL
+ *  · connect-src 'self' — fetch may reach this origin and nothing else
+ *  · frame-ancestors / base-uri / form-action 'none' — unchanged
+ */
+export const PANEL_CSP =
+  "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' blob:; " +
+  "connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+
 export interface OkBody<T> {
   ok: true;
   data: T;

@@ -19,6 +19,10 @@ import {
 } from './media.ts';
 import { deleteFile, readFile, writeFile, type CommitVerb } from './github.ts';
 import { latestStatus, statusForSha } from './status.ts';
+import { renderPanel } from './ui/page.ts';
+import { CLIENT } from './ui/client.ts';
+import { PANEL_CSP, SECURITY_HEADERS } from './http.ts';
+import { STYLES } from './ui/styles.ts';
 
 /** Hours are seven short rows. Anything larger is not a week. */
 const MAX_HOURS_BODY = 8 * 1024;
@@ -317,7 +321,41 @@ async function getLatestStatus({ env }: Context): Promise<Response> {
  * No unauthenticated health endpoint — Access fronts the hostname, so a
  * liveness probe could never reach it.
  */
+/**
+ * Serve the panel itself.
+ *
+ * Same origin as the API, which is what makes the CSRF story work: the
+ * browser attaches no cookie a cross-site form could exploit, because the
+ * Worker reads the Access header instead.
+ *
+ * These two responses carry HTML and JavaScript rather than JSON, so they set
+ * their own Content-Type while keeping every other security header.
+ */
+function document_(body: string, contentType: string): Response {
+  return new Response(body, {
+    status: 200,
+    headers: {
+      ...SECURITY_HEADERS,
+      'Content-Type': contentType,
+      // The document CSP, not the API's. Still no inline execution.
+      'Content-Security-Policy': PANEL_CSP,
+    },
+  });
+}
+
 const ROUTES: Readonly<Record<string, Route>> = Object.freeze({
+  '/': {
+    methods: ['GET'],
+    handle: ({ identity }) => document_(renderPanel(identity.email), 'text/html; charset=utf-8'),
+  },
+  '/panel.js': {
+    methods: ['GET'],
+    handle: () => document_(CLIENT, 'text/javascript; charset=utf-8'),
+  },
+  '/panel.css': {
+    methods: ['GET'],
+    handle: () => document_(STYLES, 'text/css; charset=utf-8'),
+  },
   '/api/session': {
     methods: ['GET'],
     // The minimum the panel needs: that the session is good, and who is

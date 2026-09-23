@@ -58,7 +58,7 @@ async function codeOf(file: string): Promise<string> {
 
 describe('routing', () => {
   test('an unknown route is 404 and costs no authentication', async () => {
-    for (const path of ['/', '/api', '/api/unknown', '/api/session/', '/admin', '/.env']) {
+    for (const path of ['/api', '/api/unknown', '/api/session/', '/admin', '/.env', '/index.html']) {
       const response = await call(requestWithout({ path }));
       assert.equal(response.status, 404, path);
       assert.deepEqual(await response.json(), { ok: false, error: { code: 'NOT_FOUND' } });
@@ -319,6 +319,7 @@ describe('/api/session contract', () => {
     const code = await codeOf('index.ts');
     const paths = [...code.matchAll(/^\s*'(\/[^']*)':\s*\{/gm)].map((m) => m[1]);
     assert.deepEqual(paths, [
+      '/', '/panel.js', '/panel.css',
       '/api/session', '/api/hours', '/api/photos',
       '/api/photos/publish', '/api/photos/unpublish', '/api/photos/delete',
       '/api/status', '/api/status/latest',
