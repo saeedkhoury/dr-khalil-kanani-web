@@ -1,7 +1,73 @@
 # Admin CMS recovery and local re-audit
 
-Date: 2026-09-24. Branch: `feat/admin-cms`. Local code result: **PASS**.
+Date: 2026-09-24. Branch: `feat/admin-cms`. The original remediation result
+was **PASS** at `3da2328`; the current strict local audit result is **FAIL**
+for the public-output reproducibility gate described below.
 No push, merge, deployment, remote mutation, real credential use, or infrastructure configuration was performed.
+
+## Post-audit pre-production hardening — 2026-09-24
+
+The earlier PASS at `3da2328` was reopened after a read-only reviewer found
+**N-3 — MEDIUM: a header-only image could be committed.** The old PNG check
+returned dimensions after 24 bytes; the old JPEG check returned at its first
+frame header. Neither established that the file contained a complete image
+envelope. The upload route could therefore commit malformed bytes before a
+build or browser discovered the failure.
+
+Commit `2e1087e` keeps JPEG and PNG support and rejects incomplete structure
+before any GitHub write. PNG validation now bounds every chunk, checks IHDR,
+valid bit-depth/color combinations, palette placement, contiguous nonempty
+IDAT, the final IEND and every chunk CRC. JPEG validation bounds every marker
+segment, checks a frame and scan header, requires scan data and a final EOI,
+and rejects trailing bytes. All loops advance through at most the uploaded
+bytes; no attacker-controlled length allocates memory or permits a read past
+the buffer. The Worker does **not** decompress pixels or transform an image:
+a well-framed file with corrupt compressed pixels can still fail the Astro
+decoder, so publication status remains authoritative.
+
+The new regressions reject PNG signature-only, IHDR-only, partial/oversized
+chunks, missing IDAT/IEND and bad CRC; JPEG SOI/header-only, truncated or
+malformed segments, missing EOI and trailing bytes. Real repository PNG/JPEG
+and a complete 16×16 PNG fixture pass parsing; the small fixture still fails
+the 1200px upload rule. Route tests prove malformed, oversized and undersized
+payloads make no GitHub mutation. Existing tests still cover SVG/HTML/random
+bytes, generated filename/path boundaries, treatment-work isolation, claims,
+Access and Origin checks. **N-3 after fix: PASS.**
+
+The same commit corrects the production GitHub token documentation: the
+Worker sends an authenticated request to the workflow-runs endpoint, which
+GitHub documents as requiring **Actions: Read** for a fine-grained token.
+Contents read/write remains required for file operations and commit discovery;
+the token is restricted to one repository, with no Workflows write. Real-token
+behavior remains **BLOCKED** until approved integration testing.
+
+Final clean-checkout regression at this hardening state: `npm ci` installed
+304 packages; `lint:data`, `lint:claims`, the full asset guard, `npm run
+check`, `npm run verify`, and the strict production build passed with the
+existing exact acknowledgement and no `VERIFY_RELAX`. The complete unit suite
+passed **421/421** (70 suites); the separate admin subset passed **260/260**,
+and the appointment subset **37/37**. Playwright passed **52/52**, with its
+axe checks; the built-HTML audit passed **47/47** pages.
+
+The preserved public baseline contains 128 files. The final clean checkout at
+this HEAD produced **128 files with zero byte differences**. Another fresh
+cold build of the same source received a different Google-hosted Noto Sans
+Hebrew response and produced 128 files with **two font files added, two
+removed, and 17 HTML files changed**. Removing only inline font styles and
+font preloads makes all 17 HTML files byte-identical. No baseline was updated.
+Because the font fetch is not pinned, the required unconditional
+cold-build zero-difference check is **FAIL**, even though the CMS change does
+not alter public rendering with a constant dependency. Stabilizing that fetch
+is outside this owner's narrow hardening authorization.
+
+The current reconstructed matrix is **53 PASS / 1 FAIL / 7 BLOCKED**: R54 is
+the cold-build public-output failure. N-3 is recorded separately because it
+was discovered after the original audit and is now corrected. The seven
+infrastructure rows remain BLOCKED; no mock has converted them to PASS.
+**LOCAL CODE AUDIT: FAIL** under the owner's strict byte-identical acceptance
+gate. The remaining failure is the pre-existing font-fetch reproducibility
+issue, not an unresolved image-validation defect. No production-readiness
+claim is made.
 
 ## Recovery evidence
 
@@ -199,10 +265,10 @@ imply seven original failed requirement rows.
 | R48 | Status restores after browser reload | existing admin browser tests | PASS |
 | R49 | Both workflows explicitly validate CMS data early | M-3 workflow contracts | PASS |
 | R50 | Asset guard covers both manifests | full guard + asset regression tests | PASS |
-| R51 | Types and complete unit suite pass | clean verify / 418 tests | PASS |
+| R51 | Types and complete unit suite pass | clean verify / 418 tests at original remediation; 421 after N-3 | PASS |
 | R52 | Built headings/accessibility and browser axe pass | 47-page audit + Playwright | PASS |
 | R53 | Admin Hebrew RTL, keyboard and phone UI | admin browser tests | PASS |
-| R54 | Current public output remains identical | 0 / 128 changed | PASS |
+| R54 | Current public output remains identical in a cold build | Final clean build: 0 / 128 changed; another clean build of identical source: 2 font files added, 2 removed, 17 HTML changed | FAIL |
 | R55 | Actual Cloudflare Access application and OTP policy | Not configured/tested | BLOCKED |
 | R56 | Real allowlisted identities accepted; outsiders refused | No real identities used | BLOCKED |
 | R57 | Real scoped PAT and approved content-branch mutation | Mock GitHub only | BLOCKED |
@@ -211,7 +277,7 @@ imply seven original failed requirement rows.
 | R60 | Actual publication workflow/permissions/propagation | Local responses only | BLOCKED |
 | R61 | Supervised owner phone workflow on real deployment | Requires configured integration and owner | BLOCKED |
 
-**Reconstructed totals: 54 PASS, 0 FAIL, 7 BLOCKED, 0 NOT APPLICABLE.**
+**Current reconstructed totals: 53 PASS, 1 FAIL, 7 BLOCKED, 0 NOT APPLICABLE.**
 Every blocked row means **BLOCKED — REQUIRES PRODUCTION/INTEGRATION CONFIGURATION**.
 Mocks do not change those statuses. Native-language review, real devices,
 VoiceOver and legal review from the existing site handoff remain unperformed.

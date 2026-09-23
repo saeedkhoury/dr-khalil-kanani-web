@@ -76,17 +76,26 @@ each option, and the order to do them in are in
 [docs/GIT-HISTORY-REMEDIATION.md](docs/GIT-HISTORY-REMEDIATION.md). It needs the
 owner's decision, and probably a lawyer's.
 
-### Branch `feat/admin-cms` — local remediation complete, unmerged
+### Branch `feat/admin-cms` — image hardening complete, unmerged
 
-**LOCAL CODE AUDIT: PASS.** The seven supplied findings are resolved and
+**LOCAL CODE AUDIT: FAIL under the strict cold-build byte-comparison gate.**
+The seven supplied CMS findings are resolved and
 re-proved. Two additional findings were separately recorded and fixed:
 publication status accepted unrelated workflow success, and hours could
 silently overwrite a newer revision. Full recovery evidence, commit list,
 before/fix/test/after results and the reconstructed 61-row requirement matrix
 are in [the remediation audit](docs/audits/2026-09-24-admin-cms-remediation.md).
+Post-audit image hardening in `2e1087e` also rejects incomplete PNG/JPEG
+structure before committing an upload. The Worker validates framing and PNG
+CRCs; it does not decode compressed pixels. GitHub token documentation now
+requires `Contents: Read and write` plus `Actions: Read` for authenticated
+deployment status, still pending real-token verification.
 
-The original 61-row matrix was not supplied; the reconstructed matrix has
-**54 PASS / 0 FAIL / 7 BLOCKED**. It does not claim original row identities.
+The original 61-row matrix was not supplied; the current reconstructed matrix
+has **53 PASS / 1 FAIL / 7 BLOCKED**. R54 fails because an unpinned external
+Google Hebrew font response can change a cold build even with unchanged site
+source. The CMS image-validation defect is corrected. The matrix does not
+claim original row identities.
 Production/integration rows remain blocked, with no real infrastructure test.
 
 The CMS manages only opening hours and clinic photography. Published clinic
@@ -108,13 +117,18 @@ No real credential was used and `.agents/` remains untracked.
 Verification from a clean detached worktree with a fresh lockfile install:
 
 - `npm run verify`: all gates pass; Astro reports zero diagnostics.
-- Unit suite: **418 passed**, including **257 admin Worker** and **37 appointment
+- Unit suite: **421 passed**, including **260 admin Worker** and **37 appointment
   Worker** tests, also run separately.
 - Playwright: **52 passed**; tested axe states have zero violations.
 - Production build with the existing exact three-field acknowledgement passes;
   built-HTML accessibility audit passes **47 pages**.
-- Preserved baseline: **0 of 128 public files changed**, including all 47 HTML
-  pages. An isolated all-unpublished fixture is also byte-identical.
+- Preserved baseline: **128 public files**. The final fresh build at this HEAD
+  matched all 128 files byte-for-byte. Another cold build of identical source
+  had two font files added, two removed, and 17 font-referencing HTML files
+  changed. The font fetch is not pinned, so the unconditional cold-build gate
+  remains FAIL.
+  The baseline was not updated. The earlier all-unpublished fixture was
+  byte-identical.
 - Six populated clinic-gallery screenshots were opened: he/ar/en at 375/1440.
 - Access guard mutations fail their tests; current-tree credential-pattern
   scan found no matches. Existing public media history is unchanged.
@@ -161,7 +175,7 @@ quick contact. The browser suite now contains 34 tests.
 | Mixed-script (homoglyph) linter | `npm run lint:scripts` | verify + CI |
 | Asset guard (unregistered media) | `npm run lint:assets` | **pre-commit** + CI |
 | Accessibility audit of built HTML | `npm run lint:a11y` | preview + deploy |
-| Unit tests (418) | `npm test` | CI |
+| Unit tests (421) | `npm test` | CI |
 | Type/template check | `npm run check` | verify + CI |
 | Chromium + axe browser QA (52 tests) | `npm run test:e2e` | preview + deploy |
 
