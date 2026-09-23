@@ -68,6 +68,21 @@ const IMAGE_DIR = 'src/assets/images';
 const IMAGE_FILE = /^[a-z0-9]+(?:-[a-z0-9]+)*-\d{2}\.(?:jpg|jpeg|png)$/;
 
 /**
+ * Hard length bound, checked separately from the pattern.
+ *
+ * Generated names are `<category>-<nn>.<ext>`, and the longest category
+ * (`treatment-room`, `doctor-working`) yields 21 characters. 64 leaves room
+ * for a longer convention without ever approaching a limit that matters:
+ * Git and most filesystems cap a path component at 255 bytes, and a name that
+ * long could only arrive from a hand-edited manifest.
+ *
+ * Not left to the request-body cap. A size limit on a request is not a
+ * statement about what a filename may be, and relying on one to enforce the
+ * other is the kind of coupling that breaks when either is tuned.
+ */
+const MAX_IMAGE_FILENAME = 64;
+
+/**
  * Resolve a target to a repository path, or refuse.
  *
  * Returns null rather than throwing so that a refusal is a value the caller
@@ -92,6 +107,7 @@ export function pathFor(target: WriteTarget): string | null {
       // loosened, traversal must not become possible as a side effect of an
       // unrelated change to a filename convention.
       if (file.includes('/') || file.includes('\\') || file.includes('..')) return null;
+      if (file.length > MAX_IMAGE_FILENAME) return null;
       if (!IMAGE_FILE.test(file)) return null;
       return `${IMAGE_DIR}/${file}`;
     }
@@ -161,7 +177,7 @@ export function commitMessage(
   // message reading `cms(undefined): toString`.
   if (!Object.hasOwn(SCOPE, verb)) return null;
   if (!ACTOR.test(actor)) return null;
-  if (subject !== undefined && !IMAGE_FILE.test(subject)) return null;
+  if (subject !== undefined && (subject.length > MAX_IMAGE_FILENAME || !IMAGE_FILE.test(subject))) return null;
 
   const headline = subject === undefined ? verb : `${verb} ${subject}`;
   const confirmation = patientContentConfirmed === true ? 'Patient-content confirmed: yes\n' : '';

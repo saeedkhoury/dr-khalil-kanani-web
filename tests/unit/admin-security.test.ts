@@ -135,6 +135,35 @@ describe('a caller cannot name a path', () => {
     }
   });
 
+  test('an overlong filename is refused independently of the body cap [L-1]', () => {
+    // The 4 KB action-body limit happens to reject these today. A size limit
+    // on a request is not a statement about what a filename may be, so the
+    // bound is enforced here and tested without a request at all.
+    const longest = 'treatment-room-01.jpg';
+    assert.ok(longest.length <= 64);
+    assert.ok(pathFor({ kind: 'image', file: longest }), 'a real generated name must pass');
+
+    // 64 is the bound: 60 name + '-01.jpg' is over, 53 + '-01.jpg' is exactly 60.
+    const at = `${'a'.repeat(57)}-01.jpg`;        // 64
+    const over = `${'a'.repeat(58)}-01.jpg`;      // 65
+    assert.equal(at.length, 64);
+    assert.equal(over.length, 65);
+    assert.ok(pathFor({ kind: 'image', file: at }), 'exactly at the bound must pass');
+    assert.equal(pathFor({ kind: 'image', file: over }), null, 'one over the bound must fail');
+    assert.equal(pathFor({ kind: 'image', file: `${'a'.repeat(5000)}-01.jpg` }), null);
+
+    // And the commit-message subject is bounded by the same rule.
+    assert.equal(commitMessage('publish clinic photo', DOCTOR, over), null);
+    assert.ok(commitMessage('publish clinic photo', DOCTOR, at));
+  });
+
+  test('the length bound does not weaken traversal or extension checks', () => {
+    // Short but hostile must still be refused.
+    for (const file of ['../x-01.jpg', 'a/b-01.jpg', 'x-01.svg', 'x-1.jpg']) {
+      assert.equal(pathFor({ kind: 'image', file }), null, `accepted ${file}`);
+    }
+  });
+
   test('an unknown target kind is refused', () => {
     assert.equal(pathFor({ kind: 'workflow' } as unknown as WriteTarget), null);
   });

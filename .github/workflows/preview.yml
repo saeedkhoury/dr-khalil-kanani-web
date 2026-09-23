@@ -34,6 +34,13 @@ jobs:
 
       # These gates are NOT relaxed for previews. A medical claim or an
       # unreviewed patient image is just as unacceptable on a branch.
+      #
+      # Data schema FIRST: the cheapest check, and the one a CMS commit is most
+      # likely to fail. Letting the build catch a malformed manifest by throwing
+      # on import would report it as a stack trace from inside `astro build`,
+      # which is exactly what this named step exists to avoid.
+      - name: Data schema (CMS-writable JSON)
+        run: npm run lint:data
       - name: Medical claims linter
         run: npm run lint:claims
       - name: Mixed-script linter

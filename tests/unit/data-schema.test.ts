@@ -217,3 +217,32 @@ test('rejects an unknown field rather than ignoring it', () => {
 test('rejects anything that is not an array', () => {
   assert.match(photoProblems({ 'reception-01.jpg': {} }).join('\n'), /must be a JSON array/);
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+   M-3: the data gate must run in CI.
+
+   Relying on the build to throw on import is not a substitute: it reports a
+   malformed manifest as a stack trace from inside `astro build`, which is
+   exactly what a named step exists to avoid.
+   ──────────────────────────────────────────────────────────────────────── */
+
+test('both workflows run lint:data before the expensive steps', async () => {
+  const { readFile } = await import('node:fs/promises');
+  for (const workflow of ['deploy.yml', 'preview.yml']) {
+    const yaml = await readFile(new URL(`../../.github/workflows/${workflow}`, import.meta.url), 'utf8');
+    assert.match(yaml, /npm run lint:data/, `${workflow} does not run lint:data`);
+    // Cheapest gate first: a CMS commit is likeliest to fail this one, and
+    // there is no value in type-checking or building before it.
+    const data = yaml.indexOf('npm run lint:data');
+    for (const later of ['npm run check', 'npm test', 'npm run build']) {
+      const at = yaml.indexOf(later);
+      if (at !== -1) assert.ok(data < at, `${workflow}: lint:data must precede ${later}`);
+    }
+  }
+});
+
+test('lint:data is part of npm run verify', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const pkg = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8'));
+  assert.match(pkg.scripts.verify, /lint:data/);
+});
