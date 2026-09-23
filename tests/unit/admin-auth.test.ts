@@ -309,7 +309,7 @@ describe('configuration derivation', () => {
    ──────────────────────────────────────────────────────────────────────── */
 
 describe('unusable Access configuration fails closed', () => {
-  const unusable = [undefined, '', '   ', '\t\n'];
+  const unusable = [undefined, '', '   ', '\t\n', null, 42, {}];
 
   test('31. an unusable ACCESS_AUD refuses a perfectly valid token', async () => {
     for (const value of unusable) {
