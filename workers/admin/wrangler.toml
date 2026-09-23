@@ -4,6 +4,10 @@ compatibility_date = "2026-09-01"
 workers_dev = false
 preview_urls = false
 
+[[routes]]
+pattern = "admin.drkhalilkanani.com"
+custom_domain = true
+
 # ── NOTHING PRIVATE IN THIS FILE ───────────────────────────────────────────
 # This repository is PUBLIC.
 #
@@ -27,8 +31,7 @@ preview_urls = false
 # reviewed. ACCESS_AUD identifies the Access application; knowing it does not
 # help forge a token, which would require Cloudflare's private key.
 #
-# PLACEHOLDERS. The real values do not exist until the Cloudflare Access
-# application is created, which has not been done. NEEDS CONFIGURATION.
+# The Access application exists with OTP only and no Allow policy yet.
 [vars]
 ACCESS_TEAM_DOMAIN = "late-queen-efb5.cloudflareaccess.com"   # issuer and JWKS are derived from it
 ACCESS_AUD = "539e1afa2f4375536a5115dbd0481decee80af4334dc154e170c35b5e2baa17c"
