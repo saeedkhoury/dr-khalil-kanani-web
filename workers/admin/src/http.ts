@@ -66,7 +66,15 @@ export type ErrorCode =
   | 'FORBIDDEN'
   | 'NOT_FOUND'
   | 'METHOD_NOT_ALLOWED'
-  | 'SERVER_ERROR';
+  | 'SERVER_ERROR'
+  // ── Added when mutation routes arrived. Each maps to a branch that exists;
+  //    none is speculative, and the auth codes above are unchanged.
+  | 'BAD_REQUEST'
+  | 'INVALID'
+  | 'PAYLOAD_TOO_LARGE'
+  | 'CONFLICT'
+  | 'UPSTREAM_UNAVAILABLE'
+  | 'NOT_CONFIGURED';
 
 const STATUS: Record<ErrorCode, number> = {
   AUTH_REQUIRED: 401,
@@ -75,6 +83,12 @@ const STATUS: Record<ErrorCode, number> = {
   NOT_FOUND: 404,
   METHOD_NOT_ALLOWED: 405,
   SERVER_ERROR: 500,
+  BAD_REQUEST: 400,
+  INVALID: 422,
+  PAYLOAD_TOO_LARGE: 413,
+  CONFLICT: 409,
+  UPSTREAM_UNAVAILABLE: 502,
+  NOT_CONFIGURED: 503,
 };
 
 /**
@@ -126,8 +140,21 @@ export interface OkBody<T> {
 
 export interface ErrorBody {
   ok: false;
-  error: { code: ErrorCode };
+  error: { code: ErrorCode; issues?: readonly string[] };
 }
+
+/**
+ * Stable machine keys naming what failed validation, e.g. `row_3_times_required`.
+ *
+ * ONLY ever attached to INVALID. This is not a hole in the "code and nothing
+ * else" rule that protects the auth path: the caller is authenticated,
+ * authorised, and being told about data it just submitted itself. It learns
+ * nothing it did not already know.
+ *
+ * Keys, never sentences. The Hebrew the doctor reads lives in the UI, so the
+ * Worker never carries display text and the two cannot disagree.
+ */
+export type Issues = readonly string[];
 
 function respond(body: OkBody<unknown> | ErrorBody, status: number): Response {
   return new Response(JSON.stringify(body), { status, headers: { ...SECURITY_HEADERS } });
@@ -144,6 +171,58 @@ export function ok<T>(data: T): Response {
  * that exists is a field someone will eventually fill with something useful to
  * an attacker, so the shape makes that impossible rather than discouraged.
  */
-export function fail(code: ErrorCode): Response {
-  return respond({ ok: false, error: { code } }, STATUS[code]);
+export function fail(code: ErrorCode, issues?: Issues): Response {
+  // Issues are permitted only on INVALID. Guarding here rather than trusting
+  // call sites means no future handler can attach detail to an auth refusal.
+  const error = code === 'INVALID' && issues && issues.length > 0 ? { code, issues } : { code };
+  return respond({ ok: false, error }, STATUS[code]);
+}
+
+/**
+ * Read a JSON body, refusing anything oversized or not declared as JSON.
+ *
+ * Requiring `Content-Type: application/json` is a CSRF control as well as
+ * hygiene: a cross-origin form post cannot set it without triggering a
+ * preflight, which this Worker's absent CORS headers then fail.
+ */
+export async function readJson<T>(
+  request: Request,
+  maxBytes: number,
+): Promise<{ ok: true; body: T } | { ok: false; code: ErrorCode }> {
+  const type = request.headers.get('Content-Type') ?? '';
+  if (!type.toLowerCase().startsWith('application/json')) {
+    return { ok: false, code: 'BAD_REQUEST' };
+  }
+
+  // Trust the declared length only to reject early; the real cap is the bytes
+  // actually read, because Content-Length can lie.
+  const declared = Number(request.headers.get('Content-Length') ?? '0');
+  if (Number.isFinite(declared) && declared > maxBytes) {
+    return { ok: false, code: 'PAYLOAD_TOO_LARGE' };
+  }
+
+  const text = await request.text();
+  if (new TextEncoder().encode(text).length > maxBytes) {
+    return { ok: false, code: 'PAYLOAD_TOO_LARGE' };
+  }
+
+  try {
+    return { ok: true, body: JSON.parse(text) as T };
+  } catch {
+    return { ok: false, code: 'BAD_REQUEST' };
+  }
+}
+
+/**
+ * State-changing requests must come from the admin origin.
+ *
+ * Checked server-side because CORS constrains browsers and a browser is not
+ * the only thing that can issue a request. The Access assertion is still the
+ * credential; this is defence in depth, not authentication.
+ */
+export function sameOrigin(request: Request, env: Env): boolean {
+  const origin = request.headers.get('Origin');
+  // Absent Origin is refused on mutations rather than waved through: every
+  // legitimate caller here is a browser fetch from the panel, which sets it.
+  return origin !== null && origin === env.ADMIN_ORIGIN;
 }

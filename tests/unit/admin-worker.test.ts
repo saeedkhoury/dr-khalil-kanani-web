@@ -312,21 +312,22 @@ describe('no authentication bypass exists', () => {
 });
 
 describe('/api/session contract', () => {
-  test('the route table exposes exactly one path', async () => {
+  test('the route table exposes exactly the intended paths', async () => {
     // A guard against an endpoint being added without a decision. If this
-    // fails, a route was introduced -- make sure it was meant to be.
-    const source = await (await import('node:fs/promises')).readFile(
-      new URL('../../workers/admin/src/index.ts', import.meta.url), 'utf8',
-    );
-    const paths = [...source.matchAll(/^\s*'(\/[^']*)':\s*\{/gm)].map((m) => m[1]);
-    assert.deepEqual(paths, ['/api/session']);
+    // fails, a route was introduced -- make sure it was meant to be, then
+    // update this list deliberately.
+    const code = await codeOf('index.ts');
+    const paths = [...code.matchAll(/^\s*'(\/[^']*)':\s*\{/gm)].map((m) => m[1]);
+    assert.deepEqual(paths, ['/api/session', '/api/hours']);
   });
 
-  test('the handler returns only authenticated and email', async () => {
+  test('the session handler returns only authenticated and email', async () => {
     const code = await codeOf('index.ts');
-    // No other claim may be referenced anywhere in the routing layer.
-    for (const claim of ['payload.', '.sub', '.iat', '.exp', '.nbf', '.aud', '.iss', 'jwt', 'Assertion']) {
-      assert.ok(!code.includes(claim), `the routing layer references ${claim}`);
+    // No token claim other than the email may be referenced anywhere in the
+    // routing layer. Word-bounded, so `validated.issues` is not mistaken for
+    // the `iss` claim.
+    for (const claim of [/\bpayload\b/, /\.sub\b/, /\.iat\b/, /\.exp\b/, /\.nbf\b/, /\.aud\b/, /\.iss\b/, /\bjwt\b/i, /Assertion/]) {
+      assert.ok(!claim.test(code), `the routing layer references ${claim}`);
     }
     assert.match(code, /ok\(\{ authenticated: true, email: identity\.email \}\)/);
   });
