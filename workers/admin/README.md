@@ -1,12 +1,11 @@
 # Admin Worker
 
-**It proves who you are and then does nothing.**
+The clinic owner's panel for `admin.drkhalilkanani.com`. Two jobs: opening
+hours, and clinic photographs.
 
-That is the entire current behaviour, on purpose. This Worker establishes the
-security boundary for `admin.drkhalilkanani.com`; the endpoints that edit
-opening hours and manage photographs go behind it in a later phase. If this
-part is right, adding one of those is a routing change rather than a security
-change.
+Everything it can do is behind a Cloudflare Access assertion that the Worker
+verifies itself, and every repository write goes through a path allow-list the
+caller cannot address around.
 
 ## Status
 
@@ -19,19 +18,19 @@ signed Access token. That is the intended resting state.
 
 | | |
 |---|---|
-| Routing | one route, one method, explicit. Everything else 404 or 405 |
+| Routing | exact paths, explicit methods. Everything else 404 or 405 |
 | Authentication | independently verifies the Cloudflare Access JWT |
 | Authorisation | checks the email claim against `ALLOWED_EMAILS` |
-| Responses | one JSON shape, one header set, applied to errors too |
+| Opening hours | read and replace, validated against the build's own schema |
+| Clinic photographs | add, publish, unpublish, delete permanently |
+| Publication status | by commit SHA, so a locked phone loses nothing |
+| The panel | server-rendered Hebrew/RTL, same origin as the API |
 
 ## What it deliberately does not do
 
-No data mutation · no upload · no admin UI · no unauthenticated health
-endpoint · no CORS · no rate-limiting code · **no development authentication
-bypass**.
-
-A GitHub client exists (`src/github.ts`) but **no endpoint uses it**, and it is
-not configured. See *Repository access* below.
+No unauthenticated endpoint of any kind · no CORS · no rate-limiting code ·
+no ability to write anything outside three allow-listed paths · **no
+development authentication bypass**.
 
 ## Why it verifies the JWT itself
 
@@ -137,6 +136,19 @@ that was. Access returns the address as the identity provider verified it, and
 the allow-list is a short list its owner controls.
 
 ## API
+
+Every route requires a verified, allow-listed Access identity. Mutations
+additionally require `Origin: <ADMIN_ORIGIN>` and `Content-Type:
+application/json`, checked server-side.
+
+| Route | Methods | Purpose |
+|---|---|---|
+| `/` · `/panel.js` · `/panel.css` | GET | the panel itself |
+| `/api/session` | GET | who is signed in |
+| `/api/hours` | GET · PUT | read and replace the week |
+| `/api/photos` | GET · POST | list, and add one |
+| `/api/photos/publish` · `/unpublish` · `/delete` | POST | change one photograph |
+| `/api/status?sha=` · `/api/status/latest` | GET | where a change got to |
 
 ### `GET /api/session`
 
@@ -244,3 +256,96 @@ Not yet. The Access application must exist and be verified **before** a custom
 domain makes this Worker reachable, and a non-allow-listed identity should be
 refused while the Worker still holds nothing worth reaching. See
 `docs/specs/2026-09-22-admin-cms-phase-2.md` §M.
+
+
+## Opening hours
+
+`PUT /api/hours` replaces all seven rows at once. Because the file contains
+nothing but hours, there is no adjacent content to corrupt — no regex, no AST,
+no dependency.
+
+The admin rules are **stricter than the build's**. The site may ship with
+hours not yet supplied, and `hasHours()` hides the block. But a day marked
+open *from the panel* must say when: the doctor was looking at the form when
+he ticked it, so a half-filled row is an accident rather than a state anyone
+chose. Closed days are normalised — the form disables the time inputs, so
+whatever they last held is meaningless.
+
+The final gate is the **build's own validator**, imported rather than
+reimplemented, so the Worker cannot commit hours that `npm run build` would
+reject. That failure mode would be a change that silently never went live.
+
+A stale SHA is retried **once**, which is safe only because hours are replaced
+wholesale: re-applying reproduces exactly what the doctor asked for.
+
+## Clinic photographs
+
+Images are identified from their **own bytes**, never the filename. SVG, GIF,
+WebP, HTML, a renamed script and a truncated JPEG are all refused. Filenames
+are **generated server-side** from the category and the real format; the client
+never sends, sees or influences a repository path.
+
+The patient-content confirmation is checked **server-side**, because a
+client-side gate only stops the honest path. Without it nothing is committed,
+and the commit message records that it was given.
+
+Ordering is deliberate in both directions:
+
+- **Add** — the image is committed first, the manifest second. A failure
+  between them leaves an unreferenced file, which renders nothing. The reverse
+  would publish a manifest pointing at a missing file and fail the build for
+  everyone.
+- **Delete** — the reference goes first, the file second, for the same reason.
+
+Unpublishing keeps the record and the file, so it is reversible. Permanent
+delete is reachable only from the unpublished state. Zero published
+photographs is valid.
+
+An append is **never retried** — a retry could double-add.
+
+## Publication status
+
+**A commit is not a publication.** `published` is set only on
+`conclusion: success`; everything else is `committed` or `failed`. Where a SHA
+has several runs the strictest answer wins.
+
+Status is keyed on the commit SHA rather than browser state, so
+`/api/status/latest` can answer from a new device by finding the most recent
+`cms(` commit. `localStorage` is a convenience, never the mechanism.
+
+When publication fails the site is unaffected — GitHub Pages keeps serving the
+last successful deployment — and the panel says exactly that.
+
+## The panel
+
+Server-rendered Hebrew, RTL, mobile first, from the same origin as the API.
+The tokens are mirrored from `src/styles/global.css` and a test asserts they
+match, so there is one design system rather than two that can drift.
+
+A test rejects every physical CSS property, because a physical property is
+invisible in Hebrew until someone opens the panel in English. Another asserts
+`--color-signal` is never used for text (3.28:1), and another rejects
+`box-shadow` and gradients.
+
+The document CSP is `script-src 'self'; style-src 'self'` with no
+`'unsafe-inline'` — the stylesheet and script are served as their own routes
+rather than inlined. The API keeps the stricter `default-src 'none'`.
+
+## Browser tests
+
+`scripts/serve-admin-fixture.ts` runs the **real Worker** over loopback with
+GitHub mocked, so `tests/e2e/admin.spec.ts` exercises the rendered panel.
+
+It is not an auth bypass: the Worker is unmodified and still requires a valid
+assertion, so the harness mints a real RS256 token with a generated key and
+serves the Worker a matching JWKS. Every check runs. It binds to loopback,
+refuses to start with `NODE_ENV=production`, and blocks any outbound URL that
+is not the JWKS or `api.github.com`.
+
+## Not verified against real infrastructure
+
+**BLOCKED — REQUIRES APPROVED INTEGRATION TEST CONFIGURATION.** No commit has
+ever been made to a real repository, and no real Access application exists.
+Local tests prove the exact request that *would* be sent — repository, branch,
+allowed path, expected SHA, encoded content and sanitised commit message —
+without sending it.

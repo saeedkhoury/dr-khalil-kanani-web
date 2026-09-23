@@ -143,6 +143,29 @@ control fails at least one test.
 non-allow-listed identity refused, *before* a custom domain makes the Worker
 reachable. See `docs/specs/2026-09-22-admin-cms-phase-2.md` §M.
 
+### Phases 4-8 — the CMS itself, complete locally
+
+| Phase | Commit | What |
+|---|---|---|
+| 4 | `cefd392` | opening-hours API |
+| 5 | `dccf65d` | clinic photography API |
+| 6 | `0d0041e` | publication status by commit SHA |
+| 7 | `11358c8` | the panel — server-rendered Hebrew/RTL |
+| 8 | `561d1e5` | browser tests against the real Worker |
+
+The admin CMS is **feature complete locally**. The doctor can edit opening
+hours and add, publish, unpublish and permanently delete clinic photographs,
+and see where each change got to.
+
+**Nothing is deployed or configured.** `ALLOWED_EMAILS`, `GITHUB_TOKEN`,
+`CONTENT_BRANCH` and the Access application are all unset, and every one of
+them being unset means the Worker refuses. No commit has ever been made to a
+real repository.
+
+Verification is by mocked GitHub only — local tests prove the exact request
+that *would* be sent without sending it.
+**BLOCKED — REQUIRES APPROVED INTEGRATION TEST CONFIGURATION.**
+
 ### Phase 3 — GitHub client + path allow-list (`3ab0773`)
 
 `workers/admin/src/github.ts`: the only code that can change the website.
