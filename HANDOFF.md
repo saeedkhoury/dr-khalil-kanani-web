@@ -127,9 +127,12 @@ target. Its Worker config sets the exact Access team domain and AUD, the admin
 origin, `CONTENT_BRANCH=codex/admin-cms-integration`, `workers_dev=false`,
 `preview_urls=false`, and the `admin.drkhalilkanani.com` custom domain.
 
-Cloudflare Zero Trust already has One-time PIN. A self-hosted Access application
-for the admin hostname was created with OTP as its sole login method and **no
-Allow policy**, so it denies all identities. The admin Worker is deployed and
+Cloudflare Zero Trust already has One-time PIN. The self-hosted Access
+application for the admin hostname uses OTP as its sole login method. The
+owner's existing Allow policy for the doctor's and developer's exact addresses
+was attached to the application and verified in the application list. The
+policy had initially been saved without being attached, which prevented OTP
+delivery. The admin Worker is deployed and
 bound to that hostname; an anonymous `/api/session` request redirects to the
 Access login. Its `workers.dev` hostname returns 404. The zone has an active
 rate limiting rule scoped to this hostname's `/api/` paths: over 60 requests
@@ -141,9 +144,12 @@ The token authenticated as the repository owner and passed repository/Actions
 reads; a deliberately incomplete Contents write reached GitHub validation
 without changing a file. The temporary local token copy was removed. The
 anonymous admin route still redirects to Access, and direct `workers.dev`
-returns 404. A real OTP sign-in and authenticated CMS write/read tests remain
-pending. No CMS write to `main`, merge, or website production deployment has
-occurred.
+returns 404. After the policy attachment, a fresh OTP request was made for the
+developer's allowed address, but no message appeared in Gmail across all
+folders after repeated refreshes. Cloudflare documents email suppression as a
+possible cause; delivery is not yet proven. A real OTP sign-in and authenticated
+CMS write/read tests remain pending. No CMS write to `main`, merge, or website
+production deployment has occurred.
 
 Verification from a clean detached worktree with a fresh lockfile install:
 
