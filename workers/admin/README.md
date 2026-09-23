@@ -351,3 +351,28 @@ ever been made to a real repository, and no real Access application exists.
 Local tests prove the exact request that *would* be sent — repository, branch,
 allowed path, expected SHA, encoded content and sanitised commit message —
 without sending it.
+
+
+## Local audit remediation — 2026-09-24
+
+The current recovery and verification source of truth is the
+[local remediation audit](../../docs/audits/2026-09-24-admin-cms-remediation.md).
+Its reconstructed matrix records 54 local passes and seven integration blocks.
+No remote configuration or mutation was performed.
+
+CMS text is checked by the shared claims rules before upload commits and by
+CI over decoded JSON alt/caption strings. Both workflows explicitly run the
+shared data validator. The existing public About page renders published clinic
+photography; its empty state changes no current public bytes.
+
+Filename allocation inventories the fixed repository image directory, merges
+those names with manifest names, and chooses a free two-digit slot. It never
+replaces or deletes an orphan to make space. API errors, 99 occupied category
+slots, or a possibly truncated directory inventory fail explicitly.
+
+Known-SHA publication status queries only the production deployment workflow.
+Latest-change discovery pages data history against a fixed commit, with a
+bounded unavailable response if the answer cannot be proved. It never treats
+an exhausted search as no CMS change. See the audit for exact availability
+bounds and tests. Real GitHub permissions/branch/deployment behavior remains
+blocked pending approved integration configuration.

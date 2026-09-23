@@ -2,7 +2,7 @@
 
 Current repository state. Not a history — see `CHANGELOG.md` for that.
 
-**Last updated:** 2026-09-23
+**Last updated:** 2026-09-24
 
 ---
 
@@ -76,133 +76,65 @@ each option, and the order to do them in are in
 [docs/GIT-HISTORY-REMEDIATION.md](docs/GIT-HISTORY-REMEDIATION.md). It needs the
 owner's decision, and probably a lawyer's.
 
-### Branch `feat/admin-cms` — admin CMS Phase 1 COMPLETE, unmerged
+### Branch `feat/admin-cms` — local remediation complete, unmerged
 
-Five commits on `feat/admin-cms`, not pushed and not merged. Phase 1 is the
-**data foundation only**: no admin Worker, no admin UI, no Cloudflare or DNS
-change, nothing the owner can log into yet.
+**LOCAL CODE AUDIT: PASS.** The seven supplied findings are resolved and
+re-proved. Two additional findings were separately recorded and fixed:
+publication status accepted unrelated workflow success, and hours could
+silently overwrite a newer revision. Full recovery evidence, commit list,
+before/fix/test/after results and the reconstructed 61-row requirement matrix
+are in [the remediation audit](docs/audits/2026-09-24-admin-cms-remediation.md).
 
-| | Commit | What it does |
-|---|---|---|
-| 1 | `78f81be` | media types extracted to `src/data/media-types.ts`, so a future admin Worker can import types without importing the manifest that holds `treatmentWork` |
-| 2 | `af13d20` | asset guard reads both manifests; staged and full modes over one validation core |
-| 3 | `58d0a53` | opening hours move to `src/data/hours.json`; `VERIFICATION.hours.published` becomes derived |
-| 4 | `2e9ee2a` | clinic photography becomes `src/data/clinic-photography.json` with a required `status` |
-| 5 | `10165ef` | QA fixtures own their JSON; `docs/ASSETS.md` and `AGENTS.md` updated |
+The original 61-row matrix was not supplied; the reconstructed matrix has
+**54 PASS / 0 FAIL / 7 BLOCKED**. It does not claim original row identities.
+Production/integration rows remain blocked, with no real infrastructure test.
 
-**The site did not change.** All 128 built files are byte-identical to a
-baseline captured before the first commit — 0 of 47 HTML pages differ, same
-SHA-256 tree digest. This was a data-model migration and nothing else.
+The CMS manages only opening hours and clinic photography. Published clinic
+photographs now render on the existing About page in all three locales;
+unpublished photos and empty collections produce no section. Treatment work
+remains developer-managed on the homepage. English is still seeded from Arabic
+with `needsEnglishReview: true` until a developer supplies reviewed English.
 
-Two mutable JSON files now exist, and nothing but a developer can write them
-yet: `src/data/hours.json` (seven rows, still empty, block still hidden) and
-`src/data/clinic-photography.json` (`[]`).
+CMS text uses the same claims rules in the Worker and CLI. Upload allocation
+checks repository files as well as the manifest, so orphan files are skipped.
+Hours saves require the form's loaded blob SHA and never retry a conflict.
+Publication is tied to the exact SHA and production deployment workflow.
 
-New gate: `npm run lint:data`, now part of `npm run verify`. It validates both
-JSON files using `src/lib/data-schema.ts` — the same functions the build calls,
-deliberately not a second copy, so CI and the build cannot start disagreeing
-about what is valid.
+**Nothing was pushed, merged, deployed or configured in this workstream.**
+Access settings, the identity list, GitHub token, content branch, WAF and domain
+still require approved configuration. Test GitHub requests use mocks only.
+No real credential was used and `.agents/` remains untracked.
 
-`npm run lint:assets` is now staged-scope and `npm run lint:assets:full` is
-full-scope; `verify` and CI use the latter.
+Verification from a clean detached worktree with a fresh lockfile install:
 
-Phase 1 stopped where the plan says it stops. **Do not** assume the owner can
-edit anything yet.
+- `npm run verify`: all gates pass; Astro reports zero diagnostics.
+- Unit suite: **418 passed**, including **257 admin Worker** and **37 appointment
+  Worker** tests, also run separately.
+- Playwright: **52 passed**; tested axe states have zero violations.
+- Production build with the existing exact three-field acknowledgement passes;
+  built-HTML accessibility audit passes **47 pages**.
+- Preserved baseline: **0 of 128 public files changed**, including all 47 HTML
+  pages. An isolated all-unpublished fixture is also byte-identical.
+- Six populated clinic-gallery screenshots were opened: he/ar/en at 375/1440.
+- Access guard mutations fail their tests; current-tree credential-pattern
+  scan found no matches. Existing public media history is unchanged.
 
-### Branch `feat/admin-cms` — admin CMS Phase 2 COMPLETE, unmerged
+The empty current photography manifest and placeholder hours remain unchanged.
+No clinic fact has been promoted to verified. Real-device/native-language/legal
+checks below remain outstanding.
 
-The security shell for `admin.drkhalilkanani.com`. **It proves who you are and
-then does nothing.** No admin UI, no data mutation, no GitHub access, and
-nothing deployed or configured in Cloudflare.
+### Known: the public stylesheet includes unused documentation utilities
 
-| | Commit | What it does |
-|---|---|---|
-| 1 | `14ea94f` | drop a tsconfig include pointing at a file that never existed |
-| 2 | `9516f0d` | transport layer — `Env`, error contract, security headers, `jose` |
-| 3 | `ee6fd2c` | independent Cloudflare Access JWT verification |
-| 4 | `76d40dd` | routing and `GET /api/session` |
-
-`workers/admin/` is isolated from `workers/appointment-email/` — separate
-config, secrets and domain, nothing shared.
-
-**Not deployed and not configured.** No Access application exists, no custom
-domain is bound, no secret is set. `ALLOWED_EMAILS` is unset, which means the
-Worker **refuses everyone**, including a valid signed token. That is the
-intended resting state until an identity list is deliberately configured.
-`GITHUB_TOKEN` appears nowhere — not in the type, the config, or the account.
-
-**The public site did not change.** All 128 built files remain byte-identical
-to the Phase 1 baseline. `jose` is the Worker's only runtime dependency and no
-site module imports it.
-
-66 new tests, all offline: real RSA keys, real RS256 signatures, `fetch`
-stubbed to serve a local JWKS. Mutation-tested — removing any single security
-control fails at least one test.
-
-**Before deploying:** the Access application must exist and be verified, and a
-non-allow-listed identity refused, *before* a custom domain makes the Worker
-reachable. See `docs/specs/2026-09-22-admin-cms-phase-2.md` §M.
-
-### Phases 4-8 — the CMS itself, complete locally
-
-| Phase | Commit | What |
-|---|---|---|
-| 4 | `cefd392` | opening-hours API |
-| 5 | `dccf65d` | clinic photography API |
-| 6 | `0d0041e` | publication status by commit SHA |
-| 7 | `11358c8` | the panel — server-rendered Hebrew/RTL |
-| 8 | `561d1e5` | browser tests against the real Worker |
-
-The admin CMS is **feature complete locally**. The doctor can edit opening
-hours and add, publish, unpublish and permanently delete clinic photographs,
-and see where each change got to.
-
-**Nothing is deployed or configured.** `ALLOWED_EMAILS`, `GITHUB_TOKEN`,
-`CONTENT_BRANCH` and the Access application are all unset, and every one of
-them being unset means the Worker refuses. No commit has ever been made to a
-real repository.
-
-Verification is by mocked GitHub only — local tests prove the exact request
-that *would* be sent without sending it.
-**BLOCKED — REQUIRES APPROVED INTEGRATION TEST CONFIGURATION.**
-
-### Known: the public stylesheet carries 467 bytes from documentation
-
-Tailwind scans the whole repository for class names and cannot tell a class
-from a token name written in prose. Four utilities in the live stylesheet —
-`border-be`, `border-bs`, `ring`, `uppercase` — are generated from
-`docs/**.md` and `.claude/skills/**.md`, and are used by **no page**.
-
-`workers/` and `tests/` are excluded so the CMS cannot add to this, and a test
-enforces it. The stricter fix is `@import 'tailwindcss' source(none)` plus an
-explicit `@source "../"`, which drops all four and shrinks the public
-stylesheet by 467 bytes.
-
-**Not done deliberately.** It changes the public site's CSS and every page
-hash, which is a reviewed change of its own rather than something to smuggle
-in with the CMS. Predates the CMS entirely.
-
-### Phase 3 — GitHub client + path allow-list (`3ab0773`)
-
-`workers/admin/src/github.ts`: the only code that can change the website.
-A caller names a target (`hours` / `photography` / `image`), never a path;
-owner, repo and branch are Worker values. 38 tests against a stubbed fetch,
-mutation-tested.
-
-**No endpoint uses it and nothing is configured.** `GITHUB_TOKEN` and
-`CONTENT_BRANCH` are unset, and `CONTENT_BRANCH` has no default — so the
-client refuses every call. BLOCKED — REQUIRES PRODUCTION CONFIGURATION.
-
-Three real bugs were found by its own tests during implementation, the most
-serious being that reads would have come from `main` while writes went to the
-content branch (a percent-encoded `?ref=`).
+Four utilities from docs/.claude prose predate the CMS. They were deliberately
+left unchanged under the owner's scope restriction. Worker and test sources
+remain excluded from public Tailwind scanning.
 
 ## What exists
 
 - Astro 7.3 + Tailwind 4.3, fully static, no adapter, no server
-- Three locales (he / ar / en), full RTL, 41 built pages
+- Three locales (he / ar / en), full RTL, 47 built pages
 - 6 treatments × 3 locales, authored to the medical-claims discipline
-- Appointment requests hand off to WhatsApp (ADR 0007) — nothing is stored
+- Appointment requests use the separate email-relay Worker; quick phone and WhatsApp contact remain available
 - Picture gallery, editorial grid + `<dialog>` lightbox, data-driven from
   `src/data/media.ts`; three owner-selected Instagram treatment posts and source links
 - Original tooth logo with layered 3D depth and optional mouse tracking
@@ -229,9 +161,9 @@ quick contact. The browser suite now contains 34 tests.
 | Mixed-script (homoglyph) linter | `npm run lint:scripts` | verify + CI |
 | Asset guard (unregistered media) | `npm run lint:assets` | **pre-commit** + CI |
 | Accessibility audit of built HTML | `npm run lint:a11y` | preview + deploy |
-| Unit tests (76) | `npm test` | CI |
+| Unit tests (418) | `npm test` | CI |
 | Type/template check | `npm run check` | verify + CI |
-| Chromium + axe browser QA (31 tests) | `npm run test:e2e` | preview + deploy |
+| Chromium + axe browser QA (52 tests) | `npm run test:e2e` | preview + deploy |
 
 `VERIFY_RELAX=1` is **preview only**. Production uses `ACK_UNVERIFIED`, an
 explicit per-field allowlist; anything not on it fails the build.

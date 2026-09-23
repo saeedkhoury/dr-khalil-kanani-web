@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-09-24
+
+### Admin CMS local audit remediation (unmerged)
+
+- Completed shared claims validation and connected published clinic photography
+  to the existing About page, preserving empty-state public output exactly.
+- Kept the recovered Access configuration guard, filename length cap and early
+  CI data gates; added orphan-aware allocation and exact deployment tracking.
+- Corrected stale hours saves to return a conflict without overwriting newer
+  revisions. No production configuration, credential use or remote action.
+- Clean verification: 418 unit tests, 52 browser tests, 47-page HTML audit;
+  all 128 production files byte-identical to the preserved baseline.
+
+
 ## 2026-09-21
 
 ### Early light-only opt-out

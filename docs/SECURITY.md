@@ -1,5 +1,20 @@
 # Security
 
+## Admin CMS boundary — current local state, 2026-09-24
+
+The admin Worker is separate from the appointment email relay. Its current
+security evidence is [the remediation audit](audits/2026-09-24-admin-cms-remediation.md)
+and `workers/admin/README.md`. Header-only Access JWT verification and the
+server identity list fail closed. GitHub credentials remain server-side,
+repository and paths are fixed, the branch has no default, and stale writes
+return conflicts without retries. CMS mutations cannot write treatment work.
+Production Access, identities, token scope, hostname and WAF are unconfigured
+and untested in this local workstream. No real credentials were used.
+
+The older form-endpoint notes below describe an earlier architecture; they do
+not describe the current admin Worker or authorize Supabase/KV setup. Current
+appointment delivery is documented in `workers/appointment-email/README.md`.
+
 ## Form endpoint
 
 Order of checks:
