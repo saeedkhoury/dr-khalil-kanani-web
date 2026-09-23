@@ -106,6 +106,18 @@ export const UI = {
     image_too_small: 'התמונה קטנה מדי (נדרש לפחות 1200 פיקסלים בצד הארוך)',
     category_full: 'יש כבר 99 תמונות בסוג הזה',
     photo_not_actionable: 'לא ניתן לבצע את הפעולה על התמונה הזו',
+    // Prohibited advertising content, refused before anything is committed.
+    // One message per rule, so the doctor knows what to change rather than
+    // being told only that "something" was wrong.
+    claim_guarantee: 'אסור להבטיח תוצאה של טיפול. נסחו מחדש בלי הבטחה.',
+    claim_painless: 'אסור להבטיח טיפול ללא כאב. נסחו מחדש.',
+    claim_price_promo: 'אסור לפרסם מחירים, הנחות או מבצעים.',
+    claim_urgency: 'אסור להשתמש בלחץ זמן או בדחיפות שיווקית.',
+    claim_superlative: 'אסור לשבח את מיומנות הרופא או להשתמש בסופרלטיבים.',
+    claim_unrecognised_specialty: 'אסור לציין התמחות שאינה מוכרת רשמית.',
+    claim_success_stats: 'אסור לפרסם נתוני הצלחה ללא אישור משרד הבריאות.',
+    claim_patient_identity: 'אסור לציין מטופל, תמונת מטופל או השוואת לפני/אחרי.',
+    claim_free_treatment: 'ציון טיפול בחינם דורש בדיקה משפטית לפני פרסום.',
   } as Record<string, string>,
 
   errors: {

@@ -573,3 +573,19 @@ describe('publish / unpublish / delete', () => {
     }
   });
 });
+
+for (const [field, claim, issue] of [
+  ['altHe', 'מובטח', 'alt_he_claim_guarantee'],
+  ['altAr', 'مضمون', 'alt_ar_claim_guarantee'],
+  ['altHe', 'guaranteed', 'alt_he_claim_guarantee'],
+] as const) {
+  test(`claims rejected before any commit: ${field} ${claim}`, async () => {
+    const { response, calls } = await callAdmin(
+      await adminRequest('/api/photos', { method: 'POST', body: uploadBody({ [field]: claim }) }),
+      [manifestRead()],
+    );
+    assert.equal(response.status, 422);
+    assert.ok((await response.json() as { error: { issues: string[] } }).error.issues.includes(issue));
+    assert.ok(calls.every((call) => call.method === 'GET'));
+  });
+}

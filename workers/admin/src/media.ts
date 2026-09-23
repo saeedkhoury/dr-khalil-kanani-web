@@ -15,6 +15,7 @@
  */
 
 import { CMS_CATEGORIES, assertClinicPhotographyShape } from '../../../src/lib/data-schema.ts';
+import { blockingClaims } from '../../../src/lib/claims.ts';
 import type { ClinicPhotographRecord } from '../../../src/data/media-types.ts';
 import { inspectImage, type ImageInfo } from './image.ts';
 
@@ -93,6 +94,24 @@ export function validateUpload(request: UploadRequest, existing: readonly string
 
   if (!isFilledString(request.altHe)) issues.push('alt_he_required');
   if (!isFilledString(request.altAr)) issues.push('alt_ar_required');
+
+  // ── The same rules CI enforces, applied before a commit exists ──
+  //
+  // CI is still the authoritative control: it runs on whatever actually
+  // reaches the repository, including a hand edit this Worker never saw. But
+  // learning about a prohibited claim three minutes later as "checks_failed",
+  // with the photograph already committed, is a bad way to find out. This
+  // tells the doctor at the moment he presses save.
+  //
+  // It imports the SAME rule list rather than restating it. A second copy
+  // would drift, and a drifted copy reports "checked" while checking
+  // something else.
+  for (const [locale, text] of [['he', request.altHe], ['ar', request.altAr]] as const) {
+    if (!isFilledString(text)) continue;
+    for (const finding of blockingClaims(text)) {
+      issues.push(`alt_${locale}_claim_${finding.rule.replace(/-/g, '_')}`);
+    }
+  }
 
   if (request.bytes.length === 0) issues.push('file_required');
   else if (request.bytes.length > MAX_IMAGE_BYTES) issues.push('file_too_large');

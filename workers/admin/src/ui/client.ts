@@ -81,7 +81,11 @@ async function restoreStatus() {
 function apiError(body) {
   if (!body || !body.error) return T.errors.generic;
   if (body.error.issues && body.error.issues.length) {
-    const key = String(body.error.issues[0]).replace(/^row_\\d+_/, '');
+    // row_3_times_required -> times_required
+    // alt_he_claim_painless -> claim_painless
+    const key = String(body.error.issues[0])
+      .replace(/^row_\\d+_/, '')
+      .replace(/^alt_(he|ar)_(claim_)/, '$2');
     return T.issues[key] || T.errors.generic;
   }
   return T.errors[body.error.code] || T.errors.generic;

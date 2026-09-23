@@ -11,7 +11,7 @@
     "build:preview": "VERIFY_RELAX=1 astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "lint:claims": "node scripts/lint-claims.mjs",
+    "lint:claims": "node --experimental-strip-types scripts/lint-claims.ts",
     "lint:scripts": "node scripts/lint-mixed-scripts.mjs",
     "lint:data": "node --experimental-strip-types scripts/lint-data.ts",
     "verify": "npm run lint:claims && npm run lint:scripts && npm run lint:data && npm run lint:assets:full && npm run check",
