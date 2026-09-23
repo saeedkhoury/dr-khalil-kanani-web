@@ -151,6 +151,11 @@ possible cause; delivery is not yet proven. A real OTP sign-in and authenticated
 CMS write/read tests remain pending. No CMS write to `main`, merge, or website
 production deployment has occurred.
 
+The Cloudflare Support Portal for this Free-plan account only permits cases for
+billing, account, or registrar topics; Access delivery is directed to community
+support. Do not broaden the Access policy or add another login method to work
+around the delivery block.
+
 Verification from a clean detached worktree with a fresh lockfile install:
 
 - `npm run verify`: all gates pass; Astro reports zero diagnostics.
