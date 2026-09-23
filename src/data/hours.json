@@ -1,9 +1,44 @@
 [
-  { "day": "Sunday",    "opens": "", "closes": "", "closed": false },
-  { "day": "Monday",    "opens": "", "closes": "", "closed": false },
-  { "day": "Tuesday",   "opens": "", "closes": "", "closed": false },
-  { "day": "Wednesday", "opens": "", "closes": "", "closed": false },
-  { "day": "Thursday",  "opens": "", "closes": "", "closed": false },
-  { "day": "Friday",    "opens": "", "closes": "", "closed": false },
-  { "day": "Saturday",  "opens": "", "closes": "", "closed": true  }
+  {
+    "day": "Sunday",
+    "opens": "",
+    "closes": "",
+    "closed": true
+  },
+  {
+    "day": "Monday",
+    "opens": "10:00",
+    "closes": "22:00",
+    "closed": false
+  },
+  {
+    "day": "Tuesday",
+    "opens": "",
+    "closes": "",
+    "closed": true
+  },
+  {
+    "day": "Wednesday",
+    "opens": "",
+    "closes": "",
+    "closed": true
+  },
+  {
+    "day": "Thursday",
+    "opens": "",
+    "closes": "",
+    "closed": true
+  },
+  {
+    "day": "Friday",
+    "opens": "",
+    "closes": "",
+    "closed": true
+  },
+  {
+    "day": "Saturday",
+    "opens": "",
+    "closes": "",
+    "closed": true
+  }
 ]
