@@ -143,6 +143,21 @@ control fails at least one test.
 non-allow-listed identity refused, *before* a custom domain makes the Worker
 reachable. See `docs/specs/2026-09-22-admin-cms-phase-2.md` §M.
 
+### Phase 3 — GitHub client + path allow-list (`3ab0773`)
+
+`workers/admin/src/github.ts`: the only code that can change the website.
+A caller names a target (`hours` / `photography` / `image`), never a path;
+owner, repo and branch are Worker values. 38 tests against a stubbed fetch,
+mutation-tested.
+
+**No endpoint uses it and nothing is configured.** `GITHUB_TOKEN` and
+`CONTENT_BRANCH` are unset, and `CONTENT_BRANCH` has no default — so the
+client refuses every call. BLOCKED — REQUIRES PRODUCTION CONFIGURATION.
+
+Three real bugs were found by its own tests during implementation, the most
+serious being that reads would have come from `main` while writes went to the
+content branch (a percent-encoded `?ref=`).
+
 ## What exists
 
 - Astro 7.3 + Tailwind 4.3, fully static, no adapter, no server

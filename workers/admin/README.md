@@ -26,9 +26,12 @@ signed Access token. That is the intended resting state.
 
 ## What it deliberately does not do
 
-No GitHub access and no credential for it · no data mutation · no upload · no
-admin UI · no unauthenticated health endpoint · no CORS · no rate-limiting
-code · **no development authentication bypass**.
+No data mutation · no upload · no admin UI · no unauthenticated health
+endpoint · no CORS · no rate-limiting code · **no development authentication
+bypass**.
+
+A GitHub client exists (`src/github.ts`) but **no endpoint uses it**, and it is
+not configured. See *Repository access* below.
 
 ## Why it verifies the JWT itself
 
@@ -80,11 +83,48 @@ or separators-only all mean refuse everyone.** There is no "empty means allow
 all" path, because unconfigured is exactly the state a deployment is in before
 anyone has decided who should have access.
 
-### Not here
+### Repository access — present, unconfigured, unreachable
 
-`GITHUB_TOKEN` is absent from the `Env` type, from this config, and from the
-account. This Worker cannot write to GitHub, and one that cannot name a
-credential cannot leak one.
+`GITHUB_TOKEN` and `CONTENT_BRANCH` are now in the `Env` type, both optional
+because unset is a real deployment state that must be handled by refusing.
+
+**Neither is set, and no route calls the client**, so the Worker still cannot
+change anything. When they are set, the token must be a **fine-grained** PAT
+scoped to **one repository** with `Contents: Read and write` and nothing else —
+no workflow, actions, packages, account or organisation scope.
+
+`CONTENT_BRANCH` deliberately has **no default**. Defaulting to `main` would
+mean a misconfigured deployment publishes straight to the live website.
+
+BLOCKED — REQUIRES PRODUCTION CONFIGURATION.
+
+## Repository writes
+
+A caller **cannot name a path**. It names a target:
+
+| Target | Path |
+|---|---|
+| `{ kind: 'hours' }` | `src/data/hours.json` |
+| `{ kind: 'photography' }` | `src/data/clinic-photography.json` |
+| `{ kind: 'image', file }` | `src/assets/images/<file>` |
+
+The owner, repository and branch are Worker values, never parameters. This is
+stronger than validating a path string: validation can miss a case nobody
+thought of, but a caller with no way to *express* `.github/workflows/deploy.yml`
+cannot ask for it however the request is crafted.
+
+Image filenames must match the documented convention exactly — lowercase
+ASCII, hyphen separated, two-digit index, `.jpg`/`.jpeg`/`.png`. **SVG is
+refused**: it can carry script, and no photograph is a vector.
+
+Commit messages come from a closed verb union plus the authenticated address,
+which is shape-checked first — a newline in an email claim would otherwise
+grow a commit body nobody wrote. No user text reaches a commit message.
+
+Conflicts retry **once, and only where re-applying the whole intent is
+idempotent**. Hours are replaced wholesale, so a retry reproduces exactly what
+the user asked for. Appending a photograph is not idempotent and is never
+retried; neither is a delete.
 
 ## Email matching
 
