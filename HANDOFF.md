@@ -102,7 +102,8 @@ has **54 PASS / 0 FAIL / 7 BLOCKED**. R54 now passes because two independent
 clean installs produced identical 128-file output trees. The CMS
 image-validation defect is corrected. The matrix does not
 claim original row identities.
-Production/integration rows remain blocked, with no real infrastructure test.
+The local audit matrix predates production integration; its seven infrastructure
+rows must be re-evaluated against live evidence before handoff.
 
 The CMS manages only opening hours and clinic photography. Published clinic
 photographs now render on the existing About page in all three locales;
@@ -115,10 +116,29 @@ checks repository files as well as the manifest, so orphan files are skipped.
 Hours saves require the form's loaded blob SHA and never retry a conflict.
 Publication is tied to the exact SHA and production deployment workflow.
 
-**Nothing was pushed, merged, deployed or configured in this workstream.**
-Access settings, the identity list, GitHub token, content branch, WAF and domain
-still require approved configuration. Test GitHub requests use mocks only.
-No real credential was used and `.agents/` remains untracked.
+At the end of the local audit, nothing had been pushed, merged, deployed or
+configured. Test GitHub requests used mocks only; `.agents/` remains untracked.
+
+### Production integration in progress — 2026-09-24
+
+The reviewed `feat/admin-cms` branch was pushed at frozen HEAD `85b525b`.
+`codex/admin-cms-integration` is a separate branch and is the only CMS write
+target. Its Worker config sets the exact Access team domain and AUD, the admin
+origin, `CONTENT_BRANCH=codex/admin-cms-integration`, `workers_dev=false`,
+`preview_urls=false`, and the `admin.drkhalilkanani.com` custom domain.
+
+Cloudflare Zero Trust already has One-time PIN. A self-hosted Access application
+for the admin hostname was created with OTP as its sole login method and **no
+Allow policy**, so it denies all identities. The admin Worker is deployed and
+bound to that hostname; an anonymous `/api/session` request redirects to the
+Access login. Its `workers.dev` hostname returns 404. The zone has an active
+rate limiting rule scoped to this hostname's `/api/` paths: over 60 requests
+per IP in 10 seconds are blocked for 10 seconds.
+
+`ALLOWED_EMAILS` and `GITHUB_TOKEN` are still unset. The owner's two exact
+email identities and a repository-scoped fine-grained GitHub token are needed
+before real authenticated integration tests. No CMS write to `main`, merge,
+or website production deployment has occurred.
 
 Verification from a clean detached worktree with a fresh lockfile install:
 
