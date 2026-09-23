@@ -1,5 +1,5 @@
 /**
- * IMAGE INSPECTION — format and dimensions from the file's own bytes.
+ * IMAGE INSPECTION — bounded structural validation from the file's own bytes.
  *
  * ── WHY BYTES, NOT THE FILENAME ───────────────────────────────────────────
  * An extension is a claim by the uploader. These checks are the control: a
@@ -7,13 +7,13 @@
  * regardless of what it is called, and nothing downstream has to wonder.
  *
  * ── WHY NO DEPENDENCY ─────────────────────────────────────────────────────
- * Reading a width and a height means reading two fixed-position integers in
- * PNG and walking a well-documented marker chain in JPEG. An image library
- * would be tens of thousands of lines of parsing — a far larger attack
- * surface than the ~60 lines below — to answer a question this small, in a
- * Worker that must not decode or re-encode anything.
+ * The Worker checks the complete PNG chunk envelope and CRCs, or the JPEG
+ * marker/scan envelope, before reporting dimensions. This uses constant
+ * auxiliary memory and never trusts lengths beyond the supplied byte array.
  *
- * These functions never decode pixels. They read a header and stop.
+ * This is not pixel decoding: a well-framed image with invalid compressed
+ * pixels can still fail the site's build-time image decoder. The Worker does
+ * not transform uploaded bytes.
  */
 
 export type ImageFormat = 'jpeg' | 'png';
@@ -32,60 +32,153 @@ const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
 const startsWith = (bytes: Uint8Array, prefix: readonly number[]): boolean =>
   bytes.length >= prefix.length && prefix.every((b, i) => bytes[i] === b);
 
-/**
- * PNG: an IHDR chunk is mandatory and must come first, so width and height
- * sit at fixed offsets 16 and 20, big-endian.
- */
+const CRC_TABLE = Array.from({ length: 256 }, (_, value) => {
+  let crc = value;
+  for (let bit = 0; bit < 8; bit += 1) crc = (crc >>> 1) ^ ((crc & 1) ? 0xedb88320 : 0);
+  return crc >>> 0;
+});
+
+function pngCrc(bytes: Uint8Array, start: number, end: number): number {
+  let crc = 0xffffffff;
+  for (let index = start; index < end; index += 1) {
+    crc = CRC_TABLE[(crc ^ bytes[index]) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+/** PNG chunks have a 4-byte length, 4-byte type, data and 4-byte CRC. */
 function readPng(bytes: Uint8Array): ImageInfo | null {
-  if (bytes.length < 24) return null;
+  if (bytes.length < 8 + 25 + 12 + 12) return null;
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-  // Bytes 12-15 must spell "IHDR"; if they do not, this is not a PNG whose
-  // header we are willing to trust.
-  if (String.fromCharCode(...bytes.subarray(12, 16)) !== 'IHDR') return null;
-  const width = view.getUint32(16, false);
-  const height = view.getUint32(20, false);
-  if (width === 0 || height === 0) return null;
-  return { format: 'png', width, height, extension: 'png' };
+  let offset = PNG_SIGNATURE.length;
+  let width = 0;
+  let height = 0;
+  let colorType = -1;
+  let hasPalette = false;
+  let hasData = false;
+  let dataEnded = false;
+
+  while (offset <= bytes.length - 12) {
+    const length = view.getUint32(offset, false);
+    // Subtraction avoids overflow and makes both the data and CRC bounds
+    // explicit before any offset derived from an attacker-controlled length.
+    if (length > bytes.length - offset - 12) return null;
+    const type = String.fromCharCode(...bytes.subarray(offset + 4, offset + 8));
+    if (!/^[A-Za-z]{4}$/.test(type)) return null;
+    const dataStart = offset + 8;
+    const dataEnd = dataStart + length;
+    if (pngCrc(bytes, offset + 4, dataEnd) !== view.getUint32(dataEnd, false)) return null;
+
+    if (offset === PNG_SIGNATURE.length) {
+      if (type !== 'IHDR' || length !== 13) return null;
+      width = view.getUint32(dataStart, false);
+      height = view.getUint32(dataStart + 4, false);
+      const depth = bytes[dataStart + 8];
+      colorType = bytes[dataStart + 9];
+      const validDepths: Record<number, readonly number[]> = {
+        0: [1, 2, 4, 8, 16], 2: [8, 16], 3: [1, 2, 4, 8],
+        4: [8, 16], 6: [8, 16],
+      };
+      if (width === 0 || height === 0 || !validDepths[colorType]?.includes(depth) ||
+          bytes[dataStart + 10] !== 0 || bytes[dataStart + 11] !== 0 ||
+          bytes[dataStart + 12] > 1) return null;
+    } else if (type === 'IHDR') {
+      return null;
+    } else if (type === 'PLTE') {
+      if (hasPalette || hasData || colorType === 0 || colorType === 4 ||
+          length === 0 || length > 768 || length % 3 !== 0) return null;
+      hasPalette = true;
+    } else if (type === 'IDAT') {
+      if (dataEnded || length === 0 || (colorType === 3 && !hasPalette)) return null;
+      hasData = true;
+    } else if (type === 'IEND') {
+      if (length !== 0 || !hasData || dataEnd + 4 !== bytes.length) return null;
+      return { format: 'png', width, height, extension: 'png' };
+    } else if (type[0] === type[0].toUpperCase()) {
+      // Unknown critical chunks cannot be safely interpreted.
+      return null;
+    }
+
+    if (hasData && type !== 'IDAT') dataEnded = true;
+    offset = dataEnd + 4;
+  }
+  return null;
 }
 
 /**
- * JPEG: a chain of marker segments. Dimensions live in a Start Of Frame
- * marker (SOF0-SOF15), excluding SOF4/SOF8/SOF12 which are not frame headers.
- * Walk the chain rather than guessing an offset, because the number and size
- * of preceding segments (EXIF, ICC, comments) varies per file.
+ * JPEG: consume every bounded marker segment and entropy scan through EOI.
+ * Stuffed 0xFF bytes and restart markers are valid inside a scan; neither is
+ * a substitute for actual scan data or a final EOI marker.
  */
 function readJpeg(bytes: Uint8Array): ImageInfo | null {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   let offset = 2; // past SOI
+  let width = 0;
+  let height = 0;
+  let sawScan = false;
+  let inScan = false;
 
-  while (offset + 3 < bytes.length) {
-    if (bytes[offset] !== 0xff) return null; // lost the chain; refuse rather than scan
-    const marker = bytes[offset + 1];
-
-    // Standalone markers carry no length.
-    if (marker === 0xd8 || marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
-      offset += 2;
+  while (offset < bytes.length) {
+    if (inScan) {
+      let scanBytes = 0;
+      while (offset < bytes.length) {
+        if (bytes[offset] !== 0xff) {
+          offset += 1;
+          scanBytes += 1;
+          continue;
+        }
+        const markerStart = offset;
+        while (offset < bytes.length && bytes[offset] === 0xff) offset += 1;
+        if (offset >= bytes.length) return null;
+        const marker = bytes[offset];
+        if (marker === 0x00 || (marker >= 0xd0 && marker <= 0xd7)) {
+          offset += 1;
+          if (marker === 0x00) scanBytes += 1;
+          continue;
+        }
+        offset = markerStart;
+        break;
+      }
+      if (scanBytes === 0) return null;
+      inScan = false;
       continue;
     }
-    // Start of scan: pixel data begins and no SOF was found.
-    if (marker === 0xda || marker === 0xd9) return null;
 
-    const length = view.getUint16(offset + 2, false);
-    if (length < 2) return null;
+    if (bytes[offset] !== 0xff) return null;
+    while (offset < bytes.length && bytes[offset] === 0xff) offset += 1;
+    if (offset >= bytes.length) return null;
+    const marker = bytes[offset];
+    offset += 1;
+    if (marker === 0x00 || marker === 0xd8 || marker === 0x01 ||
+        (marker >= 0xd0 && marker <= 0xd7)) return null;
+    if (marker === 0xd9) {
+      return sawScan && offset === bytes.length
+        ? { format: 'jpeg', width, height, extension: 'jpg' }
+        : null;
+    }
+    if (offset > bytes.length - 2) return null;
+    const length = view.getUint16(offset, false);
+    if (length < 2 || length > bytes.length - offset) return null;
 
     const isSof =
       marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc;
 
     if (isSof) {
-      // segment: FF marker len(2) precision(1) height(2) width(2)
-      if (offset + 9 >= bytes.length) return null;
-      const height = view.getUint16(offset + 5, false);
-      const width = view.getUint16(offset + 7, false);
+      if (length < 11 || width !== 0) return null;
+      const components = bytes[offset + 7];
+      if (components < 1 || components > 4 || length !== 8 + 3 * components) return null;
+      height = view.getUint16(offset + 3, false);
+      width = view.getUint16(offset + 5, false);
       if (width === 0 || height === 0) return null;
-      return { format: 'jpeg', width, height, extension: 'jpg' };
+    } else if (marker === 0xda) {
+      if (length < 8 || width === 0) return null;
+      const components = bytes[offset + 2];
+      if (components < 1 || components > 4 || length !== 6 + 2 * components) return null;
+      sawScan = true;
+      inScan = true;
     }
 
-    offset += 2 + length;
+    offset += length;
   }
   return null;
 }
@@ -93,9 +186,8 @@ function readJpeg(bytes: Uint8Array): ImageInfo | null {
 /**
  * Identify an image from its bytes.
  *
- * Returns null for anything that is not a JPEG or PNG whose header parses —
- * including SVG, GIF, WebP, HTML, and a JPEG truncated before its frame
- * header. Null means refuse; there is no "probably fine" answer.
+ * Returns null for anything that is not a structurally complete JPEG or PNG,
+ * including SVG, GIF, WebP, HTML and header-only/truncated image files.
  */
 export function inspectImage(bytes: Uint8Array): ImageInfo | null {
   if (startsWith(bytes, PNG_SIGNATURE)) return readPng(bytes);

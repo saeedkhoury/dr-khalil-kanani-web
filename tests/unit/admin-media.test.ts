@@ -23,6 +23,10 @@ import type { ClinicPhotographRecord } from '../../src/data/media-types.ts';
 const real = (name: string) => new Uint8Array(readFileSync(new URL(`../../src/assets/images/${name}`, import.meta.url)));
 const JPEG = real('work-extraction-01.jpg');   // 890x1600
 const PNG = real('illustration-tooth-01.png'); // 1536x1024
+const TINY_PNG = new Uint8Array(Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAAAAAA6mKC9AAAAD0lEQVR4nGP4jwYYRrYAAID5/wEokJxdAAAAAElFTkSuQmCC',
+  'base64',
+)); // Complete 16x16 grayscale PNG, including IDAT and IEND.
 
 const upload = (over: Record<string, unknown> = {}) => ({
   category: 'reception',
@@ -69,6 +73,44 @@ describe('image inspection reads the bytes, not the name', () => {
     const fake = new Uint8Array(32);
     fake.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0);
     assert.equal(inspectImage(fake), null);
+  });
+
+  test('PNG requires complete, bounded chunks, valid CRCs, image data and a final IEND', () => {
+    const headerOnly = PNG.subarray(0, 24);
+    const ihdrOnly = PNG.subarray(0, 33);
+    const truncatedChunk = PNG.subarray(0, 38);
+    const oversizedChunk = PNG.slice();
+    new DataView(oversizedChunk.buffer).setUint32(33, 0xffffffff, false);
+    const missingIend = PNG.subarray(0, PNG.length - 12);
+    const corruptCrc = PNG.slice();
+    corruptCrc[29] ^= 0xff;
+    const noIdat = TINY_PNG.slice();
+    noIdat.set(new TextEncoder().encode('tEXt'), 37);
+    for (const [label, bytes] of [
+      ['header only', headerOnly], ['IHDR only', ihdrOnly],
+      ['truncated chunk', truncatedChunk], ['oversized chunk', oversizedChunk],
+      ['missing IEND', missingIend], ['bad CRC', corruptCrc], ['missing IDAT', noIdat],
+    ] as const) {
+      assert.equal(inspectImage(bytes), null, label);
+    }
+    assert.deepEqual(inspectImage(TINY_PNG), { format: 'png', width: 16, height: 16, extension: 'png' });
+  });
+
+  test('JPEG requires bounded segments, scan data and final EOI', () => {
+    const badSegmentLength = JPEG.slice();
+    badSegmentLength[4] = 0xff;
+    badSegmentLength[5] = 0xff;
+    const afterFrame = JPEG.subarray(0, JPEG.length - 2);
+    for (const [label, bytes] of [
+      ['SOI only', JPEG.subarray(0, 2)],
+      ['header only', JPEG.subarray(0, 40)],
+      ['truncated segment', JPEG.subarray(0, 10)],
+      ['bad segment length', badSegmentLength],
+      ['missing EOI', afterFrame],
+      ['trailing garbage', Uint8Array.from([...JPEG, 1])],
+    ] as const) {
+      assert.equal(inspectImage(bytes), null, label);
+    }
   });
 
   test('an SVG renamed .jpg is still refused', () => {
@@ -119,14 +161,8 @@ describe('upload validation', () => {
   });
 
   test('an image below the long-edge minimum is refused', () => {
-    // A 16x16 PNG: valid, parseable, and far too small to publish.
-    const tiny = new Uint8Array(24);
-    tiny.set([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a], 0);
-    tiny.set(new TextEncoder().encode('IHDR'), 12);
-    new DataView(tiny.buffer).setUint32(16, 16, false);
-    new DataView(tiny.buffer).setUint32(20, 16, false);
-    assert.equal(inspectImage(tiny)?.width, 16);
-    assert.ok(issuesOf({ bytes: tiny }).includes('image_too_small'));
+    assert.equal(inspectImage(TINY_PNG)?.width, 16);
+    assert.ok(issuesOf({ bytes: TINY_PNG }).includes('image_too_small'));
   });
 
   test('the long edge is what counts, not both edges', () => {
@@ -415,6 +451,23 @@ describe('POST /api/photos — the exact requests that would be sent', () => {
     );
     assert.equal(response.status, 422);
     assert.equal(calls.length, 1);
+  });
+
+  test('malformed, oversized and undersized images never create GitHub mutations', async () => {
+    const cases = [
+      ['header-only PNG', PNG.subarray(0, 24)],
+      ['truncated JPEG', JPEG.subarray(0, 400)],
+      ['oversized JPEG', new Uint8Array(MAX_IMAGE_BYTES + 1)],
+      ['undersized PNG', TINY_PNG],
+    ] as const;
+    for (const [label, bytes] of cases) {
+      const { response, calls } = await callAdmin(
+        await adminRequest('/api/photos', { method: 'POST', body: uploadBody({ contentBase64: Buffer.from(bytes).toString('base64') }) }),
+        [manifestRead()],
+      );
+      assert.equal(response.status, 422, label);
+      assert.ok(calls.every((call) => call.method === 'GET'), `${label} created a mutation`);
+    }
   });
 
   test('content that is not base64 is refused before anything else', async () => {

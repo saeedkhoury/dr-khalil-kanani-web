@@ -118,7 +118,7 @@ manifest exists to prevent becomes impossible rather than merely handled.
 └───────────────┬──────────────────────────────────────────────┘
 ┌───────────────▼── GITHUB ────────────────────────────────────┐
 │ Contents API commit to main. Fine-grained token: this repo,  │
-│ contents:write, nothing else.                                │
+│ Contents:write + Actions:read for deployment status.         │
 └───────────────┬──────────────────────────────────────────────┘
 ┌───────────────▼── GITHUB ACTIONS (existing deploy.yml) ──────┐
 │ claims linter · mixed-script linter · asset guard ·          │
@@ -469,7 +469,7 @@ appending a photo is not.
 | Arbitrary repo write | Hard allow-list: `src/data/hours.json`, `src/data/clinic-photography.json`, `src/assets/images/<generated>`. Anything else refused before the API call |
 | Arbitrary GitHub API call | The client cannot name a repo, owner, ref or path. All are Worker constants |
 | Token exposure | `GITHUB_TOKEN` is a Wrangler secret, used only server-side, never rendered, never returned in a response |
-| Token blast radius | Fine-grained PAT: **one repository, `contents: write` only**. No workflow, packages, actions:write, or account scope |
+| Token blast radius | Fine-grained PAT: **one repository, `Contents: Read and write` plus `Actions: Read`** for authenticated deployment status. No Workflows write, packages, actions:write, or account scope |
 | Malicious upload | Magic-byte check; **SVG rejected**; 8 MB cap; dimension floor |
 | XSS | All user text HTML-escaped on render. Alt text is escaped at build by Astro too |
 | Commit-message injection | Message built from a fixed template; user text never interpolated into it. Only the authenticated email and an action verb |

@@ -308,7 +308,7 @@ arbitrary content to a medical website.
 | **Authentication** | Cloudflare Access, email one-time code. Allow-list of two identities: the doctor as primary, the developer as fallback. No password to leak or reuse. |
 | **Fail-closed allow-list** | `ALLOWED_EMAILS` is configuration, never code, and ships **empty**. An unconfigured Worker refuses every request rather than admitting anyone. Both addresses are `NEEDS OWNER CONFIGURATION` and must not be invented, guessed or hardcoded. |
 | **Authorisation** | The Worker re-checks the `Cf-Access-Jwt-Assertion` header and verifies the JWT against Cloudflare's public keys. Access sitting in front is not treated as sufficient on its own. |
-| **GitHub credential** | Fine-grained PAT: one repository, `contents: write` only. No workflow, packages, or account scope. Stored via `wrangler secret put`, never committed. |
+| **GitHub credential** | Fine-grained PAT: one repository, `Contents: Read and write` for files plus `Actions: Read` for authenticated deployment status. No Workflows write, packages, or account scope. Stored via `wrangler secret put`, never committed. |
 | **Secret exposure** | Nothing secret reaches the browser. The panel never sees the GitHub token; all writes are server-side. |
 | **Input validation** | Every field re-validated in the Worker. Category must be a known enum member. Filenames are generated, never accepted from the client — no path traversal surface. |
 | **Commit scope** | The Worker may only write `src/data/hours.json`, `src/data/clinic-photography.json` and files under `src/assets/images/`. Any other path is refused. `src/data/media.ts` is deliberately absent, which is what makes `treatmentWork` unreachable. |

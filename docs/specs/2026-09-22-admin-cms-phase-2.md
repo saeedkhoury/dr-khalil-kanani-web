@@ -408,7 +408,8 @@ When it arrives, the token must be:
 
 - a **fine-grained** PAT, not classic
 - scoped to **exactly one repository**
-- `Contents: Read and write` — and nothing else. No workflow, no actions, no
+- `Contents: Read and write` for file operations and `Actions: Read` for
+  authenticated publication-status requests. No Workflows write, no
   packages, no account scope, no org scope
 - a **Wrangler secret**, Worker-side only
 - never returned in a response body or header, never `console.log`ged, never

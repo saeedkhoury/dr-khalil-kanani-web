@@ -10,10 +10,8 @@
 /**
  * Everything the admin Worker is allowed to know.
  *
- * GITHUB_TOKEN is deliberately ABSENT. This Worker cannot write to GitHub, and
- * a Worker that cannot name a credential cannot leak one. It is added in the
- * phase that writes content, not before — typing it early is how a
- * "temporary" binding appears.
+ * GITHUB_TOKEN is optional because an unconfigured deployment must refuse
+ * repository operations. It is never exposed through this response layer.
  */
 export interface Env {
   /** `<team>.cloudflareaccess.com`. Issuer and JWKS URL are derived from it. */
@@ -32,8 +30,8 @@ export interface Env {
   ALLOWED_EMAILS?: string;
 
   /**
-   * Fine-grained GitHub PAT: ONE repository, `Contents: Read and write`, and
-   * nothing else. No workflow, actions, packages, account or org scope.
+   * Fine-grained GitHub PAT: ONE repository, `Contents: Read and write` plus
+   * `Actions: Read` for deployment status. No Workflows write or broader scope.
    *
    * Optional in the type because unset is a real deployment state and must be
    * handled by refusing, not by assuming. Used only to build an Authorization

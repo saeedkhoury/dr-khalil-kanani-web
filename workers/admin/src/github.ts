@@ -15,8 +15,9 @@
  *
  * ── WHAT THE TOKEN CAN DO ─────────────────────────────────────────────────
  * GITHUB_TOKEN is expected to be a FINE-GRAINED personal access token scoped
- * to ONE repository with `Contents: Read and write` and nothing else. No
- * workflow scope, no actions, no packages, no account or organisation scope.
+ * to ONE repository with `Contents: Read and write` for content operations
+ * and `Actions: Read` for authenticated deployment-run status. No Workflows
+ * write, packages, account or organisation scope.
  * The blast radius of a leak should be "can edit content in one repo", and the
  * code below keeps it narrower still.
  *

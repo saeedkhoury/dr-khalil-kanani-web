@@ -87,10 +87,15 @@ anyone has decided who should have access.
 `GITHUB_TOKEN` and `CONTENT_BRANCH` are now in the `Env` type, both optional
 because unset is a real deployment state that must be handled by refusing.
 
-**Neither is set, and no route calls the client**, so the Worker still cannot
-change anything. When they are set, the token must be a **fine-grained** PAT
-scoped to **one repository** with `Contents: Read and write` and nothing else —
-no workflow, actions, packages, account or organisation scope.
+**Neither is set**, so repository reads and writes refuse. When configured,
+the token must be a **fine-grained** PAT scoped only to
+`saeedkhoury/dr-khalil-kanani-web` with `Contents: Read and write` and
+`Actions: Read`. No Workflows write, packages, account or organisation scope.
+GitHub documents [Contents read/write for file operations](https://docs.github.com/en/rest/repos/contents),
+[Contents read for commit discovery](https://docs.github.com/en/rest/commits/commits#list-commits),
+and [Actions read for authenticated workflow-run listing](https://docs.github.com/en/rest/actions/workflow-runs#list-workflow-runs-for-a-workflow).
+The Worker sends this token on every GitHub request, including status reads;
+do not rely on the public-repository unauthenticated-read exception.
 
 `CONTENT_BRANCH` deliberately has **no default**. Defaulting to `main` would
 mean a misconfigured deployment publishes straight to the live website.
@@ -283,7 +288,12 @@ wholesale: re-applying reproduces exactly what the doctor asked for.
 ## Clinic photographs
 
 Images are identified from their **own bytes**, never the filename. SVG, GIF,
-WebP, HTML, a renamed script and a truncated JPEG are all refused. Filenames
+WebP, HTML, a renamed script and truncated/header-only images are refused.
+PNG inspection checks chunk bounds, IHDR, contiguous IDAT, IEND and every CRC;
+JPEG inspection checks bounded marker segments, frame, scan data and final EOI.
+Neither format's compressed pixels are decoded in the Worker, so this is a
+bounded structural check, not a guarantee that every decoder will render the
+image. Filenames
 are **generated server-side** from the category and the real format; the client
 never sends, sees or influences a repository path.
 

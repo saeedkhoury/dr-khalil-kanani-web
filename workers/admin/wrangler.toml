@@ -17,8 +17,8 @@ compatibility_date = "2026-09-01"
 # including a perfectly valid, correctly signed Access token. That is the
 # intended resting state until an identity list is deliberately configured.
 #
-# GITHUB_TOKEN does not appear here and is not in the Env type. This Worker
-# cannot write to GitHub; it gains that credential in the phase that needs it.
+# GITHUB_TOKEN does not appear here. It is an optional Worker secret, never a
+# tracked var. Without it repository reads and writes refuse.
 
 # ── The values below are deliberately public ───────────────────────────────
 # None is a credential, and each belongs in a diff where a change to it gets
