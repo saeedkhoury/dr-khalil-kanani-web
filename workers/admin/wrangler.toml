@@ -1,6 +1,8 @@
 name = "drkanani-admin"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
+workers_dev = false
+preview_urls = false
 
 # ── NOTHING PRIVATE IN THIS FILE ───────────────────────────────────────────
 # This repository is PUBLIC.
@@ -34,7 +36,6 @@ ADMIN_ORIGIN = "https://admin.drkhalilkanani.com"
 
 # The branch the CMS commits to.
 #
-# DELIBERATELY EMPTY. Defaulting to `main` would mean a misconfigured
-# deployment publishes straight to the live website, so an unset branch makes
-# every write refuse instead. Setting this is a conscious act.
-CONTENT_BRANCH = ""
+# The separate, reviewed integration branch is the only write target during
+# real CMS tests. Never point this Worker at main before owner approval.
+CONTENT_BRANCH = "codex/admin-cms-integration"
