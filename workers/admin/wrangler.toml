@@ -30,8 +30,8 @@ preview_urls = false
 # PLACEHOLDERS. The real values do not exist until the Cloudflare Access
 # application is created, which has not been done. NEEDS CONFIGURATION.
 [vars]
-ACCESS_TEAM_DOMAIN = ""   # <team>.cloudflareaccess.com -- issuer and JWKS are derived from it
-ACCESS_AUD = ""           # the Access application's AUD tag
+ACCESS_TEAM_DOMAIN = "late-queen-efb5.cloudflareaccess.com"   # issuer and JWKS are derived from it
+ACCESS_AUD = "539e1afa2f4375536a5115dbd0481decee80af4334dc154e170c35b5e2baa17c"
 ADMIN_ORIGIN = "https://admin.drkhalilkanani.com"
 
 # The branch the CMS commits to.
