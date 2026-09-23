@@ -84,10 +84,14 @@ writeFileSync(mediaPath, substitute(
  */
 writeFileSync(
   join(fixture, 'src/data/clinic-photography.json'),
-  // Empty on purpose. The homepage renders the 'work' gallery, fixtured
-  // above; a populated clinic gallery here would assert nothing and would
-  // only add a second source for the tile count.
-  JSON.stringify([], null, 2) + '\n',
+  // About renders clinic photos; the homepage retains the separate work set.
+  JSON.stringify([1, 2, 3].map((number) => ({
+    file: `reception-${String(number).padStart(2, '0')}.jpg`,
+    category: 'reception', width: 1600, height: 1200,
+    status: number === 3 ? 'unpublished' : 'published',
+    needsEnglishReview: true,
+    alt: { he: `סמל מרפאה ${number}`, ar: `رمز العيادة ${number}`, en: `رمز العيادة ${number}` },
+  })), null, 2) + '\n',
 );
 
 writeFileSync(

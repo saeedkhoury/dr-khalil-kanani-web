@@ -2,6 +2,8 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import DoctorIntro from '../../components/sections/DoctorIntro.astro';
 import ContactCta from '../../components/sections/ContactCta.astro';
+import ClinicGallery from '../../components/sections/ClinicGallery.astro';
+import { hasClinicPhotography } from '../../data/media';
 import { LOCALES, localizePath, type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
 import { doctor } from '../../data/doctor';
@@ -29,5 +31,6 @@ const breadcrumbs = [
     <h1>{t('doctor.title')}</h1>
   </div>
   <DoctorIntro locale={locale} standalone />
+  {hasClinicPhotography() && <ClinicGallery locale={locale} kind="clinic" />}
   <ContactCta locale={locale} />
 </BaseLayout>
