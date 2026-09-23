@@ -135,10 +135,15 @@ Access login. Its `workers.dev` hostname returns 404. The zone has an active
 rate limiting rule scoped to this hostname's `/api/` paths: over 60 requests
 per IP in 10 seconds are blocked for 10 seconds.
 
-`ALLOWED_EMAILS` and `GITHUB_TOKEN` are still unset. The owner's two exact
-email identities and a repository-scoped fine-grained GitHub token are needed
-before real authenticated integration tests. No CMS write to `main`, merge,
-or website production deployment has occurred.
+`ALLOWED_EMAILS` and `GITHUB_TOKEN` are installed as Worker secrets after the
+owner configured the two-email Access policy and created a fine-grained token.
+The token authenticated as the repository owner and passed repository/Actions
+reads; a deliberately incomplete Contents write reached GitHub validation
+without changing a file. The temporary local token copy was removed. The
+anonymous admin route still redirects to Access, and direct `workers.dev`
+returns 404. A real OTP sign-in and authenticated CMS write/read tests remain
+pending. No CMS write to `main`, merge, or website production deployment has
+occurred.
 
 Verification from a clean detached worktree with a fresh lockfile install:
 
