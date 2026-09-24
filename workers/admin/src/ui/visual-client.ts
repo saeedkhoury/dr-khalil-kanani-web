@@ -28,7 +28,11 @@ export const VISUAL_CLIENT = String.raw`
   const names = {he:'עברית', ar:'العربية', en:'English'};
   const urls = {copy:'/api/content/copy',services:'/api/content/services',doctor:'/api/content/doctor',faq:'/api/content/faq',contact:'/api/content/contact',hours:'/api/hours',photos:'/api/photos'};
   const titles = {copy:'טקסטים באתר',services:'טיפולים',doctor:'אזור הרופא',faq:'שאלות נפוצות',contact:'פרטי התקשרות',hours:'שעות פעילות',photos:'גלריית תמונות המרפאה'};
-  const MAX_IMAGE = 8 * 1024 * 1024, MIN_EDGE = 1200;
+  const MIN_EDGE = 1200;
+  // What is actually sent. The site never shows a photograph wider than
+  // 1536px, and a 10 MB request from a phone is slow and was refused outright
+  // by a browser during testing, so anything over this is resized first.
+  const SEND_LIMIT = 6 * 1024 * 1024, SEND_EDGE = 2560;
 
   /* ── Words the doctor reads ─────────────────────────────────────────── */
   const COPY_LABELS = {
@@ -57,7 +61,7 @@ export const VISUAL_CLIENT = String.raw`
     NOT_CONFIGURED:'מערכת העריכה אינה מוגדרת כראוי. יש לפנות למפתח.',
     PAYLOAD_TOO_LARGE:'הקובץ גדול מדי לשליחה.',
     RATE_LIMITED:'נשלחו יותר מדי בקשות ברצף. המתינו כמה שניות ונסו שוב.',
-    NETWORK:'אין חיבור לרשת. השינויים עדיין כאן; נסו שוב כשהחיבור יחזור.',
+    NETWORK:'הבקשה לא הגיעה לשרת (בעיית חיבור, או תוסף בדפדפן שחוסם אותה). השינויים עדיין כאן; נסו שוב.',
     BAD_REQUEST:'הבקשה לא תקינה. יש לרענן את הדף ולנסות שוב.',
     SERVER_ERROR:'אירעה שגיאה בלתי צפויה. השינויים עדיין כאן; נסו שוב.',
     INVALID:'לא נשמר. יש לתקן:'};
@@ -458,7 +462,7 @@ export const VISUAL_CLIENT = String.raw`
     const state=row(body); badge(state,item.status==='published'); visibilityButtons(state,item,serviceName(item));
     if(item.status==='unpublished') add(body,'p','טיוטה: אפשר לשמור גם כשחלק מהשדות או מהשפות חסרים. כדי להציג באתר, יש למלא את כל השדות בשלוש השפות.').className='visual-hint';
     if(isNew){ field(body,'כתובת העמוד באנגלית (למשל dental-crowns). לא ניתן לשנות לאחר השמירה.',item.slug,v=>{const slug=v.toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'');item.slug=slug;item.id=slug||item.id;},{path:index+'.slug',dir:'ltr'}); }
-    else add(body,'p','כתובת העמוד: /treatments/'+item.slug+'/').className='visual-hint';
+    else { const url=add(body,'p','כתובת העמוד: '); url.className='visual-hint'; const path=add(url,'bdi','/treatments/'+item.slug+'/'); path.dir='ltr'; }
     select(body,'סמל',item.icon,Object.keys(ICON_LABELS).map(x=>[x,ICON_LABELS[x]]),v=>{item.icon=v;},index+'.icon');
     const tabs=add(body,'div'); tabs.className='visual-tabs'; tabs.setAttribute('role','tablist'); tabs.setAttribute('aria-label','שפה');
     for(const lang of LANGS){const t=button(names[lang],()=>{view.lang=lang;render();const sel=body.querySelector('.visual-tabs [aria-selected="true"]');if(sel)sel.focus();});t.setAttribute('role','tab');t.setAttribute('aria-selected',String(view.lang===lang));tabs.append(t);}
@@ -522,12 +526,12 @@ export const VISUAL_CLIENT = String.raw`
     const w=bitmap.width,h=bitmap.height,long=Math.max(w,h);
     if(long<MIN_EDGE){bitmap.close();throw new Error('"'+file.name+'" קטנה מדי ('+w+'×'+h+'). נדרשים לפחות '+MIN_EDGE+' פיקסלים בצד הארוך.');}
     const target=mustType||type;
-    if(file.size<=MAX_IMAGE && target===type){bitmap.close();return {blob:file,width:w,height:h,type};}
-    for(const edge of [Math.min(long,3200),2400,1800,MIN_EDGE]){
+    if(file.size<=SEND_LIMIT && target===type){bitmap.close();return {blob:file,width:w,height:h,type};}
+    for(const edge of [Math.min(long,SEND_EDGE),2048,1600,MIN_EDGE]){
       const scale=edge/long; const canvas=document.createElement('canvas'); canvas.width=Math.round(w*scale); canvas.height=Math.round(h*scale);
       canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
       const blob=await new Promise(r=>canvas.toBlob(r,target,0.88));
-      if(blob && blob.size<=MAX_IMAGE){bitmap.close();return {blob,width:canvas.width,height:canvas.height,type:target};}
+      if(blob && blob.size<=SEND_LIMIT){bitmap.close();return {blob,width:canvas.width,height:canvas.height,type:target};}
     }
     bitmap.close(); throw new Error('"'+file.name+'" גדולה מדי גם לאחר הקטנה.');
   }

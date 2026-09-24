@@ -83,6 +83,7 @@ html[data-visual-preview] .visual-editor-bar{background:#26506b}
 .visual-dialog .visual-editor-heading:focus{outline:none}
 .visual-badge{display:inline-block;margin-inline-start:.4rem;padding:.1rem .5rem;border-radius:999px;background:#eef2f5;color:#4a6274;font:600 .75rem system-ui;vertical-align:middle}
 .visual-badge[data-state=published]{background:#e2f3ea;color:#0f6e3d}
+.visual-dialog .visual-row>.visual-badge,.visual-dialog .visual-row>.visual-hint{flex:0 0 auto}
 .visual-tabs{display:flex;gap:.3rem;margin:1rem 0 .2rem;border-bottom:1px solid #d5e1e7}
 .visual-dialog .visual-tabs button{margin:0 0 -1px;border-radius:6px 6px 0 0;border-bottom-color:transparent}
 .visual-dialog .visual-tabs button[aria-selected=true]{background:#0c5283;color:white}
