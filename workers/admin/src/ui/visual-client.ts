@@ -632,7 +632,7 @@ export const VISUAL_CLIENT = String.raw`
     const confirmBox=document.createElement('input'); confirmBox.type='checkbox'; confirmBox.id='visual-upload-confirm';
     confirmWrap.append(confirmBox,document.createTextNode('אני מאשר/ת שבאף אחת מהתמונות אין מטופל, חלק ממטופל או תמונת לפני/אחרי.'));
     const readyCount=pending.filter(p=>p.ready).length;
-    const go=button('העלאת '+readyCount+' תמונות',()=>void uploadPending(confirmBox.checked),'primary'); go.disabled=readyCount===0; fs.append(go);
+    const go=button(readyCount===1?'העלאת תמונה אחת':'העלאת '+readyCount+' תמונות',()=>void uploadPending(confirmBox.checked),'primary'); go.disabled=readyCount===0; fs.append(go);
   }
   async function addFiles(files){
     for(const file of files){
@@ -661,7 +661,7 @@ export const VISUAL_CLIENT = String.raw`
     setBusy(false);
     try{ await reloadPhotos(); }catch(error){ fail(error); return; }
     const failed=queue.length-done;
-    if(failed===0) tell(done+' תמונות הועלו ונשמרו כמוסתרות (commit '+short(last)+'). כדי להציג תמונה באתר לחצו "הצגה באתר".','ok');
+    if(failed===0) tell((done===1?'התמונה הועלתה ונשמרה כמוסתרת':done+' תמונות הועלו ונשמרו כמוסתרות')+' (commit '+short(last)+'). כדי להציג תמונה באתר לחצו "הצגה באתר".','ok');
     else tell('הועלו '+done+' מתוך '+queue.length+'. '+failed+' לא הועלו — הסיבה מופיעה ליד כל תמונה.','error');
     if(last) void track(last);
   }

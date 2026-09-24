@@ -176,10 +176,28 @@ exactly — 47/47. The public build carries no editor string or asset.
 audited HEAD is `/`, which now renders the same composition as `/he/` with its
 canonical still pointing there.
 
-**Still blocked:** no Access application, custom domain, DNS, WAF rule or
-GitHub token, and no commit has ever been made to a real repository. Every
-unset value makes the Worker refuse. BLOCKED — REQUIRES PRODUCTION
-CONFIGURATION.
+**Integration (2026-09-24/25).** The Access application (One-time PIN only,
+two exact addresses, 24h, HttpOnly cookie), custom domain, Worker secrets and
+the `/api/` rate limit exist. The Worker is deployed from
+`codex/visual-cms-integration`, which is its only write target and has no
+public deploy workflow. `workers.dev` and preview URLs return 404.
+
+**Real-user fixes.** The owner found photo replacement and treatment editing
+broken by hand while every test passed. Using the deployed admin found why:
+photos over 1 MB (every phone photo) could not be replaced or deleted and
+thumbnails were corrupted (GitHub sends no inline content over 1 MB; the Worker
+read images as text); "Edit treatment" rendered the first treatment 1,700px
+below the fold; a second save conflicted; errors were raw codes and were
+overwritten within seconds by a status poller. All fixed and retested live —
+see `tests/e2e/cms-journeys.spec.ts`, whose fixture GitHub behaves like the
+real one. CMS commits say `Changed by: CMS admin`, never an address.
+
+**Still open:** (1) Edit Mode pages are a static build, so a save shows in the
+editor at once but on the page only after the admin is rebuilt.
+`.github/workflows/admin-preview.yml` does that, but needs the
+`CLOUDFLARE_API_TOKEN` secret and the `ADMIN_DEPLOY_BRANCH` /
+`CLOUDFLARE_ACCOUNT_ID` repository variables — an owner action. (2) Release to
+`main` and pointing `CONTENT_BRANCH` at it await owner approval.
 
 ## What exists
 
