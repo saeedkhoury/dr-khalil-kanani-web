@@ -129,14 +129,15 @@ describe('/api/session fails closed', () => {
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), {
       ok: true,
-      data: { authenticated: true, email: DOCTOR },
+      data: { authenticated: true, email: DOCTOR, publishing: 'test' },
     });
   });
 
-  test('the response carries exactly two data fields', async () => {
+  test('the response carries exactly three data fields', async () => {
     const response = await call(requestWithToken(await makeToken({ email: DOCTOR })));
     const body = await response.json() as { data: Record<string, unknown> };
-    assert.deepEqual(Object.keys(body.data).sort(), ['authenticated', 'email']);
+    // publishing is derived from the configured branch, never from the token.
+    assert.deepEqual(Object.keys(body.data).sort(), ['authenticated', 'email', 'publishing']);
   });
 
   test('a valid identity that is not allow-listed is refused', async () => {
@@ -327,12 +328,12 @@ describe('/api/session contract', () => {
       '/api/session', '/api/hours',
       '/api/content/services', '/api/content/faq', '/api/content/doctor', '/api/content/copy', '/api/content/contact',
       '/api/photos',
-      '/api/photos/publish', '/api/photos/unpublish', '/api/photo', '/api/photos/order', '/api/photos/replace', '/api/photos/delete',
+      '/api/photos/publish', '/api/photos/unpublish', '/api/photo', '/api/photos/order', '/api/photos/replace', '/api/photos/describe', '/api/photos/delete',
       '/api/status', '/api/status/latest',
     ]);
   });
 
-  test('the session handler returns only authenticated and email', async () => {
+  test('the session handler returns only authenticated, email and publishing mode', async () => {
     const code = await codeOf('index.ts');
     // No token claim other than the email may be referenced anywhere in the
     // routing layer. Word-bounded, so `validated.issues` is not mistaken for
@@ -340,7 +341,7 @@ describe('/api/session contract', () => {
     for (const claim of [/\bpayload\b/, /\.sub\b/, /\.iat\b/, /\.exp\b/, /\.nbf\b/, /\.aud\b/, /\.iss\b/, /\bjwt\b/i, /Assertion/]) {
       assert.ok(!claim.test(code), `the routing layer references ${claim}`);
     }
-    assert.match(code, /ok\(\{ authenticated: true, email: identity\.email \}\)/);
+    assert.match(code, /ok\(\{\s*authenticated: true,\s*email: identity\.email,\s*publishing: env\.CONTENT_BRANCH\?\.trim\(\) === 'main' \? 'production' : 'test',\s*\}\)/);
   });
 
   test('the identity carries nothing but the email', async () => {

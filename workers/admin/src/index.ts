@@ -14,11 +14,12 @@ import { authenticate, type AccessIdentity } from './auth.ts';
 import { fail, ok, readJson, sameOrigin, type Env } from './http.ts';
 import { parseHours, serialiseHours, validateHoursPayload } from './hours.ts';
 import {
-  addRecord, parseRecords, removeRecord, reorderRecords, serialiseRecords, setStatus,
+  addRecord, describeRecord, parseRecords, removeRecord, reorderRecords, serialiseRecords, setStatus,
   validateReplacement, validateUpload, MAX_IMAGE_BYTES, nextFilename,
 } from './media.ts';
-import { deleteFile, listImageFiles, pathFor, readFile, writeFile, type CommitVerb } from './github.ts';
-import { latestStatus, statusForSha } from './status.ts';
+import { inspectImage } from './image.ts';
+import { deleteFile, listImageFiles, listImageVersions, pathFor, readBlobSha, readBytes, readFile, writeFile, type CommitVerb } from './github.ts';
+import { latestStatus, previewForSha, statusForSha } from './status.ts';
 import { renderPanel } from './ui/page.ts';
 import { CLIENT } from './ui/client.ts';
 import { PANEL_CSP, SECURITY_HEADERS } from './http.ts';
@@ -103,9 +104,14 @@ async function putHours({ request, env }: Context): Promise<Response> {
   if (!current.ok) return upstream(current.reason);
   if (current.data.sha !== expectedSha) return fail('CONFLICT');
 
+  // Nothing changed: say so, and make no commit. An empty commit tells the
+  // doctor "saved" about a change that does not exist.
+  const content = serialiseHours(validated.rows);
+  if (content === current.data.text) return ok({ sha: null, blob: current.data.sha, unchanged: true });
+
   const result = await writeFile(env, {
     target: { kind: 'hours' },
-    content: serialiseHours(validated.rows),
+    content,
     verb: 'update opening hours',
     sha: current.data.sha,
   });
@@ -113,7 +119,7 @@ async function putHours({ request, env }: Context): Promise<Response> {
 
   // The commit SHA is how the panel tracks publication. A commit is not a
   // publication, and the two are never conflated.
-  return ok({ sha: result.data.commit });
+  return ok({ sha: result.data.commit, blob: result.data.blob });
 }
 
 /* -------------------------------------------------------------------------- */
@@ -134,7 +140,13 @@ async function loadRecords(env: Env) {
 async function getPhotos({ env }: Context): Promise<Response> {
   const loaded = await loadRecords(env);
   if (!loaded.ok) return loaded.response;
-  return ok({ records: loaded.records, sha: loaded.sha });
+  // Versions are a convenience for thumbnails; a failed listing must not
+  // stop the doctor managing his photographs.
+  const listed = await listImageVersions(env);
+  const versions = listed.ok
+    ? Object.fromEntries(loaded.records.map((r) => [r.file, listed.data[r.file] ?? '']))
+    : {};
+  return ok({ records: loaded.records, sha: loaded.sha, versions });
 }
 
 /**
@@ -276,24 +288,27 @@ async function photoAction(
   // fails the repository holds an orphan image, which renders nothing. The
   // reverse would leave the manifest pointing at a deleted file and break the
   // build for everyone.
-  const current = await readFile(env, { kind: 'image', file });
+  const current = await readBlobSha(env, { kind: 'image', file });
   if (!current.ok) {
-    // The record is already gone, which is the part that matters. Report
-    // success and let the orphan be cleaned up by a developer.
+    // The record is already gone, which is the part that matters: nothing
+    // references the file, so the site cannot show it. The leftover file is
+    // reported rather than hidden.
     console.warn(JSON.stringify({ event: 'orphan_image', file, reason: current.reason }));
-    return ok({ sha: manifest.data.commit, file });
+    return ok({ sha: manifest.data.commit, file, fileRemoved: false });
   }
 
   const removed = await deleteFile(env, {
     target: { kind: 'image', file },
     verb: 'delete clinic photo',
     subject: file,
-    sha: current.data.sha,
+    sha: current.data,
   });
   if (!removed.ok) {
     console.warn(JSON.stringify({ event: 'orphan_image', file, reason: removed.reason }));
+    return ok({ sha: manifest.data.commit, file, fileRemoved: false });
   }
-  return ok({ sha: manifest.data.commit, file });
+  // The branch head is the delete commit, so that is the one to track.
+  return ok({ sha: removed.data.commit, file, fileRemoved: true });
 }
 
 /**
@@ -323,6 +338,12 @@ async function reorderPhotos({ request, env }: Context): Promise<Response> {
   // silently dropping or duplicating a photograph the doctor did not touch.
   if (reordered === null) return fail('INVALID', ['order_stale']);
 
+  // Same order as the repository already has: no commit. Pressing "save
+  // order" with nothing moved used to create an empty-looking commit.
+  if (reordered.every((record, i) => record.file === loaded.records[i]?.file)) {
+    return ok({ sha: null, unchanged: true });
+  }
+
   const manifest = await writeFile(env, {
     target: { kind: 'photography' },
     content: serialiseRecords(reordered),
@@ -332,6 +353,42 @@ async function reorderPhotos({ request, env }: Context): Promise<Response> {
   if (!manifest.ok) return upstream(manifest.reason);
 
   return ok({ sha: manifest.data.commit });
+}
+
+/**
+ * Rewrite the Hebrew, Arabic and English description of one photograph.
+ *
+ * The same rules an upload applies: all three required, English must be
+ * English, and the claims rules run before anything is committed. Writing a
+ * reviewed English description is also what clears needsEnglishReview.
+ */
+async function describePhoto({ request, env }: Context): Promise<Response> {
+  if (!sameOrigin(request, env)) return fail('FORBIDDEN');
+
+  const body = await readJson<{ file?: unknown; altHe?: unknown; altAr?: unknown; altEn?: unknown }>(request, MAX_ACTION_BODY);
+  if (!body.ok) return fail(body.code);
+
+  const file = body.body?.file;
+  if (typeof file !== 'string' || file === '') return fail('INVALID', ['file_required']);
+
+  const loaded = await loadRecords(env);
+  if (!loaded.ok) return loaded.response;
+
+  const described = describeRecord(loaded.records, file, {
+    altHe: body.body?.altHe, altAr: body.body?.altAr, altEn: body.body?.altEn,
+  });
+  if (!described.ok) return fail('INVALID', described.issues);
+  if (described.unchanged) return ok({ sha: null, unchanged: true, file });
+
+  const manifest = await writeFile(env, {
+    target: { kind: 'photography' },
+    content: serialiseRecords(described.records),
+    verb: 'describe clinic photo',
+    subject: file,
+    sha: loaded.sha,
+  });
+  if (!manifest.ok) return upstream(manifest.reason);
+  return ok({ sha: manifest.data.commit, file });
 }
 
 /**
@@ -362,7 +419,7 @@ async function replacePhoto({ request, env }: Context): Promise<Response> {
 
   // The blob SHA of the file being replaced — required, and read from the
   // repository rather than supplied by the browser.
-  const current = await readFile(env, { kind: 'image', file });
+  const current = await readBlobSha(env, { kind: 'image', file });
   if (!current.ok) return upstream(current.reason);
 
   const image = await writeFile(env, {
@@ -371,7 +428,7 @@ async function replacePhoto({ request, env }: Context): Promise<Response> {
     verb: 'replace clinic photo',
     subject: file,
     patientContentConfirmed: true,
-    sha: current.data.sha,
+    sha: current.data,
   });
   if (!image.ok) return upstream(image.reason);
 
@@ -401,19 +458,22 @@ async function getPhotoBytes({ request, env }: Context): Promise<Response> {
   const file = new URL(request.url).searchParams.get('file');
   if (file === null || pathFor({ kind: 'image', file }) === null) return fail('BAD_REQUEST');
 
-  const stored = await readFile(env, { kind: 'image', file });
+  const stored = await readBytes(env, { kind: 'image', file }, MAX_IMAGE_BYTES * 2);
   if (!stored.ok) return upstream(stored.reason);
 
-  // readFile decodes to text; re-encode to the original bytes.
-  const bytes = Uint8Array.from(stored.data.text, (c) => c.charCodeAt(0));
-  const type = file.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
-  return new Response(bytes, {
+  // The type comes from what the bytes are, not from the name, and anything
+  // that is not a JPEG or PNG is not served at all.
+  const image = inspectImage(stored.data);
+  if (image === null) return fail('UPSTREAM_UNAVAILABLE');
+  return new Response(stored.data as Uint8Array<ArrayBuffer>, {
     status: 200,
     headers: {
       ...SECURITY_HEADERS,
-      'Content-Type': type,
-      // Not a public asset: it is repository content behind Access.
-      'Cache-Control': 'no-store',
+      'Content-Type': image.format === 'png' ? 'image/png' : 'image/jpeg',
+      // Not a public asset: it is repository content behind Access. The
+      // editor requests it with the blob SHA in the URL, so a private cache
+      // never shows a replaced photograph.
+      'Cache-Control': 'private, max-age=86400',
     },
   });
 }
@@ -430,7 +490,7 @@ async function getStatus({ request, env }: Context): Promise<Response> {
 
   const result = await statusForSha(env, sha);
   if (!result.ok) return upstream(result.reason);
-  return ok(result.data);
+  return ok({ ...result.data, preview: await previewForSha(env, sha) });
 }
 
 async function getLatestStatus({ env }: Context): Promise<Response> {
@@ -490,9 +550,15 @@ const ROUTES: Readonly<Record<string, Route>> = Object.freeze({
   },
   '/api/session': {
     methods: ['GET'],
-    // The minimum the panel needs: that the session is good, and who is
-    // acting. Nothing else from the token is returned.
-    handle: ({ identity }) => ok({ authenticated: true, email: identity.email }),
+    // The minimum the panel needs: that the session is good, who is acting,
+    // and whether saves reach the public site or a test branch — so the
+    // editor never says "published" about a branch visitors do not see.
+    // Nothing else from the token is returned.
+    handle: ({ identity, env }) => ok({
+      authenticated: true,
+      email: identity.email,
+      publishing: env.CONTENT_BRANCH?.trim() === 'main' ? 'production' : 'test',
+    }),
   },
   '/api/hours': {
     methods: ['GET', 'PUT'],
@@ -529,6 +595,10 @@ const ROUTES: Readonly<Record<string, Route>> = Object.freeze({
   '/api/photos/replace': {
     methods: ['POST'],
     handle: replacePhoto,
+  },
+  '/api/photos/describe': {
+    methods: ['POST'],
+    handle: describePhoto,
   },
   '/api/photos/delete': {
     methods: ['POST'],

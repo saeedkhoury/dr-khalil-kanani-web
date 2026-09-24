@@ -208,7 +208,9 @@ const readReply = (rows: unknown = CURRENT, sha = 'blob-sha-1') => ({
   body: { content: b64(`${JSON.stringify(rows, null, 2)}\n`), encoding: 'base64', sha },
 });
 
-const writeReply = { status: 200, body: { commit: { sha: 'commit-abc123' } } };
+// GitHub's PUT answers with the commit AND the new blob; the blob is what lets
+// the editor save a second time without reloading.
+const writeReply = { status: 200, body: { commit: { sha: 'commit-abc123' }, content: { sha: 'blob-sha-2' } } };
 
 async function authed(method: string, body?: unknown): Promise<Request> {
   return new Request(`${ADMIN_ORIGIN}/api/hours`, {
@@ -259,7 +261,7 @@ describe('PUT /api/hours — the exact request that would be sent', () => {
     );
 
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { ok: true, data: { sha: 'commit-abc123' } });
+    assert.deepEqual(await response.json(), { ok: true, data: { sha: 'commit-abc123', blob: 'blob-sha-2' } });
     assert.equal(calls.length, 2, 'expected one read then one write');
 
     const [read, put] = calls;

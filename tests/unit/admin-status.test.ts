@@ -112,15 +112,49 @@ describe('GET /api/status', () => {
   test('returns the state for a commit', async () => {
     const { response, calls } = await callAdmin(
       await adminRequest(`/api/status?sha=${SHA}`),
-      [{ status: 200, body: { workflow_runs: [run('completed', 'success')] } }],
+      [
+        { status: 200, body: { workflow_runs: [run('completed', 'success')] } },
+        { status: 200, body: { workflow_runs: [] } },
+      ],
     );
     assert.equal(response.status, 200);
     assert.deepEqual(await response.json(), {
       ok: true,
-      data: { state: 'published', completedAt: '2026-09-23T10:00:00Z', reason: null },
+      // `preview` is Edit Mode's own rebuild, reported separately from the
+      // public deployment so neither is ever mistaken for the other.
+      data: { state: 'published', completedAt: '2026-09-23T10:00:00Z', reason: null, preview: 'none' },
     });
     assert.equal(calls[0].url, `${RUNS}?head_sha=${SHA}&branch=cms-test-branch&per_page=100`);
     assert.equal(calls[0].method, 'GET');
+    assert.equal(calls[1].url, `https://api.github.com/repos/saeedkhoury/dr-khalil-kanani-web/actions/workflows/admin-preview.yml/runs?head_sha=${SHA}&per_page=20`);
+  });
+
+  test('the preview state follows the Edit Mode rebuild', async () => {
+    for (const [runs, expected] of [
+      [[run('in_progress', null)], 'building'],
+      [[run('completed', 'success')], 'ready'],
+      [[run('completed', 'failure')], 'failed'],
+      [[run('completed', 'cancelled')], 'building'],
+    ] as const) {
+      const { response } = await callAdmin(await adminRequest(`/api/status?sha=${SHA}`), [
+        { status: 200, body: { workflow_runs: [] } },
+        { status: 200, body: { workflow_runs: runs } },
+      ]);
+      const body = await response.json() as { data: { state: string; preview: string } };
+      assert.equal(body.data.preview, expected);
+      assert.equal(body.data.state, 'committed', 'a preview is never a publication');
+    }
+  });
+
+  test('a failed preview lookup does not fail the publication status', async () => {
+    const { response } = await callAdmin(await adminRequest(`/api/status?sha=${SHA}`), [
+      { status: 200, body: { workflow_runs: [run('completed', 'success')] } },
+      { status: 500, body: {} },
+    ]);
+    assert.equal(response.status, 200);
+    const body = await response.json() as { data: { state: string; preview: string } };
+    assert.equal(body.data.state, 'published');
+    assert.equal(body.data.preview, 'unavailable');
   });
 
   test('a sha that is not a git object name never reaches GitHub', async () => {
@@ -234,8 +268,10 @@ describe('exact commit status beyond the old history window [M-2]', () => {
       { status: 200, body: { workflow_runs: [run('completed', 'success')] } },
     ]);
     assert.equal(response.status, 200);
-    assert.equal(calls.length, 1);
+    // One publication lookup and one preview lookup; never the history.
+    assert.equal(calls.length, 2);
     assert.ok(calls[0].url.startsWith(`${RUNS}?head_sha=${SHA}`));
+    assert.ok(calls.every((call) => !call.url.includes('/commits')));
   });
   test('old success cannot publish a newer commit, and unknown conclusions fail', async () => {
     for (const [runs, expected] of [

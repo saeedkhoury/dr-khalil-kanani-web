@@ -144,6 +144,7 @@ export type CommitVerb =
   | 'delete clinic photo'
   | 'reorder clinic photos'
   | 'replace clinic photo'
+  | 'describe clinic photo'
   | 'update visual content';
 
 const SCOPE: Record<CommitVerb, 'hours' | 'media' | 'content'> = {
@@ -154,6 +155,7 @@ const SCOPE: Record<CommitVerb, 'hours' | 'media' | 'content'> = {
   'delete clinic photo': 'media',
   'reorder clinic photos': 'media',
   'replace clinic photo': 'media',
+  'describe clinic photo': 'media',
   'update visual content': 'content',
 };
 
@@ -275,7 +277,7 @@ function classify(status: number): Failure {
 async function call(
   config: Config,
   path: string,
-  init: { method: 'GET' | 'PUT' | 'DELETE'; body?: unknown; ref?: string },
+  init: { method: 'GET' | 'PUT' | 'DELETE'; body?: unknown; ref?: string; raw?: boolean },
 ): Promise<Response> {
   // The path is built by pathFor() from constants, never by a caller, but
   // encode each segment anyway so a future target kind cannot introduce a
@@ -292,7 +294,10 @@ async function call(
     headers: {
       // The only place the token is used.
       Authorization: `Bearer ${config.token}`,
-      Accept: 'application/vnd.github+json',
+      // raw: the file's own bytes. The JSON form carries content inline only
+      // up to 1 MB; above that GitHub sends `encoding: "none"` and no content,
+      // which is every real photograph from a phone.
+      Accept: init.raw === true ? 'application/vnd.github.raw+json' : 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
       'User-Agent': USER_AGENT,
       ...(init.body === undefined ? {} : { 'Content-Type': 'application/json' }),
@@ -324,6 +329,7 @@ function toBase64(content: string | Uint8Array): string {
  */
 export type ReadQuery =
   | { kind: 'runs'; headSha: string }
+  | { kind: 'previewRuns'; headSha: string }
   | { kind: 'commits'; page?: number; headSha?: string };
 
 /** A git object name. Hex only, so it cannot carry a path or a parameter. */
@@ -335,6 +341,12 @@ function queryUrl(query: ReadQuery, branch: string): string | null {
     case 'runs': {
       if (typeof query.headSha !== 'string' || !SHA.test(query.headSha)) return null;
       return `${base}/actions/workflows/deploy.yml/runs?head_sha=${query.headSha}&branch=${encodeURIComponent(branch)}&per_page=100`;
+    }
+    case 'previewRuns': {
+      // The Edit Mode rebuild. Separate from the public deployment above:
+      // "the preview shows it" and "visitors see it" are different facts.
+      if (typeof query.headSha !== 'string' || !SHA.test(query.headSha)) return null;
+      return `${base}/actions/workflows/admin-preview.yml/runs?head_sha=${query.headSha}&per_page=20`;
     }
     case 'commits': {
       const page = query.page ?? 1;
@@ -374,6 +386,18 @@ export async function query<T>(env: Env, request: ReadQuery): Promise<Result<T>>
 
 /** Inventory the fixed image directory, including files absent from the manifest. */
 export async function listImageFiles(env: Env): Promise<Result<string[]>> {
+  const listed = await listImageVersions(env);
+  return listed.ok ? { ok: true, data: Object.keys(listed.data) } : listed;
+}
+
+/**
+ * The image directory as file name -> blob SHA.
+ *
+ * The SHA doubles as a version: a thumbnail URL carrying it can be cached
+ * indefinitely, and a replaced photograph gets a new URL instead of a stale
+ * picture.
+ */
+export async function listImageVersions(env: Env): Promise<Result<Record<string, string>>> {
   const config = configure(env);
   if (config === null) return refuse('not_configured');
   const response = await call(config, IMAGE_DIR, { method: 'GET', ref: config.branch });
@@ -384,7 +408,11 @@ export async function listImageFiles(env: Env): Promise<Result<string[]>> {
   if (!Array.isArray(body) || body.length >= 1000 || body.some((entry: unknown) =>
     entry === null || typeof entry !== 'object' || !('name' in entry) || typeof entry.name !== 'string'
   )) return refuse('unavailable');
-  return { ok: true, data: body.map((entry: { name: string }) => entry.name) };
+  return {
+    ok: true,
+    data: Object.fromEntries(body.map((entry: { name: string; sha?: unknown }) =>
+      [entry.name, typeof entry.sha === 'string' ? entry.sha : ''])),
+  };
 }
 
 /** Read a file. `not_found` is a normal answer, not an error. */
@@ -408,6 +436,43 @@ export async function readFile(env: Env, target: WriteTarget): Promise<Result<Fi
   return { ok: true, data: { text: new TextDecoder().decode(bytes), sha: body.sha } };
 }
 
+/**
+ * The blob SHA of a file, without its content.
+ *
+ * Replacing or deleting needs only the SHA, and the metadata carries it at any
+ * size. Going through readFile instead refused every photograph over 1 MB,
+ * because the inline content it insists on is absent above that size.
+ */
+export async function readBlobSha(env: Env, target: WriteTarget): Promise<Result<string>> {
+  const path = pathFor(target);
+  if (path === null) return refuse('refused');
+  const config = configure(env);
+  if (config === null) return refuse('not_configured');
+  const response = await call(config, path, { method: 'GET', ref: config.branch });
+  if (!response.ok) return refuse(classify(response.status));
+  const body = (await response.json()) as { sha?: unknown; type?: unknown };
+  if (typeof body.sha !== 'string' || body.type !== 'file') return refuse('unavailable');
+  return { ok: true, data: body.sha };
+}
+
+/**
+ * A file's exact bytes.
+ *
+ * Never decoded as text: an image passed through TextDecoder has every
+ * invalid UTF-8 sequence replaced, and what comes back is not the picture.
+ */
+export async function readBytes(env: Env, target: WriteTarget, limit: number): Promise<Result<Uint8Array>> {
+  const path = pathFor(target);
+  if (path === null) return refuse('refused');
+  const config = configure(env);
+  if (config === null) return refuse('not_configured');
+  const response = await call(config, path, { method: 'GET', ref: config.branch, raw: true });
+  if (!response.ok) return refuse(classify(response.status));
+  const bytes = new Uint8Array(await response.arrayBuffer());
+  if (bytes.length === 0 || bytes.length > limit) return refuse('unavailable');
+  return { ok: true, data: bytes };
+}
+
 export interface WriteRequest {
   target: WriteTarget;
   content: string | Uint8Array;
@@ -421,7 +486,7 @@ export interface WriteRequest {
 }
 
 /** Create or replace a file. Returns the new commit SHA. */
-export async function writeFile(env: Env, request: WriteRequest): Promise<Result<{ commit: string }>> {
+export async function writeFile(env: Env, request: WriteRequest): Promise<Result<{ commit: string; blob: string | null }>> {
   const path = pathFor(request.target);
   if (path === null) return refuse('refused');
 
@@ -448,11 +513,14 @@ export async function writeFile(env: Env, request: WriteRequest): Promise<Result
 
   if (!response.ok) return refuse(classify(response.status));
 
-  const body = (await response.json()) as { commit?: { sha?: string } };
+  const body = (await response.json()) as { commit?: { sha?: string }; content?: { sha?: string } };
   const commit = body.commit?.sha;
   // A 200 with an unreadable body is not a success we are willing to report.
   if (typeof commit !== 'string') return refuse('unavailable');
-  return { ok: true, data: { commit } };
+  // The new blob SHA lets the editor save again without reloading. Without it
+  // a second save sent the SHA it opened with and was refused as a conflict.
+  const blob = typeof body.content?.sha === 'string' ? body.content.sha : null;
+  return { ok: true, data: { commit, blob } };
 }
 
 export interface DeleteRequest {

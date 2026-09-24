@@ -32,19 +32,37 @@ export const adminEnv: Env = {
 export interface Recorded {
   url: string;
   method: string;
+  /** Which representation was asked for: JSON metadata or the raw file. */
+  accept: string | null;
   body: Record<string, unknown> | null;
 }
 
 export interface Reply {
   status: number;
   body: unknown;
+  /** Answer with these exact bytes instead of JSON (the raw media type). */
+  raw?: Uint8Array;
 }
 
 /** Encode text the way the GitHub Contents API returns it. */
 export const asContents = (text: string, sha: string): Reply => ({
   status: 200,
-  body: { content: Buffer.from(text, 'utf8').toString('base64'), encoding: 'base64', sha },
+  body: { type: 'file', content: Buffer.from(text, 'utf8').toString('base64'), encoding: 'base64', sha },
 });
+
+/**
+ * What GitHub ACTUALLY returns for a file over 1 MB — which is every photo a
+ * phone takes: metadata and a SHA, no inline content. The earlier mock gave
+ * every file inline content, which is how a Worker that refused all real
+ * photographs passed its tests.
+ */
+export const asLargeFile = (sha: string, size = 5_000_000): Reply => ({
+  status: 200,
+  body: { type: 'file', sha, size, encoding: 'none', content: '' },
+});
+
+/** The raw media type: the file's own bytes. */
+export const asRaw = (bytes: Uint8Array): Reply => ({ status: 200, body: null, raw: bytes });
 
 export const asCommit = (sha: string): Reply => ({ status: 200, body: { commit: { sha } } });
 
@@ -69,9 +87,11 @@ export async function callAdmin(
       calls.push({
         url,
         method: init?.method ?? 'GET',
+        accept: new Headers(init?.headers).get('Accept'),
         body: init?.body === undefined ? null : JSON.parse(String(init.body)),
       });
       const reply = gitHub[Math.min(i++, gitHub.length - 1)] ?? { status: 500, body: {} };
+      if (reply.raw !== undefined) return new Response(reply.raw as Uint8Array<ArrayBuffer>, { status: reply.status });
       return new Response(JSON.stringify(reply.body), { status: reply.status });
     }
     throw new Error(`unexpected network access to ${url}`);

@@ -14,7 +14,44 @@ const PARSERS: Record<Kind, (value: unknown) => unknown> = {
 const FACTUAL = new Set<Kind>(['contactFacts', 'doctorProfile']);
 
 function parse(kind: Kind, value: unknown): unknown | null {
-  try { return PARSERS[kind](value); } catch { return null; }
+  const checked = check(kind, value);
+  return checked.ok ? checked.value : null;
+}
+
+/**
+ * Validate, keeping WHERE it failed.
+ *
+ * "content_invalid" told the doctor that something, somewhere, in thirty
+ * fields and three languages was wrong. Each issue is a path and a reason —
+ * `3.locales.en.title:too_small` — which the editor turns into a sentence
+ * naming the item, the field and the language. Paths come from the schema,
+ * never from the submitted text, so nothing the caller wrote is echoed back.
+ */
+function check(kind: Kind, value: unknown): { ok: true; value: unknown } | { ok: false; issues: string[] } {
+  try {
+    return { ok: true, value: PARSERS[kind](value) };
+  } catch (error) {
+    const zodIssues = (error as { issues?: Array<{ path?: PropertyKey[]; code?: string }> }).issues;
+    if (Array.isArray(zodIssues)) {
+      return {
+        ok: false,
+        issues: zodIssues.slice(0, 20).map((issue) =>
+          `${(issue.path ?? []).map((part) => String(part).replace(/[^A-Za-z0-9_.-]/g, '')).join('.')}:${String(issue.code ?? 'invalid').replace(/[^a-z_]/g, '')}`),
+      };
+    }
+    const claims = error instanceof Error ? error.message.match(/prohibited claims: (.*)$/)?.[1] : undefined;
+    if (claims) {
+      return {
+        ok: false,
+        issues: claims.split('; ').slice(0, 20).map((entry) => {
+          const [where = '', rule = ''] = entry.split(': ');
+          const path = where.replace(/^[^.[]*/, '').replace(/\[(\d+)\]/g, '.$1').replace(/^\./, '').replace(/[^A-Za-z0-9_.-]/g, '');
+          return `${path}:claim_${rule.replace(/[^a-z-]/g, '').replace(/-/g, '_')}`;
+        }),
+      };
+    }
+    return { ok: false, issues: ['content_invalid'] };
+  }
 }
 
 /** Stable published URLs cannot silently change during editing. */
@@ -48,8 +85,9 @@ export async function managedContent(
   if (body.body.sha !== current.data.sha) return fail('CONFLICT');
   if (FACTUAL.has(kind) && body.body.confirmed !== true) return fail('INVALID', ['owner_confirmation_required']);
 
-  const value = parse(kind, body.body.value);
-  if (value === null) return fail('INVALID', ['content_invalid']);
+  const checked = check(kind, body.body.value);
+  if (!checked.ok) return fail('INVALID', checked.issues);
+  const value = checked.value;
   if (!transitionAllowed(kind, existing, value)) return fail('INVALID', ['published_item_or_url_locked']);
   if (kind === 'contactFacts') {
     const oldFacts = existing as Record<string, unknown>;
@@ -58,12 +96,18 @@ export async function managedContent(
     if (locationChanged && body.body.sameLocation !== true) return fail('INVALID', ['same_location_confirmation_required']);
   }
 
+  // Nothing changed: no commit, and the editor says so instead of "saved".
+  // Compared as parsed values, so formatting in the file cannot make an
+  // unchanged save look like a change.
+  if (JSON.stringify(value) === JSON.stringify(existing)) return ok({ sha: null, blob: current.data.sha, unchanged: true });
+  const content = `${JSON.stringify(value, null, 2)}\n`;
+
   const result = await writeFile(env, {
     target,
-    content: `${JSON.stringify(value, null, 2)}\n`,
+    content,
     verb: 'update visual content',
     sha: current.data.sha,
   });
   if (!result.ok) return result.reason === 'conflict' ? fail('CONFLICT') : fail('UPSTREAM_UNAVAILABLE');
-  return ok({ sha: result.data.commit });
+  return ok({ sha: result.data.commit, blob: result.data.blob });
 }

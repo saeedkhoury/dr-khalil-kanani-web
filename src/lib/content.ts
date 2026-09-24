@@ -12,7 +12,10 @@ export interface Treatment {
 
 export async function getTreatments(locale: Locale): Promise<Treatment[]> {
   return services.filter((service) => service.status === 'published')
-    .sort((a, b) => a.tier - b.tier || a.order - b.order || a.id.localeCompare(b.id))
+    // The order the doctor sets in Edit Mode is the order visitors see. Tier
+    // only breaks ties; sorting by it first made a drag across the tier
+    // boundary snap straight back.
+    .sort((a, b) => a.order - b.order || a.tier - b.tier || a.id.localeCompare(b.id))
     .map((service) => ({
       id: `${locale}/${service.slug}`,
       data: {

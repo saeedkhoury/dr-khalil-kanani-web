@@ -64,7 +64,7 @@ async function withGitHub<T>(
   }
 }
 
-const okWrite = { status: 200, body: { commit: { sha: 'commit-sha-1' } } };
+const okWrite = { status: 200, body: { commit: { sha: 'commit-sha-1' }, content: { sha: 'blob-sha-1' } } };
 
 const write = (target: WriteTarget, over: Record<string, unknown> = {}) =>
   writeFile(env, { target, content: '[]', verb: 'update opening hours', ...over } as never);
@@ -424,7 +424,7 @@ describe('a success is never reported falsely', () => {
 
   test('a successful write reports the commit sha', async () => {
     const { result } = await withGitHub([okWrite], () => write({ kind: 'hours' }, { sha: 'old' }));
-    assert.deepEqual(result, { ok: true, data: { commit: 'commit-sha-1' } });
+    assert.deepEqual(result, { ok: true, data: { commit: 'commit-sha-1', blob: 'blob-sha-1' } });
   });
 });
 

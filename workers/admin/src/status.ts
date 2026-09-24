@@ -152,3 +152,27 @@ export async function latestStatus(env: Parameters<typeof query>[0]): Promise<Re
   // Bound Worker work, but never turn incomplete history into "no change".
   return { ok: false, reason: 'unavailable' };
 }
+
+export type PreviewState = 'none' | 'building' | 'ready' | 'failed' | 'unavailable';
+
+/**
+ * Whether Edit Mode itself has been rebuilt with a commit.
+ *
+ * The admin pages are a static build, so a save is visible in the page only
+ * after the preview workflow redeploys it. Without this the doctor saved,
+ * reloaded, saw the old page and reasonably concluded the save had failed.
+ *
+ * A cancelled run was superseded by a newer commit (the workflow cancels in
+ * progress), and the newer run includes this one's change.
+ */
+export async function previewForSha(env: Parameters<typeof query>[0], sha: string): Promise<PreviewState> {
+  const result = await query<{ workflow_runs?: WorkflowRun[] }>(env, { kind: 'previewRuns', headSha: sha });
+  if (!result.ok) return 'unavailable';
+  const runs = result.data?.workflow_runs;
+  if (!Array.isArray(runs)) return 'unavailable';
+  if (runs.length === 0) return 'none';
+  if (runs.some((run) => run.status === 'completed' && run.conclusion === 'success')) return 'ready';
+  if (runs.some((run) => run.status !== 'completed')) return 'building';
+  if (runs.every((run) => run.conclusion === 'cancelled')) return 'building';
+  return 'failed';
+}

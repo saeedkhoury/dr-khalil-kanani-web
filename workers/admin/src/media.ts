@@ -75,6 +75,70 @@ export function nextFilename(
 }
 
 /**
+ * The description rules, shared by upload and by editing a description later
+ * so the two can never disagree about what is acceptable.
+ */
+export function altIssues(altHe: unknown, altAr: unknown, altEn: unknown): MediaIssue[] {
+  const issues: MediaIssue[] = [];
+  if (!isFilledString(altHe)) issues.push('alt_he_required');
+  if (!isFilledString(altAr)) issues.push('alt_ar_required');
+  if (!isFilledString(altEn)) issues.push('alt_en_required');
+  else if (!/[A-Za-z]/.test(altEn) || /[\u0590-\u05ff\u0600-\u06ff]/.test(altEn)) issues.push('alt_en_not_english');
+
+  // ── The same rules CI enforces, applied before a commit exists ──
+  //
+  // CI is still the authoritative control: it runs on whatever actually
+  // reaches the repository, including a hand edit this Worker never saw. But
+  // learning about a prohibited claim three minutes later as "checks_failed",
+  // with the photograph already committed, is a bad way to find out. This
+  // tells the doctor at the moment he presses save.
+  //
+  // It imports the SAME rule list rather than restating it. A second copy
+  // would drift, and a drifted copy reports "checked" while checking
+  // something else.
+  for (const [locale, text] of [['he', altHe], ['ar', altAr], ['en', altEn]] as const) {
+    if (!isFilledString(text)) continue;
+    for (const finding of blockingClaims(text)) {
+      issues.push(`alt_${locale}_claim_${finding.rule.replace(/-/g, '_')}`);
+    }
+  }
+  return issues;
+}
+
+export type DescribeResult =
+  | { ok: true; unchanged: true }
+  | { ok: true; unchanged: false; records: ClinicPhotographRecord[] }
+  | { ok: false; issues: MediaIssue[] };
+
+/** Replace one photograph's descriptions; a reviewed English text clears the review flag. */
+export function describeRecord(
+  records: readonly ClinicPhotographRecord[],
+  file: string,
+  alt: { altHe: unknown; altAr: unknown; altEn: unknown },
+): DescribeResult {
+  const existing = records.find((record) => record.file === file);
+  if (existing === undefined) return { ok: false, issues: ['photo_not_actionable'] };
+  const issues = altIssues(alt.altHe, alt.altAr, alt.altEn);
+  if (issues.length > 0) return { ok: false, issues };
+  const next = {
+    he: (alt.altHe as string).trim(),
+    ar: (alt.altAr as string).trim(),
+    en: (alt.altEn as string).trim(),
+  };
+  const same = next.he === existing.alt.he && next.ar === existing.alt.ar && next.en === existing.alt.en;
+  if (same && existing.needsEnglishReview !== true) return { ok: true, unchanged: true };
+  return {
+    ok: true,
+    unchanged: false,
+    records: records.map((record) => {
+      if (record.file !== file) return record;
+      const { needsEnglishReview: _cleared, ...rest } = record;
+      return { ...rest, alt: next };
+    }),
+  };
+}
+
+/**
  * Validate an upload and build the record that would be stored.
  *
  * Every check that matters runs on the BYTES, not on what the client said
@@ -93,28 +157,7 @@ export function validateUpload(request: UploadRequest, existing: readonly string
     issues.push('category_not_allowed');
   }
 
-  if (!isFilledString(request.altHe)) issues.push('alt_he_required');
-  if (!isFilledString(request.altAr)) issues.push('alt_ar_required');
-  if (!isFilledString(request.altEn)) issues.push('alt_en_required');
-  else if (!/[A-Za-z]/.test(request.altEn) || /[\u0590-\u05ff\u0600-\u06ff]/.test(request.altEn)) issues.push('alt_en_not_english');
-
-  // ── The same rules CI enforces, applied before a commit exists ──
-  //
-  // CI is still the authoritative control: it runs on whatever actually
-  // reaches the repository, including a hand edit this Worker never saw. But
-  // learning about a prohibited claim three minutes later as "checks_failed",
-  // with the photograph already committed, is a bad way to find out. This
-  // tells the doctor at the moment he presses save.
-  //
-  // It imports the SAME rule list rather than restating it. A second copy
-  // would drift, and a drifted copy reports "checked" while checking
-  // something else.
-  for (const [locale, text] of [['he', request.altHe], ['ar', request.altAr], ['en', request.altEn]] as const) {
-    if (!isFilledString(text)) continue;
-    for (const finding of blockingClaims(text)) {
-      issues.push(`alt_${locale}_claim_${finding.rule.replace(/-/g, '_')}`);
-    }
-  }
+  issues.push(...altIssues(request.altHe, request.altAr, request.altEn));
 
   if (request.bytes.length === 0) issues.push('file_required');
   else if (request.bytes.length > MAX_IMAGE_BYTES) issues.push('file_too_large');

@@ -333,7 +333,7 @@ describe('record mutation', () => {
 
 import {
   adminEnv, adminRequest, asCommit, asContents, callAdmin, decodeContent,
-  CONTENT_BRANCH, FAKE_GITHUB_TOKEN, REPO_CONTENTS,
+  asLargeFile, CONTENT_BRANCH, FAKE_GITHUB_TOKEN, REPO_CONTENTS,
 } from '../helpers/admin-api.ts';
 import type { Env } from '../../workers/admin/src/http.ts';
 
@@ -359,10 +359,28 @@ const uploadBody = (over: Record<string, unknown> = {}) => ({
 
 describe('GET /api/photos', () => {
   test('returns the records and the manifest sha', async () => {
-    const { response, calls } = await callAdmin(await adminRequest('/api/photos'), [manifestRead()]);
+    const listing = { status: 200, body: EXISTING.map((r, i) => ({ name: r.file, sha: `blob-${i}` })) };
+    const { response, calls } = await callAdmin(await adminRequest('/api/photos'), [manifestRead(), listing]);
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { ok: true, data: { records: EXISTING, sha: 'manifest-sha-1' } });
+    assert.deepEqual(await response.json(), {
+      ok: true,
+      data: {
+        records: EXISTING,
+        sha: 'manifest-sha-1',
+        // Each photograph's blob SHA versions its thumbnail URL, so a replaced
+        // photo is never shown from a stale cache.
+        versions: Object.fromEntries(EXISTING.map((r, i) => [r.file, `blob-${i}`])),
+      },
+    });
     assert.equal(calls[0].url, `${REPO_CONTENTS}/src/data/clinic-photography.json?ref=${CONTENT_BRANCH}`);
+  });
+
+  test('a failed directory listing still returns the records', async () => {
+    const { response } = await callAdmin(await adminRequest('/api/photos'), [manifestRead(), { status: 500, body: {} }]);
+    assert.equal(response.status, 200);
+    const body = await response.json() as { data: { records: unknown[]; versions: object } };
+    assert.deepEqual(body.data.records, EXISTING);
+    assert.deepEqual(body.data.versions, {});
   });
 });
 
@@ -544,12 +562,18 @@ describe('publish / unpublish / delete', () => {
       [
         manifestRead(unpublished),
         asCommit('manifest-commit'),
-        asContents('binary', 'image-blob-sha'),
+        // Over 1 MB, like any real photograph: a SHA and no inline content.
+        asLargeFile('image-blob-sha'),
         asCommit('image-commit'),
       ],
     );
     assert.equal(response.status, 200);
     assert.equal(calls.length, 4);
+    // The file really went, and the commit to track is the LAST one — the
+    // delete — not the manifest commit before it.
+    assert.deepEqual(await response.json(), {
+      ok: true, data: { sha: 'image-commit', file: 'reception-01.jpg', fileRemoved: true },
+    });
 
     // The reference goes first: an orphan file renders nothing, but a manifest
     // pointing at a deleted file breaks the build for everyone.
@@ -572,7 +596,9 @@ describe('publish / unpublish / delete', () => {
       [manifestRead(unpublished), asCommit('manifest-commit'), { status: 500, body: {} }],
     );
     assert.equal(response.status, 200);
-    assert.deepEqual(await response.json(), { ok: true, data: { sha: 'manifest-commit', file: 'reception-01.jpg' } });
+    assert.deepEqual(await response.json(), {
+      ok: true, data: { sha: 'manifest-commit', file: 'reception-01.jpg', fileRemoved: false },
+    });
   });
 
   test('an unknown file is refused without writing', async () => {

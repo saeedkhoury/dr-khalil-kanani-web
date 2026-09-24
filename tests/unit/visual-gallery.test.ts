@@ -16,7 +16,7 @@ import { VISUAL_CLIENT, VISUAL_STYLES } from '../../workers/admin/src/ui/visual.
 import { assertClinicPhotographyShape } from '../../src/lib/data-schema.ts';
 import type { ClinicPhotographRecord } from '../../src/data/media-types.ts';
 import {
-  adminRequest, asCommit, asContents, callAdmin, decodeContent, REPO_CONTENTS, CONTENT_BRANCH,
+  adminRequest, asCommit, asContents, asLargeFile, asRaw, callAdmin, decodeContent, REPO_CONTENTS, CONTENT_BRANCH,
 } from '../helpers/admin-api.ts';
 
 const JPEG = new Uint8Array(readFileSync(new URL('../../src/assets/images/work-extraction-01.jpg', import.meta.url)));
@@ -152,10 +152,13 @@ describe('replacing a photograph', () => {
         method: 'POST',
         body: { file: 'reception-01.jpg', contentBase64: Buffer.from(JPEG).toString('base64') },
       }),
-      [stored(THREE), asContents('old-bytes', 'image-blob-sha'), asCommit('image-commit'), asCommit('manifest-commit')],
+      // The existing photograph is over 1 MB, as every phone photo is: GitHub
+      // answers with its SHA and NO inline content. The old Worker read it as
+      // text, got nothing, and refused every real replacement with 502.
+      [stored(THREE), asLargeFile('image-blob-sha'), asCommit('image-commit'), asCommit('manifest-commit')],
     );
     assert.equal(response.status, 200);
-    assert.equal(calls.length, 4, 'manifest read, image read, image write, manifest write');
+    assert.equal(calls.length, 4, 'manifest read, image SHA read, image write, manifest write');
 
     const image = calls[2];
     assert.equal(image.url, `${REPO_CONTENTS}/src/assets/images/reception-01.jpg`);
@@ -198,27 +201,43 @@ describe('replacing a photograph', () => {
 });
 
 describe('serving a photograph to the editor', () => {
-  test('GET /api/photo returns the bytes for an unpublished file', async () => {
+  test('GET /api/photo returns the exact bytes of a real photograph', async () => {
     const { response, calls } = await callAdmin(
-      await adminRequest('/api/photo?file=exterior-01.jpg'), [asContents('rawbytes', 'blob')],
+      await adminRequest('/api/photo?file=exterior-01.jpg&v=blob'), [asRaw(JPEG)],
     );
     assert.equal(response.status, 200);
     assert.match(response.headers.get('Content-Type') ?? '', /^image\/jpeg/);
-    assert.equal(response.headers.get('Cache-Control'), 'no-store');
+    assert.equal(response.headers.get('Cache-Control'), 'private, max-age=86400');
     assert.match(calls[0].url, /\/contents\/src\/assets\/images\/exterior-01\.jpg\?ref=/);
+    // The raw representation, which works at any size. The JSON form has no
+    // content above 1 MB.
+    assert.equal(calls[0].accept, 'application/vnd.github.raw+json');
+    // Byte-identical. A JPEG is not valid UTF-8; decoding it as text replaced
+    // every invalid sequence and served a picture that no longer existed.
+    assert.deepEqual(new Uint8Array(await response.arrayBuffer()), JPEG);
   });
 
-  test('png is served as png', async () => {
+  test('png is served as png, byte for byte', async () => {
     const { response } = await callAdmin(
-      await adminRequest('/api/photo?file=reception-01.png'), [asContents('x', 'blob')],
+      await adminRequest('/api/photo?file=reception-01.png'), [asRaw(PNG)],
     );
     assert.match(response.headers.get('Content-Type') ?? '', /^image\/png/);
+    assert.deepEqual(new Uint8Array(await response.arrayBuffer()), PNG);
+  });
+
+  test('the content type comes from the bytes, and non-images are not served', async () => {
+    const { response } = await callAdmin(
+      await adminRequest('/api/photo?file=reception-01.jpg'),
+      [asRaw(new TextEncoder().encode('<script>alert(1)</script>'))],
+    );
+    assert.equal(response.status, 502);
+    assert.doesNotMatch(response.headers.get('Content-Type') ?? '', /image|html/);
   });
 
   test('a path-shaped or missing file never reaches GitHub', async () => {
     for (const q of ['', '?file=', '?file=../../secrets.yml', '?file=sub/dir.jpg', '?file=x.svg']) {
       const { response, calls } = await callAdmin(
-        await adminRequest(`/api/photo${q}`), [asContents('x', 'b')],
+        await adminRequest(`/api/photo${q}`), [asRaw(JPEG)],
       );
       assert.equal(response.status, 400, q);
       assert.deepEqual(calls, [], q);
@@ -228,7 +247,7 @@ describe('serving a photograph to the editor', () => {
   test('it requires authentication like everything else', async () => {
     const { response, calls } = await callAdmin(
       new Request('https://admin.drkhalilkanani.test/api/photo?file=reception-01.jpg'),
-      [asContents('x', 'b')],
+      [asRaw(JPEG)],
     );
     assert.equal(response.status, 401);
     assert.deepEqual(calls, []);

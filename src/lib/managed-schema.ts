@@ -3,7 +3,6 @@ import { findClaims } from './claims.ts';
 
 const text = (max = 2000) => z.string().trim().min(1).max(max);
 const translated = <T extends z.ZodType>(value: T) => z.strictObject({ he: value, ar: value, en: value });
-const status = z.enum(['published', 'unpublished']);
 const qa = z.strictObject({ q: text(400), a: text(2000) });
 
 const serviceLocale = z.strictObject({
@@ -17,15 +16,42 @@ const serviceLocale = z.strictObject({
   seoDescription: text(160),
 });
 
-export const serviceSchema = z.strictObject({
+/*
+ * DRAFTS. An unpublished item may be incomplete: the doctor can save a new
+ * treatment with only its Hebrew text and come back for Arabic and English,
+ * rather than being unable to save anything until all three exist — and
+ * nobody is tempted to invent a translation just to get past the form.
+ * Unpublished items are never rendered (getTreatments filters on status),
+ * the same maximum lengths apply, and the moment an item is published it must
+ * satisfy the complete rules above.
+ */
+const draft = (max = 2000) => z.string().trim().max(max);
+const serviceLocaleDraft = z.strictObject({
+  title: draft(120), cardTitle: draft(80), summary: draft(320),
+  candidacy: z.array(draft(500)).max(6),
+  process: z.array(z.strictObject({ step: draft(120), detail: draft(1000) })).max(6),
+  expect: z.array(draft(500)).max(6),
+  faq: z.array(z.strictObject({ q: draft(400), a: draft(2000) })).max(6),
+  reviewedOn: z.iso.date().optional(),
+  seoTitle: draft(60).optional(),
+  seoDescription: draft(160),
+});
+
+// Built field by field in the repository's own key order, so a save rewrites
+// only the values that changed and never reorders every object in the file.
+const serviceFields = {
   id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(80),
   slug: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(80),
-  status,
+};
+const serviceRest = {
   tier: z.union([z.literal(1), z.literal(2)]),
   order: z.number().int().min(0).max(999),
   icon: z.enum(['implant', 'crown', 'whitening', 'filling', 'veneer', 'aligner', 'root-canal', 'extraction', 'cleaning', 'emergency', 'aesthetic']),
-  locales: translated(serviceLocale),
-});
+};
+export const serviceSchema = z.discriminatedUnion('status', [
+  z.strictObject({ ...serviceFields, status: z.literal('published'), ...serviceRest, locales: translated(serviceLocale) }),
+  z.strictObject({ ...serviceFields, status: z.literal('unpublished'), ...serviceRest, locales: translated(serviceLocaleDraft) }),
+]);
 export const servicesSchema = z.array(serviceSchema).max(40).superRefine((items, ctx) => {
   const ids = new Set<string>();
   const slugs = new Set<string>();
@@ -36,10 +62,12 @@ export const servicesSchema = z.array(serviceSchema).max(40).superRefine((items,
   }
 });
 
-export const faqSchema = z.array(z.strictObject({
-  id: z.string().regex(/^faq-[a-z0-9-]+$/).max(80), status,
-  order: z.number().int().min(0).max(999), q: translated(text(400)), a: translated(text(2000)),
-})).max(40).superRefine((items, ctx) => {
+const faqId = z.string().regex(/^faq-[a-z0-9-]+$/).max(80);
+const faqOrder = z.number().int().min(0).max(999);
+export const faqSchema = z.array(z.discriminatedUnion('status', [
+  z.strictObject({ id: faqId, status: z.literal('published'), order: faqOrder, q: translated(text(400)), a: translated(text(2000)) }),
+  z.strictObject({ id: faqId, status: z.literal('unpublished'), order: faqOrder, q: translated(draft(400)), a: translated(draft(2000)) }),
+])).max(40).superRefine((items, ctx) => {
   const ids = new Set<string>();
   for (const [index, item] of items.entries()) {
     if (ids.has(item.id)) ctx.addIssue({ code: 'custom', path: [index, 'id'], message: 'duplicate id' });
