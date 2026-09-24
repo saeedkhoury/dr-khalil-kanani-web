@@ -83,11 +83,17 @@ export async function managedContent(
   if (!body.ok) return fail(body.code);
   if (typeof body.body?.sha !== 'string' || !/^[0-9a-f]{40}$/.test(body.body.sha)) return fail('CONFLICT');
   if (body.body.sha !== current.data.sha) return fail('CONFLICT');
-  if (FACTUAL.has(kind) && body.body.confirmed !== true) return fail('INVALID', ['owner_confirmation_required']);
 
   const checked = check(kind, body.body.value);
   if (!checked.ok) return fail('INVALID', checked.issues);
   const value = checked.value;
+  // Nothing changed: no commit, and the editor says so instead of "saved".
+  // Checked before the confirmation, which is about CHANGED facts — asking
+  // someone to confirm a change they did not make is noise.
+  // Compared as parsed values, so formatting in the file cannot make an
+  // unchanged save look like a change.
+  if (JSON.stringify(value) === JSON.stringify(existing)) return ok({ sha: null, blob: current.data.sha, unchanged: true });
+  if (FACTUAL.has(kind) && body.body.confirmed !== true) return fail('INVALID', ['owner_confirmation_required']);
   if (!transitionAllowed(kind, existing, value)) return fail('INVALID', ['published_item_or_url_locked']);
   if (kind === 'contactFacts') {
     const oldFacts = existing as Record<string, unknown>;
@@ -96,10 +102,6 @@ export async function managedContent(
     if (locationChanged && body.body.sameLocation !== true) return fail('INVALID', ['same_location_confirmation_required']);
   }
 
-  // Nothing changed: no commit, and the editor says so instead of "saved".
-  // Compared as parsed values, so formatting in the file cannot make an
-  // unchanged save look like a change.
-  if (JSON.stringify(value) === JSON.stringify(existing)) return ok({ sha: null, blob: current.data.sha, unchanged: true });
   const content = `${JSON.stringify(value, null, 2)}\n`;
 
   const result = await writeFile(env, {

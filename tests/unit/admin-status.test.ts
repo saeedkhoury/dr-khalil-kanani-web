@@ -135,6 +135,8 @@ describe('GET /api/status', () => {
       [[run('completed', 'success')], 'ready'],
       [[run('completed', 'failure')], 'failed'],
       [[run('completed', 'cancelled')], 'building'],
+      // Skipped = preview not configured for this branch; never "failed".
+      [[run('completed', 'skipped')], 'none'],
     ] as const) {
       const { response } = await callAdmin(await adminRequest(`/api/status?sha=${SHA}`), [
         { status: 200, body: { workflow_runs: [] } },

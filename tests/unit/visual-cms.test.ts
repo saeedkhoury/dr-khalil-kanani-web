@@ -82,10 +82,22 @@ test('stale, cross-origin, invalid and claim-bearing edits make no GitHub mutati
   assert.equal(wrong.calls.length, 0);
 });
 
-test('owner facts require explicit confirmation before write', async () => {
+test('owner facts require explicit confirmation before a CHANGE is written', async () => {
+  const changedDoctor = { ...doctor, intro: { ...doctor.intro, he: `${doctor.intro.he} ` + 'עדכון' } };
+  const changedContact = { ...contact, email: contact.email === 'clinic@example.test' ? '' : 'clinic@example.test' };
+  for (const [path, stored, value] of [['doctor', doctor, changedDoctor], ['contact', contact, changedContact]] as const) {
+    const { response, calls } = await callAdmin(await adminRequest('/api/content/' + path, { method: 'PUT', body: { value, sha: SHA } }), [asContents(JSON.stringify(stored), SHA)]);
+    assert.equal(response.status, 422, path);
+    assert.deepEqual((await response.json() as { error: { issues: string[] } }).error.issues, ['owner_confirmation_required']);
+    assert.equal(calls.length, 1, `${path}: nothing written`);
+  }
+});
+
+test('saving unchanged facts needs no confirmation and writes nothing', async () => {
   for (const [path, value] of [['doctor', doctor], ['contact', contact]] as const) {
     const { response, calls } = await callAdmin(await adminRequest('/api/content/' + path, { method: 'PUT', body: { value, sha: SHA } }), [asContents(JSON.stringify(value), SHA)]);
-    assert.equal(response.status, 422);
+    assert.equal(response.status, 200, path);
+    assert.equal((await response.json() as { data: { unchanged: boolean } }).data.unchanged, true);
     assert.equal(calls.length, 1);
   }
 });

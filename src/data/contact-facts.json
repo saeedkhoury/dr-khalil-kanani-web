@@ -2,9 +2,21 @@
   "landline": "04-884-8891",
   "mobile": "052-288-5179",
   "email": "",
-  "street": { "he": "רחוב 1003", "ar": "شارع 1003", "en": "Street 1003" },
-  "locality": { "he": "ג׳דיידה-מכר", "ar": "الجديدة-المكر", "en": "Jadeidi-Makr" },
-  "region": { "he": "מחוז הצפון", "ar": "لواء الشمال", "en": "Northern District" },
+  "street": {
+    "he": "רחוב 1003",
+    "ar": "شارع 1003",
+    "en": "Street 1003"
+  },
+  "locality": {
+    "he": "ג׳דיידה-מכר",
+    "ar": "الجديدة-المكر",
+    "en": "Jadeidi-Makr"
+  },
+  "region": {
+    "he": "מחוז הצפון",
+    "ar": "لواء الشمال",
+    "en": "Northern District"
+  },
   "postalCode": "2510500",
   "instagram": "https://www.instagram.com/dr.khalil.kanani",
   "facebook": "",

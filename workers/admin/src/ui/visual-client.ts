@@ -315,6 +315,7 @@ export const VISUAL_CLIENT = String.raw`
     const wrap=add(body,'label');wrap.className='visual-check';const input=document.createElement('input');input.type='checkbox';input.id='visual-same-location';wrap.append(input,document.createTextNode('אני מאשר/ת שזו אותה כתובת פיזית, והמפה וקישור Waze עדיין נכונים.'));
   }
   function hoursForm(){
+    if(draft.some(day=>!day.closed&&(!day.opens||!day.closes))) add(body,'p','לחלק מהימים עדיין לא הוגדרו שעות, ולכן שעות הפעילות לא מוצגות באתר. יש למלא שעת פתיחה וסגירה לכל יום, או לסמן "סגור ביום זה", ואז לשמור.').className='visual-hint';
     draft.forEach((day,index)=>{
       const fs=group(body,'יום '+(DAY_OF[day.day]||day.day)); fs.setAttribute('data-path','row_'+index); fs.tabIndex=-1;
       check(fs,'סגור ביום זה',day.closed,v=>{day.closed=v;if(v){day.opens='';day.closes='';}render();});
@@ -502,7 +503,11 @@ export const VISUAL_CLIENT = String.raw`
   /* ── The gallery manager ────────────────────────────────────────────── */
   async function reloadPhotos(){const data=await api('/api/photos','GET');sha=data.sha;versions=data.versions||{};draft=structuredClone(data.records);original=structuredClone(draft);orderDirty=false;render();}
   async function photoRequest(url,payload,working,done){
-    if(busy) return; clearErrors(); setBusy(true); tell(working,'working');
+    if(busy) return;
+    // Every other action reloads the gallery, which would drop an unsaved
+    // reorder without a word. Ask first.
+    if(orderDirty && url!=='/api/photos/order' && !confirm('שינוי הסדר עדיין לא נשמר, והפעולה הזו תבטל אותו. להמשיך?')) return null;
+    clearErrors(); setBusy(true); tell(working,'working');
     try {
       const result=await api(url,'POST',payload);
       await reloadPhotos();

@@ -171,6 +171,10 @@ export async function previewForSha(env: Parameters<typeof query>[0], sha: strin
   const runs = result.data?.workflow_runs;
   if (!Array.isArray(runs)) return 'unavailable';
   if (runs.length === 0) return 'none';
+  // The job is skipped when this branch is not the configured deploy branch
+  // or no deploy credential exists — preview is not set up, which is not a
+  // failure and must not be reported as one.
+  if (runs.every((run) => run.conclusion === 'skipped')) return 'none';
   if (runs.some((run) => run.status === 'completed' && run.conclusion === 'success')) return 'ready';
   if (runs.some((run) => run.status !== 'completed')) return 'building';
   if (runs.every((run) => run.conclusion === 'cancelled')) return 'building';
