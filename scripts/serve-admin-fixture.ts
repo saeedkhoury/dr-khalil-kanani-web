@@ -21,8 +21,16 @@
  */
 
 import { createServer } from 'node:http';
+import { readFileSync } from 'node:fs';
+import { extname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import worker from '../workers/admin/src/index.ts';
+import servicesData from '../src/data/services.json' with { type: 'json' };
+import faqData from '../src/data/general-faq.json' with { type: 'json' };
+import doctorData from '../src/data/doctor-profile.json' with { type: 'json' };
+import copyData from '../src/data/managed-copy.json' with { type: 'json' };
+import contactData from '../src/data/contact-facts.json' with { type: 'json' };
 import type { Env } from '../workers/admin/src/http.ts';
 import {
   AUDIENCE, DOCTOR, TEAM_DOMAIN, jwksDocument, makeToken,
@@ -33,6 +41,19 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 const PORT = 4332;
+const ASSET_ROOT = resolve(fileURLToPath(new URL('../workers/admin/dist/', import.meta.url)));
+
+function asset(request: Request): Response {
+  const pathname = new URL(request.url).pathname;
+  const relative = pathname.endsWith('/') ? `${pathname}index.html` : pathname;
+  const path = resolve(join(ASSET_ROOT, relative.slice(1)));
+  if (!path.startsWith(`${ASSET_ROOT}/`)) return new Response('Not found', { status: 404 });
+  try {
+    const ext = extname(path);
+    const type = ext === '.html' ? 'text/html; charset=utf-8' : ext === '.css' ? 'text/css' : ext === '.js' ? 'text/javascript' : ext === '.woff2' ? 'font/woff2' : ext === '.svg' ? 'image/svg+xml' : 'application/octet-stream';
+    return new Response(readFileSync(path), { headers: { 'Content-Type': type } });
+  } catch { return new Response('Not found', { status: 404 }); }
+}
 
 const env: Env = {
   ACCESS_TEAM_DOMAIN: TEAM_DOMAIN,
@@ -41,6 +62,7 @@ const env: Env = {
   ALLOWED_EMAILS: DOCTOR,
   GITHUB_TOKEN: 'fixture-token-not-a-credential',
   CONTENT_BRANCH: 'fixture-branch',
+  ASSETS: { fetch: async (request) => asset(request) },
 };
 
 /* ── In-memory repository ────────────────────────────────────────────────── */
@@ -67,6 +89,22 @@ const store = {
       status: 'unpublished', alt: { he: 'חזית המרפאה', ar: 'واجهة العيادة', en: 'Clinic exterior' },
     },
   ],
+  services: servicesData,
+  faq: faqData,
+  doctor: doctorData,
+  copy: copyData,
+  contact: contactData,
+};
+
+const fileKinds: Record<string, keyof typeof store> = {
+  'hours.json': 'hours', 'clinic-photography.json': 'photos',
+  'services.json': 'services', 'general-faq.json': 'faq',
+  'doctor-profile.json': 'doctor', 'managed-copy.json': 'copy',
+  'contact-facts.json': 'contact',
+};
+const blobShas: Record<keyof typeof store, string> = {
+  hours: '1'.repeat(40), photos: '2'.repeat(40), services: '3'.repeat(40),
+  faq: '4'.repeat(40), doctor: '5'.repeat(40), copy: '6'.repeat(40), contact: '7'.repeat(40),
 };
 
 let commits = 0;
@@ -76,6 +114,7 @@ function mockGitHub(url: string, init?: RequestInit): Response {
   const method = init?.method ?? 'GET';
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  const kind = Object.entries(fileKinds).find(([file]) => url.includes(`/contents/src/data/${file}`))?.[1];
 
   if (url.includes('/actions/workflows/deploy.yml/runs')) {
     return json({ workflow_runs: [{ head_sha: new URL(url).searchParams.get('head_sha'), status: 'completed', conclusion: 'success', updated_at: new Date().toISOString() }] });
@@ -85,22 +124,18 @@ function mockGitHub(url: string, init?: RequestInit): Response {
   }
 
   if (method === 'PUT' || method === 'DELETE') {
-    const body = JSON.parse(String(init?.body ?? '{}')) as { content?: string };
-    if (url.includes('hours.json') && body.content) {
-      store.hours = JSON.parse(Buffer.from(body.content, 'base64').toString('utf8'));
-    }
-    if (url.includes('clinic-photography.json') && body.content) {
-      store.photos = JSON.parse(Buffer.from(body.content, 'base64').toString('utf8'));
+    const body = JSON.parse(String(init?.body ?? '{}')) as { content?: string; sha?: string };
+    if (kind && body.sha !== blobShas[kind]) return json({ message: 'Conflict' }, 409);
+    if (kind && body.content) {
+      (store as Record<string, unknown>)[kind] = JSON.parse(Buffer.from(body.content, 'base64').toString('utf8'));
     }
     commits += 1;
+    if (kind) blobShas[kind] = String(commits).padStart(40, 'd');
     return json({ commit: { sha: String(commits).padStart(40, 'f') } });
   }
 
-  if (url.includes('hours.json')) {
-    return json({ content: encode(`${JSON.stringify(store.hours, null, 2)}\n`), encoding: 'base64', sha: 'hours-sha' });
-  }
-  if (url.includes('clinic-photography.json')) {
-    return json({ content: encode(`${JSON.stringify(store.photos, null, 2)}\n`), encoding: 'base64', sha: 'photos-sha' });
+  if (kind) {
+    return json({ content: encode(`${JSON.stringify(store[kind], null, 2)}\n`), encoding: 'base64', sha: blobShas[kind] });
   }
   if (new URL(url).pathname.endsWith('/contents/src/assets/images')) {
     return json(store.photos.map((record) => ({ name: record.file })));

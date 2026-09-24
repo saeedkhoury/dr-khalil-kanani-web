@@ -63,7 +63,7 @@ for (const locale of ['he', 'ar', 'en']) {
       await expect(page.locator('html')).toHaveAttribute('dir', locale === 'en' ? 'ltr' : 'rtl');
       await expect(page.locator('html')).toHaveAttribute('lang', locale);
       await expect(gallery.locator('[data-gallery-open]')).toHaveCount(2);
-      const alt = locale === 'he' ? 'סמל מרפאה 1' : 'رمز العيادة 1';
+      const alt = locale === 'he' ? 'סמל מרפאה 1' : locale === 'ar' ? 'رمز العيادة 1' : 'Clinic test mark 1';
       await expect(gallery.locator('[data-gallery-open="0"] img')).toHaveAttribute('alt', alt);
       await expect(gallery.locator('[aria-label="סמל מרפאה 3"], [aria-label="رمز العيادة 3"]')).toHaveCount(0);
       await expect(page.locator('[data-gallery-kind="work"]')).toHaveCount(0);

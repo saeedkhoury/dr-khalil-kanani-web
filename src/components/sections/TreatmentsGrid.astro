@@ -14,6 +14,7 @@ import { localizePath, type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
 import type { Treatment } from '../../lib/content';
 import Icon from '../primitives/Icon.astro';
+import EditControl from '../editor/EditControl.astro';
 
 interface Props {
   locale: Locale;
@@ -43,6 +44,7 @@ const items = limit ? treatments.slice(0, limit) : treatments;
 
 <section class="section bg-[var(--color-mist)]" aria-labelledby="treatments-heading">
   <div class="shell">
+    <EditControl kind="services" locale={locale} label={locale === 'he' ? 'ניהול טיפולים' : locale === 'ar' ? 'إدارة العلاجات' : 'Manage services'} />
     <div class="max-w-2xl">
       <p class="eyebrow">{t('nav.treatments')}</p>
       <Heading id="treatments-heading" class="mt-2">{t('treatments.title')}</Heading>

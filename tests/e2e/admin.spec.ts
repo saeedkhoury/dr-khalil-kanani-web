@@ -9,7 +9,7 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 
-const PANEL = 'http://127.0.0.1:4332/';
+const PANEL = 'http://127.0.0.1:4332/panel';
 
 test.use({ baseURL: 'http://127.0.0.1:4332' });
 
@@ -165,16 +165,18 @@ test('the panel asks to stay out of search results', async ({ page }) => {
 test('stale hours report conflict and reload current values without retrying', async ({ page }) => {
   let writes = 0;
   let reads = 0;
+  let initialSha = '';
   await page.route('**/api/hours', async (route) => {
     if (route.request().method() === 'GET') {
       const response = await route.fetch();
       const body = await response.json();
       reads += 1;
+      if (reads === 1) initialSha = body.data.sha;
       body.data.rows[0].opens = reads === 1 ? '09:00' : '10:00';
       return route.fulfill({ response, json: body });
     }
     writes += 1;
-    expect(route.request().postDataJSON().sha).toBe('hours-sha');
+    expect(route.request().postDataJSON().sha).toBe(initialSha);
     return route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ ok: false, error: { code: 'CONFLICT' } }) });
   });
   await page.goto(PANEL);

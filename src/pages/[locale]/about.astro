@@ -7,6 +7,7 @@ import { hasClinicPhotography } from '../../data/media';
 import { LOCALES, localizePath, type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
 import { doctor } from '../../data/doctor';
+import EditControl from '../../components/editor/EditControl.astro';
 
 export function getStaticPaths() {
   return LOCALES.map((locale) => ({ params: { locale } }));
@@ -14,6 +15,7 @@ export function getStaticPaths() {
 
 const locale = Astro.params.locale as Locale;
 const t = useTranslations(locale);
+const editing = process.env.VISUAL_CMS === '1';
 
 const breadcrumbs = [
   { name: t('nav.home'), path: localizePath(locale, '') },
@@ -31,6 +33,7 @@ const breadcrumbs = [
     <h1>{t('doctor.title')}</h1>
   </div>
   <DoctorIntro locale={locale} standalone />
+  {editing && <div class="shell"><EditControl kind="photos" locale={locale} label={locale === 'he' ? 'ניהול תמונות המרפאה' : locale === 'ar' ? 'إدارة صور العيادة' : 'Manage clinic photos'} /></div>}
   {hasClinicPhotography() && <ClinicGallery locale={locale} kind="clinic" />}
   <ContactCta locale={locale} />
 </BaseLayout>

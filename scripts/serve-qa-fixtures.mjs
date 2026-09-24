@@ -89,8 +89,7 @@ writeFileSync(
     file: `reception-${String(number).padStart(2, '0')}.jpg`,
     category: 'reception', width: 1600, height: 1200,
     status: number === 3 ? 'unpublished' : 'published',
-    needsEnglishReview: true,
-    alt: { he: `סמל מרפאה ${number}`, ar: `رمز العيادة ${number}`, en: `رمز العيادة ${number}` },
+    alt: { he: `סמל מרפאה ${number}`, ar: `رمز العيادة ${number}`, en: `Clinic test mark ${number}` },
   })), null, 2) + '\n',
 );
 
@@ -114,10 +113,13 @@ writeFileSync(
 const clinicPath = join(fixture, 'src/data/clinic.ts');
 const clinicSource = readFileSync(clinicPath, 'utf8');
 let clinicFixture = substitute(clinicSource, /geo: \{ lat: [\d.-]+, lng: [\d.-]+ \}/, 'geo: { lat: 1, lng: 1 }', 'map pin');
-clinicFixture = substitute(clinicFixture, /googleBusiness: ''/, "googleBusiness: 'https://example.invalid/qa-profile'", 'Google profile URL');
 clinicFixture = substitute(clinicFixture, /value: null as number \| null/, 'value: 4.5 as number | null', 'rating value');
 clinicFixture = substitute(clinicFixture, /count: null as number \| null/, 'count: 12 as number | null', 'review count');
 writeFileSync(clinicPath, clinicFixture);
+const contactPath = join(fixture, 'src/data/contact-facts.json');
+const contactFixture = JSON.parse(readFileSync(contactPath, 'utf8'));
+contactFixture.googleBusiness = 'https://www.google.com/maps?cid=12345';
+writeFileSync(contactPath, `${JSON.stringify(contactFixture, null, 2)}\n`);
 
 const astro = join(root, 'node_modules/astro/bin/astro.mjs');
 execFileSync(process.execPath, [astro, 'build'], {

@@ -53,6 +53,7 @@ function launchGate() {
  */
 export default defineConfig({
   site: process.env.ASTRO_SITE || clinic.siteUrl,
+  outDir: process.env.VISUAL_CMS === '1' ? './workers/admin/dist' : './dist',
   base: process.env.ASTRO_BASE || undefined,
   trailingSlash: 'always',
 
@@ -125,12 +126,12 @@ export default defineConfig({
 
   integrations: [
     launchGate(),
-    sitemap({
+    ...(process.env.VISUAL_CMS === '1' ? [] : [sitemap({
       i18n: {
         defaultLocale: 'he',
         locales: { he: 'he', ar: 'ar', en: 'en' },
       },
-    }),
+    })]),
   ],
 
   vite: {

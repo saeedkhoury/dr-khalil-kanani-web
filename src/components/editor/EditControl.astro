@@ -1,0 +1,12 @@
+---
+interface Props {
+  kind: 'copy' | 'services' | 'doctor' | 'faq' | 'photos' | 'hours' | 'contact';
+  focus?: string;
+  locale?: 'he' | 'ar' | 'en';
+  label?: string;
+}
+const { kind, focus, locale, label } = Astro.props;
+const editing = process.env.VISUAL_CMS === '1';
+const text = label ?? ({ he: 'עריכה', ar: 'تعديل', en: 'Edit' }[locale ?? 'he']);
+---
+{editing && <button type="button" class="visual-edit-control" data-edit-kind={kind} data-edit-focus={focus} aria-label={text}>{text}</button>}

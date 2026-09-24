@@ -235,18 +235,21 @@ export const VERIFICATION: Record<
   'tagline.he': { tier: 'verified', blocking: true, note: 'Logo lockup + flyer + IG bio' },
   'tagline.ar': { tier: 'unverified', blocking: true, note: 'Translation needs native review.' },
   'tagline.en': { tier: 'unverified', blocking: false },
-  'phone.landline': { tier: 'verified', blocking: true, note: 'Flyer + Instagram bio' },
-  'phone.mobile': {
-    tier: 'verified',
-    blocking: true,
-    note: 'Flyer + IG bio + post footer. WhatsApp presence NOT yet confirmed.',
+  'phone.landline': {
+    tier: contact.landline === '04-884-8891' ? 'verified' : 'owner', blocking: true,
+    note: contact.landline === '04-884-8891' ? 'Flyer + Instagram bio' : 'Updated in owner-confirmed CMS commit.',
   },
-  email: { tier: 'placeholder', blocking: false, note: 'No published address found.' },
+  'phone.mobile': {
+    tier: contact.mobile === '052-288-5179' ? 'verified' : 'owner',
+    blocking: true,
+    note: contact.mobile === '052-288-5179' ? 'Flyer + IG bio + post footer. WhatsApp presence NOT yet confirmed.' : 'Updated in owner-confirmed CMS commit.',
+  },
+  email: { tier: contact.email ? 'owner' : 'placeholder', blocking: false, note: contact.email ? 'Owner-confirmed CMS value.' : 'No published address found.' },
   'address.street': { tier: 'owner', blocking: true, note: 'Owner supplied Street 1003, Jadeidi-Makr on 2026-09-21.' },
   'address.locality': { tier: 'owner', blocking: false, note: 'IG address + post footer' },
   'address.geo': { tier: 'owner', blocking: true, note: 'Resolved from owner-supplied https://waze.com/ul/hsvbgrg6s4 on 2026-09-21.' },
   hours: {
-    tier: 'placeholder',
+    tier: hasHours() ? 'owner' : 'placeholder',
     blocking: true,
     /**
      * DERIVED, never stored. hasHours() is what actually decides whether the
@@ -265,7 +268,7 @@ export const VERIFICATION: Record<
     published: false,
     note: 'Overridden by ASTRO_SITE in CI, so the placeholder never ships.',
   },
-  'social.instagram': { tier: 'verified', blocking: false },
+  'social.instagram': { tier: contact.instagram === 'https://www.instagram.com/dr.khalil.kanani' ? 'verified' : 'owner', blocking: false },
 };
 
 /* -------------------------------------------------------------------------- */

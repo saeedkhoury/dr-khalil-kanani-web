@@ -18,6 +18,7 @@ import { portrait } from '../../data/media';
 import { resolveImage } from '../../lib/images';
 import Icon from '../primitives/Icon.astro';
 import Button from '../primitives/Button.astro';
+import EditControl from '../editor/EditControl.astro';
 
 interface Props {
   locale: Locale;
@@ -26,6 +27,7 @@ interface Props {
 }
 const { locale, standalone = false } = Astro.props;
 const t = useTranslations(locale);
+const editing = process.env.VISUAL_CMS === '1';
 
 // Portrait comes from the media manifest, resolved to a real asset. Missing
 // file -> no portrait, rather than a broken image on a doctor's page.
@@ -33,6 +35,7 @@ const portraitAsset = portrait ? resolveImage(portrait.file) : undefined;
 ---
 
 <section class="section" aria-labelledby="doctor-heading">
+  {editing && <div class="shell"><EditControl kind="doctor" locale={locale} /></div>}
   <div class:list={[
     'shell reveal reveal-soft',
     portrait && portraitAsset ? 'grid gap-10 lg:grid-cols-[0.8fr_1.2fr] lg:gap-14' : '',

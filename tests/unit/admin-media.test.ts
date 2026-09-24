@@ -33,6 +33,7 @@ const upload = (over: Record<string, unknown> = {}) => ({
   bytes: JPEG,
   altHe: 'אזור ההמתנה במרפאה',
   altAr: 'منطقة الانتظار في العيادة',
+  altEn: 'Clinic waiting area',
   confirmed: true,
   ...over,
 });
@@ -136,22 +137,22 @@ describe('upload validation', () => {
     }
   });
 
-  test('both descriptions are required', () => {
+  test('all three descriptions are required', () => {
     assert.ok(issuesOf({ altHe: '' }).includes('alt_he_required'));
     assert.ok(issuesOf({ altHe: '   ' }).includes('alt_he_required'));
     assert.ok(issuesOf({ altAr: '' }).includes('alt_ar_required'));
     assert.ok(issuesOf({ altAr: undefined }).includes('alt_ar_required'));
+    assert.ok(issuesOf({ altEn: '' }).includes('alt_en_required'));
+    assert.ok(issuesOf({ altEn: undefined }).includes('alt_en_required'));
   });
 
-  test('English alt is seeded from Arabic and flagged for review', () => {
+  test('English alt must be supplied; upload starts unpublished', () => {
     const result = validateUpload(upload() as never, []);
     assert.equal(result.ok, true);
     if (!result.ok) return;
-    assert.equal(result.record.alt.en, result.record.alt.ar);
-    assert.equal(result.record.needsEnglishReview, true);
-    // An empty alt is never correct for a meaningful image; the flag is the
-    // remediation path, not the absence of one.
-    assert.notEqual(result.record.alt.en.trim(), '');
+    assert.equal(result.record.alt.en, 'Clinic waiting area');
+    assert.equal(result.record.needsEnglishReview, undefined);
+    assert.equal(result.record.status, 'unpublished');
   });
 
   test('a file that is too large is refused', () => {
@@ -351,6 +352,7 @@ const uploadBody = (over: Record<string, unknown> = {}) => ({
   contentBase64: Buffer.from(JPEG).toString('base64'),
   altHe: 'חזית המרפאה',
   altAr: 'واجهة العيادة',
+  altEn: 'Clinic exterior',
   confirmed: true,
   ...over,
 });
@@ -403,8 +405,8 @@ describe('POST /api/photos — the exact requests that would be sent', () => {
     assert.equal(written.length, 2);
     assert.deepEqual(written[1], {
       file: 'exterior-01.jpg', category: 'exterior', width: 890, height: 1600,
-      status: 'published', needsEnglishReview: true,
-      alt: { he: 'חזית המרפאה', ar: 'واجهة العيادة', en: 'واجهة العيادة' },
+      status: 'unpublished',
+      alt: { he: 'חזית המרפאה', ar: 'واجهة العيادة', en: 'Clinic exterior' },
     });
     // And the committed manifest satisfies the build's own schema.
     assert.doesNotThrow(() => assertClinicPhotographyShape(written, 'committed'));

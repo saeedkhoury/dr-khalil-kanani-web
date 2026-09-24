@@ -145,11 +145,11 @@ describe('the panel markup', () => {
     }
   });
 
-  test('the add form follows the binding order: pick, preview, category, he, ar, confirm, save', () => {
+  test('the add form follows the binding order: pick, preview, category, he, ar, en, confirm, save', () => {
     // The preview precedes the descriptions because he cannot describe a
     // photograph he has not seen — and seeing it is when he would notice a
     // patient in the frame.
-    const order = ['photo-file', 'photo-preview', 'photo-category', 'photo-alt-he', 'photo-alt-ar', 'photo-confirm', 'photo-submit'];
+    const order = ['photo-file', 'photo-preview', 'photo-category', 'photo-alt-he', 'photo-alt-ar', 'photo-alt-en', 'photo-confirm', 'photo-submit'];
     const positions = order.map((id) => page.indexOf(`id="${id}"`));
     for (const [i, position] of positions.entries()) {
       assert.notEqual(position, -1, `${order[i]} missing`);
@@ -223,8 +223,8 @@ describe('escaping', () => {
 });
 
 describe('the panel is served correctly', () => {
-  test('GET / returns the panel to an authenticated caller', async () => {
-    const { response } = await callAdmin(await adminRequest('/'), []);
+  test('GET /panel returns the legacy panel to an authenticated caller', async () => {
+    const { response } = await callAdmin(await adminRequest('/panel'), []);
     assert.equal(response.status, 200);
     assert.match(response.headers.get('Content-Type') ?? '', /^text\/html/);
     const body = await response.text();
@@ -233,14 +233,14 @@ describe('the panel is served correctly', () => {
   });
 
   test('the panel, its script and its stylesheet all require authentication', async () => {
-    for (const path of ['/', '/panel.js', '/panel.css']) {
+    for (const path of ['/panel', '/panel.js', '/panel.css']) {
       const { response } = await callAdmin(new Request(`https://admin.drkhalilkanani.test${path}`), []);
       assert.equal(response.status, 401, `${path} was served unauthenticated`);
     }
   });
 
   test('the document CSP permits no inline execution', async () => {
-    const { response } = await callAdmin(await adminRequest('/'), []);
+    const { response } = await callAdmin(await adminRequest('/panel'), []);
     const csp = response.headers.get('Content-Security-Policy') ?? '';
     assert.match(csp, /script-src 'self'/);
     assert.match(csp, /style-src 'self'/);
@@ -250,7 +250,7 @@ describe('the panel is served correctly', () => {
   });
 
   test('the panel keeps every other security header', async () => {
-    const { response } = await callAdmin(await adminRequest('/'), []);
+    const { response } = await callAdmin(await adminRequest('/panel'), []);
     assert.equal(response.headers.get('Cache-Control'), 'no-store');
     assert.equal(response.headers.get('X-Content-Type-Options'), 'nosniff');
     assert.equal(response.headers.get('Referrer-Policy'), 'no-referrer');

@@ -184,7 +184,8 @@ test('requires non-empty alt text in all three locales', () => {
 
 test('needsEnglishReview is optional — absent is the normal end state', () => {
   assert.doesNotThrow(() => assertClinicPhotographyShape([photo()], 'fixture'));
-  assert.doesNotThrow(() => assertClinicPhotographyShape([photo({ needsEnglishReview: true })], 'fixture'));
+  assert.doesNotThrow(() => assertClinicPhotographyShape([photo({ status: 'unpublished', needsEnglishReview: true })], 'fixture'));
+  assert.match(photoProblems([photo({ needsEnglishReview: true })]).join('\n'), /reviewed before publication/);
   assert.doesNotThrow(() => assertClinicPhotographyShape([photo({ needsEnglishReview: false })], 'fixture'));
   assert.match(photoProblems([photo({ needsEnglishReview: 'yes' })]).join('\n'), /must be true or false/);
 });

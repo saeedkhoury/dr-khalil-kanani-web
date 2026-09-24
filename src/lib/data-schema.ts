@@ -252,6 +252,9 @@ export function assertClinicPhotographyShape(
     if (needsEnglishReview !== undefined && typeof needsEnglishReview !== 'boolean') {
       problems.push(`${at}: "needsEnglishReview" must be true or false when present`);
     }
+    if (status === 'published' && needsEnglishReview === true) {
+      problems.push(`${at}: English alt text must be reviewed before publication`);
+    }
   });
 
   if (problems.length > 0) throw new DataShapeError(source, problems);

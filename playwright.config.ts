@@ -23,7 +23,7 @@ export default defineConfig({
   }, {
     // The real admin Worker over loopback, with GitHub mocked and a generated
     // Access token. Not an auth bypass: every signature and claim check runs.
-    command: 'node --experimental-strip-types scripts/serve-admin-fixture.ts',
+    command: 'ACK_UNVERIFIED=doctor.ar,doctor.en,tagline.ar npm run build:admin > /tmp/kanani-admin-e2e-build.log 2>&1 && node --experimental-strip-types scripts/serve-admin-fixture.ts',
     url: 'http://127.0.0.1:4332/panel.css',
     reuseExistingServer: false,
     timeout: 60_000,
