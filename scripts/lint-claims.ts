@@ -44,7 +44,12 @@ const SCAN_DIRS = ['src/content', 'src/i18n', 'src/components', 'src/pages'];
  * the CMS cannot write that file; widening the net to cover them is separate
  * work with its own review, not a side effect of closing this gap.
  */
-const SCAN_FILES = ['src/data/clinic-photography.json', 'src/data/hours.json'];
+const SCAN_FILES = [
+  'src/data/clinic-photography.json', 'src/data/hours.json',
+  'src/data/services.json', 'src/data/general-faq.json',
+  'src/data/doctor-profile.json', 'src/data/managed-copy.json',
+  'src/data/contact-facts.json',
+];
 const SCAN_EXT = new Set(['.md', '.mdx', '.ts', '.astro', '.json']);
 
 /* The rules themselves live in src/lib/claims.ts, imported above, because

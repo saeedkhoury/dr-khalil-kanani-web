@@ -18,6 +18,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertClinicPhotographyShape, assertHoursShape, DataShapeError } from '../src/lib/data-schema.ts';
+import { parseManaged, servicesSchema, faqSchema, doctorProfileSchema, managedCopySchema, contactFactsSchema } from '../src/lib/managed-schema.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
 
@@ -33,6 +34,11 @@ interface Check {
 }
 
 const CHECKS: Check[] = [
+  { path: 'src/data/services.json', assert: (v) => parseManaged(servicesSchema, v, 'services'), describe: () => 'valid structured content' },
+  { path: 'src/data/general-faq.json', assert: (v) => parseManaged(faqSchema, v, 'general FAQ'), describe: () => 'valid structured content' },
+  { path: 'src/data/doctor-profile.json', assert: (v) => parseManaged(doctorProfileSchema, v, 'doctor profile'), describe: () => 'valid structured content' },
+  { path: 'src/data/managed-copy.json', assert: (v) => parseManaged(managedCopySchema, v, 'managed copy'), describe: () => 'valid structured content' },
+  { path: 'src/data/contact-facts.json', assert: (v) => parseManaged(contactFactsSchema, v, 'contact facts'), describe: () => 'valid contact facts' },
   {
     path: 'src/data/hours.json',
     assert: assertHoursShape,

@@ -1,0 +1,1222 @@
+[
+  {
+    "id": "emergency-dental",
+    "slug": "emergency-dental",
+    "status": "published",
+    "tier": 1,
+    "order": 0,
+    "icon": "emergency",
+    "locales": {
+      "ar": {
+        "title": "علاجات الطوارئ",
+        "cardTitle": "علاج طارئ",
+        "summary": "استجابة لألم الأسنان، كسر في السن أو انتفاخ. عند وجود ألم شديد يُفضّل الاتصال مباشرة بدل انتظار ردّ على طلب إلكتروني.",
+        "candidacy": [
+          "ألم أسنان مستمر أو شديد",
+          "كسر أو شرخ في السن",
+          "انتفاخ في اللثة أو الوجه",
+          "سقوط تاج أو حشوة",
+          "إصابة في السن بعد حادث"
+        ],
+        "process": [
+          {
+            "step": "اتصال هاتفي",
+            "detail": "وصف مختصر للحالة عبر الهاتف، لفهم ما هو عاجل وما يمكن أن ينتظر."
+          },
+          {
+            "step": "فحص",
+            "detail": "فحص المنطقة، وعند الحاجة صورة أشعة، لفهم مصدر المشكلة."
+          },
+          {
+            "step": "معالجة الحالة العاجلة",
+            "detail": "علاج يهدف إلى معالجة السبب المباشر."
+          },
+          {
+            "step": "تخطيط المتابعة",
+            "detail": "بعد معالجة الحالة العاجلة نتحدث عمّا هو مطلوب لاحقًا."
+          }
+        ],
+        "expect": [
+          "نشرح ما وُجد في الفحص قبل البدء",
+          "علاج الطوارئ لا ينهي دائمًا كل المطلوب — قد تلزم زيارة متابعة",
+          "إذا كانت هناك حساسية لأدوية أو حالة طبية، من المهم ذكرها مسبقًا"
+        ],
+        "faq": [
+          {
+            "q": "ماذا نفعل عند ألم شديد خارج ساعات العمل؟",
+            "a": "يمكن ترك رسالة أو طلب عبر الموقع، لكن إذا كان الألم شديدًا أو هناك انتفاخ يتسع، يجب التوجه إلى جهة طبية متاحة أو غرفة الطوارئ."
+          },
+          {
+            "q": "انكسر السن — ماذا نفعل حتى الوصول؟",
+            "a": "إذا انكسر جزء من السن يُستحسن الاحتفاظ به. يُنصح بتجنّب المضغ في تلك المنطقة والتواصل في أقرب وقت."
+          }
+        ],
+        "seoDescription": "علاجات أسنان طارئة في الجديدة-المكر — استجابة للألم، كسر السن، الانتفاخ أو سقوط التاج. معلومات عمّا يجري في الحالة العاجلة."
+      },
+      "en": {
+        "title": "Emergency dental care",
+        "cardTitle": "Emergency care",
+        "summary": "For toothache, a broken tooth or swelling. If the pain is severe it is better to call directly rather than wait for a reply to an online request.",
+        "candidacy": [
+          "Persistent or severe toothache",
+          "A broken or cracked tooth",
+          "Swelling in the gum or face",
+          "A crown or filling that has come out",
+          "A tooth injured in an accident"
+        ],
+        "process": [
+          {
+            "step": "Phone call",
+            "detail": "A short description of the situation by phone, so we can tell what is urgent and what can wait."
+          },
+          {
+            "step": "Examination",
+            "detail": "An examination of the area, and an X-ray if needed, to understand the source of the problem."
+          },
+          {
+            "step": "Addressing the urgent issue",
+            "detail": "Treatment aimed at the immediate cause."
+          },
+          {
+            "step": "Planning what follows",
+            "detail": "Once the urgent issue is handled we discuss what is needed next."
+          }
+        ],
+        "expect": [
+          "We explain what the examination found before starting",
+          "Emergency care does not always complete everything — a follow-up visit may be needed",
+          "If you have a drug allergy or a medical condition, please say so in advance"
+        ],
+        "faq": [
+          {
+            "q": "What should I do with severe pain outside opening hours?",
+            "a": "You can leave a message or a request on this site, but if the pain is severe or swelling is spreading, please contact an available medical service or an emergency room."
+          },
+          {
+            "q": "A tooth broke — what do I do until I arrive?",
+            "a": "If part of the tooth broke off, keep it. Avoid chewing on that side and get in touch as soon as you can."
+          }
+        ],
+        "seoDescription": "Emergency dental care in Jadeidi-Makr — for pain, a broken tooth, swelling or a lost crown. What happens during an urgent visit."
+      },
+      "he": {
+        "title": "טיפולי חירום",
+        "cardTitle": "טיפול חירום",
+        "summary": "מענה לכאבי שיניים, שבר בשן או נפיחות. אם יש כאב חזק — עדיף להתקשר ישירות ולא להמתין לתגובה לפנייה מקוונת.",
+        "candidacy": [
+          "כאב שיניים מתמשך או חזק",
+          "שבר או סדק בשן",
+          "נפיחות בחניכיים או בפנים",
+          "כתר או סתימה שנפלו",
+          "חבלה בשן לאחר תאונה"
+        ],
+        "process": [
+          {
+            "step": "פנייה טלפונית",
+            "detail": "תיאור קצר של המצב בטלפון, כדי להבין מה דחוף ומה יכול להמתין."
+          },
+          {
+            "step": "בדיקה",
+            "detail": "בדיקה של האזור, ובמידת הצורך צילום, כדי להבין את מקור הבעיה."
+          },
+          {
+            "step": "הקלה על המצב הדחוף",
+            "detail": "טיפול שמטרתו לטפל בגורם המיידי."
+          },
+          {
+            "step": "תכנון המשך",
+            "detail": "לאחר שהמצב הדחוף טופל, נדבר על מה שנדרש בהמשך."
+          }
+        ],
+        "expect": [
+          "נסביר מה נמצא בבדיקה לפני שמתחילים",
+          "טיפול חירום לא תמיד מסיים את כל הנדרש — לעיתים נדרשת פגישת המשך",
+          "אם יש רגישות לתרופות או מצב רפואי — חשוב לומר מראש"
+        ],
+        "faq": [
+          {
+            "q": "מה עושים בכאב חזק אחרי שעות הפעילות?",
+            "a": "אפשר להשאיר הודעה או פנייה באתר, אך אם הכאב חזק או שיש נפיחות מתפשטת, יש לפנות לגורם רפואי זמין או לחדר מיון."
+          },
+          {
+            "q": "שן נשברה — מה לעשות עד שמגיעים?",
+            "a": "אם נשבר חלק מהשן, כדאי לשמור אותו. מומלץ להימנע מלעיסה באזור וליצור קשר בהקדם."
+          }
+        ],
+        "seoDescription": "טיפולי חירום לשיניים בג׳דיידה-מכר — מענה לכאב, שבר בשן, נפיחות או כתר שנפל. מידע על מה שנעשה בפנייה דחופה."
+      }
+    }
+  },
+  {
+    "id": "dental-implants",
+    "slug": "dental-implants",
+    "status": "published",
+    "tier": 1,
+    "order": 1,
+    "icon": "implant",
+    "locales": {
+      "ar": {
+        "title": "زراعة الأسنان",
+        "cardTitle": "زراعة",
+        "summary": "الزرعة السنّية هي برغي من التيتانيوم يُثبَّت في عظم الفك ويُستخدم أساسًا لسن تعويضية. تُستخدم في حالات فقدان سن أو سن لا يمكن الحفاظ عليه.",
+        "candidacy": [
+          "فقدان سن واحد أو أكثر",
+          "سن لا يمكن الحفاظ عليه ويجب خلعه",
+          "صعوبة في المضغ بسبب أسنان مفقودة",
+          "بديل عن الجسر أو طقم الأسنان المتحرك"
+        ],
+        "process": [
+          {
+            "step": "فحص وتخطيط",
+            "detail": "فحص سريري وصورة أشعة لتقييم حالة العظم واللثة وبناء خطة علاج."
+          },
+          {
+            "step": "تثبيت الزرعة",
+            "detail": "تُثبَّت الزرعة في عظم الفك تحت تخدير موضعي."
+          },
+          {
+            "step": "فترة الالتئام",
+            "detail": "فترة يلتحم فيها العظم حول الزرعة. مدتها تختلف بين المرضى."
+          },
+          {
+            "step": "تركيب التاج",
+            "detail": "بعد الالتئام يُركَّب تاج على الزرعة."
+          }
+        ],
+        "expect": [
+          "عملية متعددة المراحل تمتد على عدة زيارات",
+          "المدة ومدى ملاءمة العلاج تُحدَّد بشكل شخصي بعد الفحص",
+          "الحفاظ على النظافة والمتابعة الدورية مطلوبان أيضًا بعد الانتهاء"
+        ],
+        "faq": [
+          {
+            "q": "هل يمكن لأي شخص إجراء الزراعة؟",
+            "a": "تُحدَّد الملاءمة بعد الفحص. يُنظر من ضمن ذلك في حالة العظم وحالة اللثة والوضع الصحي العام."
+          },
+          {
+            "q": "كم تستغرق العملية؟",
+            "a": "تختلف المدة بين المرضى وتعتمد على الحالة الأولية. نشرح الجدول الزمني التقريبي بعد الفحص."
+          }
+        ],
+        "seoDescription": "زراعة الأسنان في الجديدة-المكر — معلومات عن ماهية الزرعة السنّية، ولمن يُدرس العلاج، وكيف تسير المراحل."
+      },
+      "en": {
+        "title": "Dental implants",
+        "cardTitle": "Implants",
+        "summary": "A dental implant is a titanium screw placed in the jawbone that serves as the base for a replacement tooth. It is used where a tooth is missing or cannot be preserved.",
+        "candidacy": [
+          "One or more missing teeth",
+          "A tooth that cannot be preserved and must be removed",
+          "Difficulty chewing because of missing teeth",
+          "An alternative to a bridge or a removable denture"
+        ],
+        "process": [
+          {
+            "step": "Examination and planning",
+            "detail": "A clinical examination and imaging to assess the bone and gums and build a treatment plan."
+          },
+          {
+            "step": "Placing the implant",
+            "detail": "The implant is placed in the jawbone under local anaesthetic."
+          },
+          {
+            "step": "Healing period",
+            "detail": "A period during which the bone integrates around the implant. Its length varies between patients."
+          },
+          {
+            "step": "Fitting the crown",
+            "detail": "Once healed, a crown is fitted onto the implant."
+          }
+        ],
+        "expect": [
+          "A multi-stage process spread across several appointments",
+          "Timing and suitability are determined individually after examination",
+          "Hygiene and periodic review are needed after completion as well"
+        ],
+        "faq": [
+          {
+            "q": "Can anyone have an implant?",
+            "a": "Suitability is determined after an examination, which considers bone condition, gum health and general medical history among other factors."
+          },
+          {
+            "q": "How long does the process take?",
+            "a": "It varies between patients and depends on the starting situation. We explain the expected timeline after the examination."
+          }
+        ],
+        "seoDescription": "Dental implants in Jadeidi-Makr — what a dental implant is, when it is considered, and how the process works stage by stage."
+      },
+      "he": {
+        "title": "השתלות שיניים",
+        "cardTitle": "השתלות",
+        "summary": "שתל דנטלי הוא בורג מטיטניום שמוחדר לעצם הלסת ומשמש בסיס לשן תותבת. מתאים במצבים של שן חסרה או שן שאינה ניתנת לשימור.",
+        "candidacy": [
+          "שן אחת או יותר חסרות",
+          "שן שאינה ניתנת לשימור ויש להסירה",
+          "קושי בלעיסה עקב שיניים חסרות",
+          "חלופה לגשר או לתותבת נשלפת"
+        ],
+        "process": [
+          {
+            "step": "בדיקה ותכנון",
+            "detail": "בדיקה קלינית וצילום, כדי להעריך את מצב העצם והחניכיים ולבנות תוכנית טיפול."
+          },
+          {
+            "step": "החדרת השתל",
+            "detail": "השתל מוחדר לעצם הלסת בהרדמה מקומית."
+          },
+          {
+            "step": "תקופת החלמה",
+            "detail": "פרק זמן שבו העצם מתאחה סביב השתל. משך הזמן משתנה בין מטופלים."
+          },
+          {
+            "step": "הרכבת הכתר",
+            "detail": "לאחר ההחלמה מורכב כתר על השתל."
+          }
+        ],
+        "expect": [
+          "תהליך רב-שלבי שנפרס על פני מספר פגישות",
+          "משך הזמן והתאמת הטיפול נקבעים אישית לאחר בדיקה",
+          "שמירה על היגיינה ומעקב תקופתי נדרשים גם לאחר סיום"
+        ],
+        "faq": [
+          {
+            "q": "האם כל אחד יכול לעבור השתלה?",
+            "a": "ההתאמה נקבעת לאחר בדיקה. נבדקים בין היתר מצב העצם, מצב החניכיים ומצב רפואי כללי."
+          },
+          {
+            "q": "כמה זמן נמשך התהליך?",
+            "a": "משך התהליך משתנה בין מטופלים ותלוי במצב ההתחלתי. נסביר את לוח הזמנים המשוער לאחר הבדיקה."
+          }
+        ],
+        "seoDescription": "השתלות שיניים בג׳דיידה-מכר — מידע על מהו שתל דנטלי, למי הטיפול נשקל ואיך נראה התהליך שלב אחר שלב."
+      }
+    }
+  },
+  {
+    "id": "clear-aligners",
+    "slug": "clear-aligners",
+    "status": "published",
+    "tier": 1,
+    "order": 2,
+    "icon": "aligner",
+    "locales": {
+      "ar": {
+        "title": "التقويم الشفاف",
+        "cardTitle": "تقويم شفاف",
+        "summary": "تقويم الأسنان عبر سلسلة من القوالب الشفافة القابلة للإزالة، تُصمَّم بشكل شخصي وتُستبدل وفق مراحل الخطة.",
+        "candidacy": [
+          "ازدحام أو فراغات بين الأسنان",
+          "أسنان غير مصطفّة",
+          "تفضيل بديل أقل ظهورًا من التقويم المعدني",
+          "البالغون واليافعون الذين اكتمل نمو أسنانهم"
+        ],
+        "process": [
+          {
+            "step": "فحص الملاءمة",
+            "detail": "فحص وضع الأسنان والإطباق لتقييم ما إذا كان التقويم الشفاف مناسبًا للحالة."
+          },
+          {
+            "step": "مسح وتخطيط",
+            "detail": "مسح للأسنان وبناء خطة الحركة مرحلة بمرحلة."
+          },
+          {
+            "step": "مراحل القوالب",
+            "detail": "تُستبدل القوالب وفق الخطة مع متابعة دورية في العيادة."
+          },
+          {
+            "step": "التثبيت",
+            "detail": "في النهاية يلزم مثبّت للحفاظ على الوضع الذي تحقّق."
+          }
+        ],
+        "expect": [
+          "القوالب قابلة للإزالة، ويجب الالتزام بعدد ساعات الارتداء اليومية حسب الإرشاد",
+          "ليست كل حالة مناسبة للتقويم الشفاف — هناك حالات تتطلب حلًا آخر",
+          "مدة العلاج تختلف بين المرضى"
+        ],
+        "faq": [
+          {
+            "q": "هل القوالب ظاهرة؟",
+            "a": "هي شفافة وبالتالي أقل ظهورًا من التقويم المعدني، لكنها تبقى مرئية عن قرب."
+          },
+          {
+            "q": "هل يمكن الأكل بها؟",
+            "a": "تُزال القوالب عند الأكل والشرب وعند تنظيف الأسنان."
+          }
+        ],
+        "seoDescription": "التقويم الشفاف لتقويم الأسنان في الجديدة-المكر — كيف يعمل العلاج، ولمن يُدرس، وما المطلوب خلال المراحل."
+      },
+      "en": {
+        "title": "Clear aligners",
+        "cardTitle": "Clear aligners",
+        "summary": "Teeth straightening using a series of transparent, removable aligners, made individually and changed according to the stages of the plan.",
+        "candidacy": [
+          "Crowding or gaps between teeth",
+          "Teeth that are not aligned",
+          "A preference for something less visible than metal braces",
+          "Adults and teenagers whose teeth have finished developing"
+        ],
+        "process": [
+          {
+            "step": "Suitability assessment",
+            "detail": "An examination of the teeth and bite to assess whether clear aligners suit the case."
+          },
+          {
+            "step": "Scan and planning",
+            "detail": "A scan of the teeth and a stage-by-stage movement plan."
+          },
+          {
+            "step": "Aligner stages",
+            "detail": "Aligners are changed according to the plan, with periodic review at the clinic."
+          },
+          {
+            "step": "Retention",
+            "detail": "At the end a retainer is needed to hold the position achieved."
+          }
+        ],
+        "expect": [
+          "Aligners are removable, and the daily wear time must be followed as instructed",
+          "Not every case suits clear aligners — some situations need a different approach",
+          "Treatment length varies between patients"
+        ],
+        "faq": [
+          {
+            "q": "Are the aligners noticeable?",
+            "a": "They are transparent and so less visible than metal braces, though they can still be seen close up."
+          },
+          {
+            "q": "Can I eat with them in?",
+            "a": "Aligners are taken out for eating and drinking, and for brushing."
+          }
+        ],
+        "seoDescription": "Clear aligners for teeth straightening in Jadeidi-Makr — how the treatment works, when it is considered and what it involves."
+      },
+      "he": {
+        "title": "קשתיות שקופות",
+        "cardTitle": "קשתיות שקופות",
+        "summary": "יישור שיניים באמצעות סדרת קשתיות שקופות ונשלפות, המותאמות אישית ומוחלפות לפי שלבי התוכנית.",
+        "candidacy": [
+          "צפיפות או רווחים בין השיניים",
+          "שיניים שאינן מיושרות",
+          "העדפה לחלופה פחות בולטת מגשר מתכת",
+          "מבוגרים ומתבגרים שסיימו את התפתחות השיניים"
+        ],
+        "process": [
+          {
+            "step": "בדיקת התאמה",
+            "detail": "בדיקה של מצב השיניים והסגר, כדי להעריך אם קשתיות שקופות מתאימות למקרה."
+          },
+          {
+            "step": "סריקה ותכנון",
+            "detail": "סריקה של השיניים ובניית תוכנית התנועה שלב אחר שלב."
+          },
+          {
+            "step": "שלבי הקשתיות",
+            "detail": "הקשתיות מוחלפות בהתאם לתוכנית, עם מעקב תקופתי במרפאה."
+          },
+          {
+            "step": "שימור",
+            "detail": "בסיום נדרש שימור כדי לשמור על המצב שהושג."
+          }
+        ],
+        "expect": [
+          "הקשתיות נשלפות, ויש להקפיד על זמן ההרכבה היומי לפי ההנחיה",
+          "לא כל מקרה מתאים לקשתיות שקופות — יש מצבים שבהם נדרש פתרון אחר",
+          "משך הטיפול משתנה בין מטופלים"
+        ],
+        "faq": [
+          {
+            "q": "האם הקשתיות בולטות?",
+            "a": "הן שקופות ולכן פחות בולטות מגשר מתכת, אך הן עדיין נראות במבט קרוב."
+          },
+          {
+            "q": "האם אפשר לאכול איתן?",
+            "a": "הקשתיות נשלפות לצורך אכילה ושתייה ולצורך צחצוח."
+          }
+        ],
+        "seoDescription": "קשתיות שקופות ליישור שיניים בג׳דיידה-מכר — איך עובד הטיפול, למי הוא נשקל ומה נדרש במהלך התהליך."
+      }
+    }
+  },
+  {
+    "id": "teeth-whitening",
+    "slug": "teeth-whitening",
+    "status": "published",
+    "tier": 1,
+    "order": 3,
+    "icon": "whitening",
+    "locales": {
+      "ar": {
+        "title": "تبييض الأسنان",
+        "cardTitle": "تبييض",
+        "summary": "علاج يهدف إلى تفتيح لون السن بواسطة مادة مبيّضة. النتيجة تختلف بين الأشخاص وتعتمد على اللون الأولي وسبب الاغمقاق.",
+        "candidacy": [
+          "اغمقاق اللون مع السنوات",
+          "بقع من المشروبات أو التدخين",
+          "قبل مناسبة، كجزء من تخطيط تجميلي أوسع"
+        ],
+        "process": [
+          {
+            "step": "فحص مسبق",
+            "detail": "فحص للتأكد من عدم وجود تسوّس أو التهاب لثة يستلزم علاجًا قبل ذلك."
+          },
+          {
+            "step": "تنظيف",
+            "detail": "أحيانًا يُنصح بتنظيف الجير قبل التبييض."
+          },
+          {
+            "step": "التبييض",
+            "detail": "يُجرى العلاج في العيادة أو عبر طقم منزلي مخصّص، حسب ما يُحدَّد."
+          },
+          {
+            "step": "إرشادات بعد العلاج",
+            "detail": "إرشادات حول الأطعمة والمشروبات في الأيام التالية للعلاج."
+          }
+        ],
+        "expect": [
+          "قد تظهر حساسية مؤقتة بعد العلاج",
+          "الحشوات والتيجان والقشور لا يتغيّر لونها بالتبييض",
+          "النتيجة ليست دائمة وتخفّ مع الوقت"
+        ],
+        "faq": [
+          {
+            "q": "كم تدوم النتيجة؟",
+            "a": "تختلف بين الأشخاص وتعتمد على عادات الأكل والشرب والتدخين. لا توجد مدة موحّدة."
+          },
+          {
+            "q": "هل التبييض مناسب للجميع؟",
+            "a": "ليس في كل حالة. نفحص قبل العلاج وجود تسوّس أو تآكل أو حساسية تستلزم معالجة أولًا."
+          }
+        ],
+        "seoDescription": "تبييض الأسنان في الجديدة-المكر — ما يشمله العلاج، وما يُفحص قبله، ولماذا تختلف النتيجة بين الأشخاص."
+      },
+      "en": {
+        "title": "Teeth whitening",
+        "cardTitle": "Whitening",
+        "summary": "A treatment intended to lighten the shade of the tooth using a whitening agent. The result varies between people and depends on the starting shade and the cause of discolouration.",
+        "candidacy": [
+          "Shade darkening over the years",
+          "Staining from drinks or smoking",
+          "Ahead of an occasion, as part of wider aesthetic planning"
+        ],
+        "process": [
+          {
+            "step": "Prior examination",
+            "detail": "An examination to confirm there is no decay or gum inflammation that needs treating first."
+          },
+          {
+            "step": "Cleaning",
+            "detail": "A scale and clean is sometimes recommended before whitening."
+          },
+          {
+            "step": "The whitening",
+            "detail": "Carried out at the clinic or with a fitted home kit, depending on what is decided."
+          },
+          {
+            "step": "Aftercare guidance",
+            "detail": "Guidance on food and drink in the days following treatment."
+          }
+        ],
+        "expect": [
+          "Temporary sensitivity may occur afterwards",
+          "Fillings, crowns and veneers do not change shade with whitening",
+          "The result is not permanent and fades over time"
+        ],
+        "faq": [
+          {
+            "q": "How long does the result last?",
+            "a": "It varies between people and depends on eating, drinking and smoking habits. There is no single timeframe."
+          },
+          {
+            "q": "Is whitening suitable for everyone?",
+            "a": "Not in every case. Before treatment we check for decay, wear or sensitivity that should be addressed first."
+          }
+        ],
+        "seoDescription": "Teeth whitening in Jadeidi-Makr — what the treatment involves, what is checked beforehand, and why results vary between people."
+      },
+      "he": {
+        "title": "הלבנת שיניים",
+        "cardTitle": "הלבנת שיניים",
+        "summary": "טיפול שמטרתו לבהיר את גוון השן באמצעות חומר מלבין. התוצאה משתנה בין אנשים ותלויה בגוון ההתחלתי ובסיבת ההכהות.",
+        "candidacy": [
+          "הכהות גוון עם השנים",
+          "כתמים משתייה או מעישון",
+          "לפני אירוע, כחלק מתכנון אסתטי רחב יותר"
+        ],
+        "process": [
+          {
+            "step": "בדיקה מקדימה",
+            "detail": "בדיקה שמטרתה לוודא שאין עששת או דלקת חניכיים שמצריכות טיפול קודם."
+          },
+          {
+            "step": "ניקוי",
+            "detail": "לעיתים מומלץ ניקוי אבנית לפני ההלבנה."
+          },
+          {
+            "step": "ההלבנה",
+            "detail": "הטיפול מבוצע במרפאה או באמצעות ערכה ביתית מותאמת, לפי מה שנקבע."
+          },
+          {
+            "step": "הנחיות לאחר",
+            "detail": "הנחיות לגבי מאכלים ומשקאות בימים שלאחר הטיפול."
+          }
+        ],
+        "expect": [
+          "ייתכן רגישות זמנית לאחר הטיפול",
+          "סתימות, כתרים וציפויים אינם משנים את גוונם בהלבנה",
+          "התוצאה אינה קבועה ודוהה עם הזמן"
+        ],
+        "faq": [
+          {
+            "q": "כמה זמן נשמרת התוצאה?",
+            "a": "משתנה בין אנשים ותלוי בהרגלי אכילה, שתייה ועישון. אין תקופה אחידה."
+          },
+          {
+            "q": "האם ההלבנה מתאימה לכולם?",
+            "a": "לא בכל מצב. נבדוק לפני הטיפול אם יש עששת, שחיקה או רגישות שמצריכות התייחסות קודם."
+          }
+        ],
+        "seoDescription": "הלבנת שיניים בג׳דיידה-מכר — מה כולל הטיפול, מה נבדק לפניו ולמה חשוב לדעת שהתוצאה משתנה בין אנשים."
+      }
+    }
+  },
+  {
+    "id": "veneers",
+    "slug": "veneers",
+    "status": "published",
+    "tier": 1,
+    "order": 4,
+    "icon": "veneer",
+    "locales": {
+      "ar": {
+        "title": "القشور التجميلية",
+        "cardTitle": "قشور (فينير)",
+        "summary": "قشرة رقيقة تُلصق على السطح الأمامي للسن لتغيير الشكل أو اللون. تُستخدم أساسًا في الأسنان الأمامية.",
+        "candidacy": [
+          "تغيير شكل سن أمامي",
+          "لون لا يتغيّر بالتبييض",
+          "سن مكسور أو متآكل في المقدمة",
+          "فراغ صغير بين الأسنان الأمامية"
+        ],
+        "process": [
+          {
+            "step": "تخطيط تجميلي",
+            "detail": "فحص وحديث حول ما يزعج وما يمكن عمله، بما في ذلك الحدود."
+          },
+          {
+            "step": "تحضير السن",
+            "detail": "غالبًا يلزم إزالة طبقة رقيقة من سطح السن. في بعض الحالات تكون الإزالة ضئيلة."
+          },
+          {
+            "step": "تصنيع القشرة",
+            "detail": "تُصنع القشرة في المختبر وفق التخطيط."
+          },
+          {
+            "step": "الإلصاق",
+            "detail": "تُلصق القشرة على السن وتُضبط مع الإطباق."
+          }
+        ],
+        "expect": [
+          "تحضير السن في معظم الحالات غير قابل للعكس",
+          "القشور تتطلب صيانة ومتابعة",
+          "اللون يُحدَّد مسبقًا ولا يتغيّر بالتبييض لاحقًا"
+        ],
+        "faq": [
+          {
+            "q": "ما الفرق بين القشرة والتاج؟",
+            "a": "القشرة تغطي أساسًا السطح الأمامي للسن، بينما التاج يغلّف السن بالكامل. يعتمد الاختيار على حالة السن."
+          },
+          {
+            "q": "كم تدوم القشور؟",
+            "a": "تختلف بين الأشخاص وتعتمد على العادات والإطباق والحفاظ على النظافة. نشرح ما يؤثر في حالتكم."
+          }
+        ],
+        "seoDescription": "القشور التجميلية للأسنان في الجديدة-المكر — ما هي القشرة، متى تُدرس، ما يتطلبه تحضير السن وما يجب معرفته مسبقًا."
+      },
+      "en": {
+        "title": "Aesthetic veneers",
+        "cardTitle": "Veneers",
+        "summary": "A thin facing bonded to the front surface of a tooth to change its shape or shade. Used mainly on the front teeth.",
+        "candidacy": [
+          "Changing the shape of a front tooth",
+          "A shade that does not respond to whitening",
+          "A chipped or worn front tooth",
+          "A small gap between front teeth"
+        ],
+        "process": [
+          {
+            "step": "Aesthetic planning",
+            "detail": "An examination and a conversation about what bothers you and what can be done, including the limits."
+          },
+          {
+            "step": "Preparing the tooth",
+            "detail": "A thin layer of the tooth surface is usually removed. In some cases the removal is minimal."
+          },
+          {
+            "step": "Making the veneer",
+            "detail": "The veneer is produced in a laboratory according to the plan."
+          },
+          {
+            "step": "Bonding",
+            "detail": "The veneer is bonded to the tooth and adjusted to the bite."
+          }
+        ],
+        "expect": [
+          "Preparing the tooth is in most cases irreversible",
+          "Veneers require maintenance and review",
+          "The shade is set in advance and will not change with later whitening"
+        ],
+        "faq": [
+          {
+            "q": "What is the difference between a veneer and a crown?",
+            "a": "A veneer covers mainly the front surface of the tooth, while a crown encases the whole tooth. The choice depends on the condition of the tooth."
+          },
+          {
+            "q": "How long do veneers last?",
+            "a": "It varies between people and depends on habits, bite and hygiene. We explain what affects it in your case."
+          }
+        ],
+        "seoDescription": "Aesthetic veneers in Jadeidi-Makr — what a veneer is, when it is considered, what preparing the tooth involves and what to know first."
+      },
+      "he": {
+        "title": "ציפויים אסתטיים",
+        "cardTitle": "ציפויים",
+        "summary": "ציפוי דק המודבק על פני השן הקדמית כדי לשנות את הצורה או הגוון. משמש בעיקר בשיניים הקדמיות.",
+        "candidacy": [
+          "שינוי בצורת שן קדמית",
+          "גוון שאינו משתנה בהלבנה",
+          "שן שבורה או שחוקה בחזית",
+          "רווח קטן בין השיניים הקדמיות"
+        ],
+        "process": [
+          {
+            "step": "תכנון אסתטי",
+            "detail": "בדיקה ושיחה על מה שמפריע ומה ניתן לעשות, כולל מגבלות."
+          },
+          {
+            "step": "הכנת השן",
+            "detail": "לרוב נדרשת הסרה של שכבה דקה מפני השן. בחלק מהמקרים ההסרה מזערית."
+          },
+          {
+            "step": "ייצור הציפוי",
+            "detail": "הציפוי מיוצר במעבדה בהתאם לתכנון."
+          },
+          {
+            "step": "הדבקה",
+            "detail": "הציפוי מודבק לשן ומותאם לסגר."
+          }
+        ],
+        "expect": [
+          "הכנת השן היא ברוב המקרים בלתי הפיכה",
+          "ציפויים דורשים תחזוקה ומעקב",
+          "הגוון נקבע מראש ואינו משתנה בהלבנה בהמשך"
+        ],
+        "faq": [
+          {
+            "q": "מה ההבדל בין ציפוי לכתר?",
+            "a": "ציפוי מכסה בעיקר את פני השן הקדמיים, בעוד כתר עוטף את השן כולה. הבחירה תלויה במצב השן."
+          },
+          {
+            "q": "כמה זמן מחזיקים ציפויים?",
+            "a": "משתנה בין אנשים ותלוי בהרגלים, בסגר ובשמירה על היגיינה. נסביר מה משפיע במקרה שלכם."
+          }
+        ],
+        "seoDescription": "ציפויים אסתטיים לשיניים בג׳דיידה-מכר — מה זה ציפוי, מתי הוא נשקל, מה כרוך בהכנת השן ומה חשוב לדעת מראש."
+      }
+    }
+  },
+  {
+    "id": "root-canal",
+    "slug": "root-canal",
+    "status": "published",
+    "tier": 1,
+    "order": 5,
+    "icon": "root-canal",
+    "locales": {
+      "ar": {
+        "title": "علاج العصب",
+        "cardTitle": "علاج العصب",
+        "summary": "علاج يهدف إلى تنظيف قناة الجذر عندما يتضرّر نسيج العصب داخل السن، ثم إغلاقها. يُجرى للحفاظ على السن في مكانه.",
+        "candidacy": [
+          "ألم مستمر أو حساسية مطوّلة للحرارة والبرودة",
+          "تسوّس عميق وصل إلى العصب",
+          "انتفاخ أو خرّاج في منطقة السن",
+          "إصابة في السن أضرّت بالعصب"
+        ],
+        "process": [
+          {
+            "step": "تشخيص",
+            "detail": "فحص وصورة أشعة للتأكد من أن المصدر في قناة الجذر."
+          },
+          {
+            "step": "تخدير ووصول",
+            "detail": "يُجرى العلاج تحت تخدير موضعي."
+          },
+          {
+            "step": "تنظيف وإغلاق",
+            "detail": "تُنظَّف قنوات الجذر وتُغلق."
+          },
+          {
+            "step": "ترميم السن",
+            "detail": "بعد العلاج يلزم ترميم، وأحيانًا تاج، لحماية السن."
+          }
+        ],
+        "expect": [
+          "أحيانًا تلزم أكثر من زيارة واحدة",
+          "السن بعد علاج العصب يصبح أكثر هشاشة ويحتاج غالبًا إلى ترميم مناسب",
+          "قد يظهر انزعاج في الأيام التالية للعلاج"
+        ],
+        "faq": [
+          {
+            "q": "لماذا لا نخلع السن ببساطة؟",
+            "a": "الحفاظ على السن الطبيعي يحافظ على الإطباق وعلى العظم المحيط. يُدرس الخلع عندما لا يمكن الحفاظ على السن."
+          },
+          {
+            "q": "هل يلزم تاج دائمًا بعد علاج العصب؟",
+            "a": "ليس دائمًا. يعتمد على كمية بنية السن المتبقية وعلى موقعه."
+          }
+        ],
+        "seoDescription": "علاج العصب في الجديدة-المكر — متى يلزم علاج الجذر، كيف يُجرى، وما المطلوب بعده للحفاظ على السن."
+      },
+      "en": {
+        "title": "Root canal treatment",
+        "cardTitle": "Root canal",
+        "summary": "Treatment that cleans and seals the root canal when the nerve tissue inside the tooth has been damaged. It is carried out to keep the tooth in place.",
+        "candidacy": [
+          "Persistent pain or prolonged sensitivity to hot and cold",
+          "Deep decay that has reached the nerve",
+          "Swelling or an abscess near the tooth",
+          "An injury to the tooth that damaged the nerve"
+        ],
+        "process": [
+          {
+            "step": "Diagnosis",
+            "detail": "An examination and imaging to confirm the source is the root canal."
+          },
+          {
+            "step": "Anaesthetic and access",
+            "detail": "The treatment is carried out under local anaesthetic."
+          },
+          {
+            "step": "Cleaning and sealing",
+            "detail": "The root canals are cleaned and sealed."
+          },
+          {
+            "step": "Restoring the tooth",
+            "detail": "Afterwards a restoration, and sometimes a crown, is needed to protect the tooth."
+          }
+        ],
+        "expect": [
+          "More than one appointment is sometimes required",
+          "A tooth after root canal treatment is more brittle and usually needs a suitable restoration",
+          "Some discomfort in the days afterwards is possible"
+        ],
+        "faq": [
+          {
+            "q": "Why not simply extract the tooth?",
+            "a": "Keeping the natural tooth preserves the bite and the surrounding bone. Extraction is considered when the tooth cannot be preserved."
+          },
+          {
+            "q": "Is a crown always needed afterwards?",
+            "a": "Not always. It depends on how much tooth structure remains and where the tooth sits."
+          }
+        ],
+        "seoDescription": "Root canal treatment in Jadeidi-Makr — when it is needed, how it is carried out, and what is required afterwards to preserve the tooth."
+      },
+      "he": {
+        "title": "טיפולי שורש",
+        "cardTitle": "טיפול שורש",
+        "summary": "טיפול שמטרתו לנקות את תעלת השורש כאשר רקמת העצב בתוך השן נפגעה, ולאטום אותה. מבוצע כדי לשמר את השן במקומה.",
+        "candidacy": [
+          "כאב מתמשך או רגישות ממושכת לחום ולקור",
+          "עששת עמוקה שהגיעה לעצב",
+          "נפיחות או מורסה באזור השן",
+          "חבלה בשן שפגעה בעצב"
+        ],
+        "process": [
+          {
+            "step": "אבחון",
+            "detail": "בדיקה וצילום כדי לאשר שהמקור הוא בתעלת השורש."
+          },
+          {
+            "step": "הרדמה וגישה",
+            "detail": "הטיפול מבוצע בהרדמה מקומית."
+          },
+          {
+            "step": "ניקוי ואיטום",
+            "detail": "תעלות השורש מנוקות ונאטמות."
+          },
+          {
+            "step": "שיקום השן",
+            "detail": "לאחר הטיפול נדרש שחזור, ולעיתים כתר, כדי להגן על השן."
+          }
+        ],
+        "expect": [
+          "לעיתים נדרשת יותר מפגישה אחת",
+          "שן לאחר טיפול שורש שבירה יותר ולרוב זקוקה לשחזור מתאים",
+          "ייתכן חוסר נוחות בימים שלאחר הטיפול"
+        ],
+        "faq": [
+          {
+            "q": "למה לא פשוט לעקור את השן?",
+            "a": "שימור השן הטבעית שומר על הסגר ועל העצם סביבה. עקירה נשקלת כשלא ניתן לשמר את השן."
+          },
+          {
+            "q": "האם תמיד צריך כתר אחרי טיפול שורש?",
+            "a": "לא תמיד. זה תלוי בכמות מבנה השן שנותרה ובמיקום השן."
+          }
+        ],
+        "seoDescription": "טיפולי שורש בג׳דיידה-מכר — מתי נדרש טיפול שורש, איך הוא מתבצע ומה נדרש לאחריו כדי לשמר את השן."
+      }
+    }
+  },
+  {
+    "id": "tooth-extraction",
+    "slug": "tooth-extraction",
+    "status": "published",
+    "tier": 2,
+    "order": 6,
+    "icon": "extraction",
+    "locales": {
+      "ar": {
+        "title": "خلع الأسنان",
+        "cardTitle": "خلع الأسنان",
+        "summary": "إزالة السن من الفك عندما يتعذّر الحفاظ عليه، أو عندما يضغط على الأسنان المجاورة. يُجرى تحت تخدير موضعي، وغالبًا في جلسة واحدة.",
+        "candidacy": [
+          "سن متضرّر بدرجة لا تسمح بترميمه",
+          "التهاب أو خرّاج لم يستجب للعلاج",
+          "ضرس عقل منحشر أو يضغط على الأسنان المجاورة",
+          "مرض لثة متقدّم أضعف ثبات السن",
+          "التحضير لتقويم الأسنان عندما يلزم توفير مساحة"
+        ],
+        "process": [
+          {
+            "step": "الفحص والتصوير",
+            "detail": "صورة أشعة لمعرفة شكل الجذور وموقعها بالنسبة للعصب والجيب الأنفي."
+          },
+          {
+            "step": "التخدير الموضعي",
+            "detail": "تخدير المنطقة قبل البدء."
+          },
+          {
+            "step": "الخلع",
+            "detail": "يُحرَّك السن ثم يُزال. الضرس المنحشر قد يستدعي مدخلًا جراحيًا وأحيانًا غرزًا."
+          },
+          {
+            "step": "تعليمات الشفاء",
+            "detail": "شرح للعناية بمكان الخلع في الأيام الأولى، وما العمل عند حدوث أمر غير معتاد."
+          },
+          {
+            "step": "التخطيط لما بعد",
+            "detail": "إذا كان السن ظاهرًا في الابتسامة أو يحمل المضغ، نناقش خيارات تعويضه."
+          }
+        ],
+        "expect": [
+          "التورّم وعدم الراحة في الأيام التالية أمر شائع",
+          "يُنصح بتجنّب المضمضة القوية والتدخين خلال فترة الشفاء",
+          "يلتئم مكان الخلع تدريجيًا خلال عدّة أسابيع",
+          "خلع ضرس العقل المنحشر إجراء أطول من الخلع العادي"
+        ],
+        "faq": [
+          {
+            "q": "هل يمكن العودة إلى العمل فورًا؟",
+            "a": "يعتمد على حجم الخلع وطبيعة العمل. في الخلع البسيط يعود كثيرون إلى يومهم مباشرة؛ أمّا الخلع الجراحي فيُفضَّل معه تخصيص يوم راحة."
+          },
+          {
+            "q": "ماذا بعد خلع السن؟",
+            "a": "للسن المخلوع عدّة خيارات تعويض — زرعة أو جسر أو طقم جزئي. يعتمد الاختيار على موقع السن وحالة العظم وعوامل أخرى نستعرضها معًا."
+          },
+          {
+            "q": "هل يجب خلع ضرس العقل دائمًا؟",
+            "a": "لا. الضرس الذي بزغ كاملًا ويمكن تنظيفه ولا يضغط على جيرانه لا داعي للمساس به. يُدرَس الخلع عند وجود أعراض أو ملاحظة في الصورة."
+          }
+        ],
+        "seoDescription": "خلع الأسنان في الجديدة-المكر — متى يلزم الخلع، كيف يجري الإجراء، ما المتوقع في أيام الشفاء وما خيارات تعويض السن."
+      },
+      "en": {
+        "title": "Tooth extraction",
+        "cardTitle": "Extractions",
+        "summary": "Removing a tooth when it cannot be kept, or when it is pressing on the teeth around it. Carried out under local anaesthetic, usually in a single visit.",
+        "candidacy": [
+          "A tooth damaged beyond what a restoration can hold",
+          "Infection or an abscess that has not settled with treatment",
+          "An impacted wisdom tooth, or one crowding its neighbours",
+          "Advanced gum disease that has loosened the tooth",
+          "Making room before orthodontic treatment"
+        ],
+        "process": [
+          {
+            "step": "Examination and imaging",
+            "detail": "An X-ray to see the shape of the roots and where they sit relative to the nerve and sinus."
+          },
+          {
+            "step": "Local anaesthetic",
+            "detail": "The area is numbed before any work begins."
+          },
+          {
+            "step": "The extraction",
+            "detail": "The tooth is loosened and removed. An impacted tooth may need surgical access and sometimes stitches."
+          },
+          {
+            "step": "Healing instructions",
+            "detail": "How to look after the socket in the first few days, and what to do if something is not as described."
+          },
+          {
+            "step": "Planning what follows",
+            "detail": "If the tooth is visible when you smile or carries chewing load, we discuss the options for replacing it."
+          }
+        ],
+        "expect": [
+          "Swelling and discomfort in the following days are common",
+          "Vigorous rinsing and smoking are best avoided while the socket heals",
+          "The socket closes gradually over several weeks",
+          "An impacted wisdom tooth is a longer procedure than a routine extraction"
+        ],
+        "faq": [
+          {
+            "q": "Can I go back to work straight away?",
+            "a": "It depends on the extraction and on your work. After a simple extraction many people carry on with the day; after a surgical one it is worth planning a rest day."
+          },
+          {
+            "q": "What happens after a tooth is removed?",
+            "a": "An extracted tooth can be replaced by an implant, a bridge or a partial denture. Which suits depends on the position of the tooth, the state of the bone and other factors we go through together."
+          },
+          {
+            "q": "Do wisdom teeth always have to come out?",
+            "a": "No. A wisdom tooth that has come through fully, can be cleaned and is not pressing on its neighbours needs nothing done. Extraction is considered when there are symptoms or a finding on the X-ray."
+          }
+        ],
+        "seoDescription": "Tooth extraction in Jadeidi-Makr — when an extraction is needed, how the procedure works, what to expect while healing and the options for replacing the tooth."
+      },
+      "he": {
+        "title": "עקירת שיניים",
+        "cardTitle": "עקירות",
+        "summary": "הוצאת שן מהלסת כאשר לא ניתן לשמר אותה, או כאשר היא מפריעה לשיניים סביבה. מבוצע בהרדמה מקומית, ולרוב בפגישה אחת.",
+        "candidacy": [
+          "שן עם נזק נרחב שלא ניתן לשקם",
+          "זיהום או מורסה שלא הגיבו לטיפול",
+          "שן בינה כלואה או שגורמת ללחץ על השיניים הסמוכות",
+          "מחלת חניכיים מתקדמת שערערה את יציבות השן",
+          "הכנה לטיפול יישור, כאשר נדרש מקום"
+        ],
+        "process": [
+          {
+            "step": "אבחון וצילום",
+            "detail": "צילום כדי לראות את צורת השורשים ואת מיקומם ביחס לעצב ולסינוס."
+          },
+          {
+            "step": "הרדמה מקומית",
+            "detail": "האזור מורדם לפני תחילת העבודה."
+          },
+          {
+            "step": "העקירה",
+            "detail": "השן משוחררת ומוצאת. שן כלואה עשויה לדרוש גישה כירורגית ולעיתים תפרים."
+          },
+          {
+            "step": "הנחיות החלמה",
+            "detail": "הסבר על טיפול בחלל העקירה בימים הראשונים, ומה לעשות אם משהו חריג."
+          },
+          {
+            "step": "תכנון המשך",
+            "detail": "אם נעקרה שן שנראית בחיוך או נושאת לעיסה, נדון באפשרויות להשלמתה."
+          }
+        ],
+        "expect": [
+          "נפיחות וחוסר נוחות בימים שלאחר העקירה הם שכיחים",
+          "מומלץ להימנע משטיפות נמרצות ומעישון בשלב ההחלמה",
+          "החלל נסגר בהדרגה לאורך מספר שבועות",
+          "שן בינה כלואה היא הליך ארוך יותר מעקירה רגילה"
+        ],
+        "faq": [
+          {
+            "q": "האם אפשר לחזור לעבודה מיד?",
+            "a": "תלוי בהיקף העקירה ובאופי העבודה. בעקירה פשוטה רבים חוזרים לשגרה באותו יום; בעקירה כירורגית כדאי לתכנן יום מנוחה."
+          },
+          {
+            "q": "מה עושים אחרי שנעקרה שן?",
+            "a": "לשן שנעקרה יש כמה אפשרויות השלמה — שתל, גשר או תותבת חלקית. הבחירה תלויה במיקום השן, במצב העצם ובשיקולים נוספים שנעבור עליהם יחד."
+          },
+          {
+            "q": "תמיד צריך לעקור שן בינה?",
+            "a": "לא. שן בינה שיצאה במלואה, נקייה וללא לחץ על השכנות — אין סיבה לגעת בה. העקירה נשקלת כשיש תסמינים או ממצא בצילום."
+          }
+        ],
+        "seoDescription": "עקירת שיניים בג׳דיידה-מכר — מתי נדרשת עקירה, איך מתבצע התהליך, מה צפוי בימי ההחלמה ואילו אפשרויות קיימות להשלמת השן."
+      }
+    }
+  },
+  {
+    "id": "dental-fillings",
+    "slug": "dental-fillings",
+    "status": "published",
+    "tier": 2,
+    "order": 7,
+    "icon": "filling",
+    "locales": {
+      "ar": {
+        "title": "حشوات الأسنان",
+        "cardTitle": "الحشوات",
+        "summary": "تنظيف الجزء المتضرّر من السن وملؤه بمادة تعيد للسن شكله ووظيفته. الحشوات المعتمدة اليوم بلون السن.",
+        "candidacy": [
+          "تسوّس ظهر في الفحص أو في صورة الأشعة",
+          "حساسية للحلو أو الحار أو البارد في موضع معيّن",
+          "سن مكسور أو متشقّق جزئيًا",
+          "حشوة قديمة تشقّقت أو تسرّبت أو تآكلت",
+          "تآكل في منطقة عنق السن"
+        ],
+        "process": [
+          {
+            "step": "الفحص",
+            "detail": "فحص، وأحيانًا صورة أشعة، لمعرفة اتساع التسوّس وقربه من العصب."
+          },
+          {
+            "step": "التخدير الموضعي",
+            "detail": "يلزم في معظم الحالات بحسب العمق."
+          },
+          {
+            "step": "التنظيف",
+            "detail": "تُزال الأنسجة المتضرّرة ويبقى النسيج السليم فقط."
+          },
+          {
+            "step": "الحشو",
+            "detail": "توضع المادة على طبقات وتُصلَّب، ثم تُشكَّل على هيئة السن."
+          },
+          {
+            "step": "فحص الإطباق",
+            "detail": "التأكّد من أنّ الحشوة ليست مرتفعة، حتى تعود العضّة طبيعية."
+          }
+        ],
+        "expect": [
+          "معظم الحشوات تُنجَز في جلسة واحدة",
+          "حساسية خفيفة للحار والبارد في الأيام الأولى ليست أمرًا غريبًا",
+          "يمكن الأكل بعد زوال مفعول التخدير",
+          "الحشوة العميقة قد تستدعي متابعة، وأحيانًا علاج عصب لاحقًا"
+        ],
+        "faq": [
+          {
+            "q": "هل تدوم الحشوة إلى الأبد؟",
+            "a": "لا. الحشوة ترميم وله عمر. تُفحَص في الزيارات الدورية وتُستبدَل عندما تتشقّق أو تتسرّب أو تتآكل."
+          },
+          {
+            "q": "ما الفرق بين الحشوة البيضاء والأملغم؟",
+            "a": "الحشوة بلون السن تلتصق ببنية السن وتسمح بإزالة أقل للنسيج السليم. أمّا الأملغم فنادر الاستعمال اليوم في العلاجات الجديدة."
+          },
+          {
+            "q": "لماذا نحشو سنًا لا يؤلم؟",
+            "a": "التسوّس يتقدّم بصمت. حين يبدأ الألم يكون غالبًا قد اقترب من العصب، ويصبح العلاج المطلوب أوسع."
+          }
+        ],
+        "seoDescription": "حشوات الأسنان في الجديدة-المكر — متى تلزم الحشوة، كيف يجري الإجراء، ما الشعور بعده ومتى تُستبدَل الحشوة القديمة."
+      },
+      "en": {
+        "title": "Dental fillings",
+        "cardTitle": "Fillings",
+        "summary": "Cleaning out the damaged part of a tooth and filling it with a material that restores the tooth's shape and function. Fillings placed today are tooth-coloured.",
+        "candidacy": [
+          "Decay found during an examination or on an X-ray",
+          "Sensitivity to sweet, hot or cold in one particular spot",
+          "A tooth that has chipped or partly cracked",
+          "An older filling that has cracked, started to leak or worn down",
+          "Wear at the neck of the tooth"
+        ],
+        "process": [
+          {
+            "step": "Examination",
+            "detail": "An examination, and sometimes an X-ray, to see how far the decay reaches and how close it is to the nerve."
+          },
+          {
+            "step": "Local anaesthetic",
+            "detail": "Needed in most cases, depending on the depth."
+          },
+          {
+            "step": "Cleaning",
+            "detail": "The damaged tissue is removed, leaving sound tooth behind."
+          },
+          {
+            "step": "Filling",
+            "detail": "The material is placed in layers and set, then shaped to the contour of the tooth."
+          },
+          {
+            "step": "Checking the bite",
+            "detail": "Making sure the filling is not sitting high, so your bite feels normal again."
+          }
+        ],
+        "expect": [
+          "Most fillings are completed in a single visit",
+          "Mild sensitivity to hot and cold in the first few days is not unusual",
+          "You can eat once the anaesthetic has worn off",
+          "A deep filling may need follow-up, and sometimes root canal treatment later"
+        ],
+        "faq": [
+          {
+            "q": "Does a filling last forever?",
+            "a": "No. A filling is a restoration and it has a lifespan. It is checked at routine appointments and replaced when it cracks, begins to leak or wears down."
+          },
+          {
+            "q": "What is the difference between a white filling and amalgam?",
+            "a": "A tooth-coloured filling bonds to the tooth structure, which allows less sound tissue to be removed. Amalgam is rarely used for new work today."
+          },
+          {
+            "q": "Why fill a tooth that does not hurt?",
+            "a": "Decay progresses quietly. By the time it hurts it is usually close to the nerve, and the treatment then needed is more extensive."
+          }
+        ],
+        "seoDescription": "Dental fillings in Jadeidi-Makr — when a filling is needed, how the procedure works, what it feels like afterwards and when an old filling is replaced."
+      },
+      "he": {
+        "title": "סתימות שיניים",
+        "cardTitle": "סתימות",
+        "summary": "ניקוי האזור הפגוע בשן ומילויו בחומר שמחזיר את צורת השן ואת תפקודה. הסתימות המקובלות היום הן בגוון השן.",
+        "candidacy": [
+          "עששת שאותרה בבדיקה או בצילום",
+          "רגישות למתוק, לחום או לקור באזור מסוים",
+          "שן שנשברה או נסדקה בחלקה",
+          "סתימה ישנה שנסדקה, דלפה או נשחקה",
+          "שחיקה באזור צוואר השן"
+        ],
+        "process": [
+          {
+            "step": "אבחון",
+            "detail": "בדיקה, ולעיתים צילום, כדי לראות את היקף הנגע ואת קרבתו לעצב."
+          },
+          {
+            "step": "הרדמה מקומית",
+            "detail": "נדרשת ברוב המקרים, בהתאם לעומק."
+          },
+          {
+            "step": "ניקוי",
+            "detail": "הרקמה הפגועה מוסרת ונשארת שן בריאה בלבד."
+          },
+          {
+            "step": "מילוי",
+            "detail": "החומר מונח בשכבות ומוקשה, ואז מעוצב לצורת השן."
+          },
+          {
+            "step": "בדיקת סגר",
+            "detail": "וידוא שהסתימה אינה גבוהה מדי, כדי שהנשיכה תחזור להרגיש טבעית."
+          }
+        ],
+        "expect": [
+          "רוב הסתימות מבוצעות בפגישה אחת",
+          "רגישות קלה לחום ולקור בימים הראשונים אינה חריגה",
+          "אפשר לאכול לאחר שההרדמה חולפת",
+          "סתימה עמוקה עשויה לדרוש מעקב, ולעיתים טיפול שורש בהמשך"
+        ],
+        "faq": [
+          {
+            "q": "האם סתימה מחזיקה לתמיד?",
+            "a": "לא. סתימה היא שחזור, ויש לה אורך חיים. היא נבדקת בבדיקות התקופתיות ומוחלפת כשהיא נסדקת, דולפת או נשחקת."
+          },
+          {
+            "q": "מה ההבדל בין סתימה לבנה לאמלגם?",
+            "a": "סתימה בגוון השן נדבקת למבנה השן ומאפשרת הסרה מצומצמת יותר של רקמה בריאה. אמלגם כמעט אינו בשימוש היום בטיפולים חדשים."
+          },
+          {
+            "q": "למה צריך לסתום שן שאין בה תסמינים?",
+            "a": "עששת מתקדמת בשקט. כשהיא כבר מורגשת היא לרוב קרובה לעצב, ואז הטיפול הנדרש רחב יותר."
+          }
+        ],
+        "seoDescription": "סתימות שיניים בג׳דיידה-מכר — מתי נדרשת סתימה, איך מתבצע התהליך, מה מרגישים אחריו ומתי מחליפים סתימה ישנה."
+      }
+    }
+  }
+]

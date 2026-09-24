@@ -16,6 +16,9 @@
 @import 'tailwindcss';
 @source not "../../workers";
 @source not "../../tests";
+/* Preserve two harmless utilities previously picked up from removed Markdown.
+   Keeping the CSS hash stable makes the public migration diff reviewable. */
+@source inline("collapse lowercase");
 
 /* ==========================================================================
    DR. KHALIL KANANI — DESIGN SYSTEM

@@ -20,6 +20,8 @@
  */
 
 import type { Locale } from '../i18n/config';
+import profile from './doctor-profile.json' with { type: 'json' };
+import { doctorProfileSchema, parseManaged } from '../lib/managed-schema.ts';
 
 export interface Credential {
   /** Factual line only: degree, institution, year, membership. */
@@ -27,32 +29,13 @@ export interface Credential {
   year?: string;
 }
 
+/* The text is owner-editable JSON; this module keeps the established API. */
 export const doctor = {
   /** Short factual introduction. Safe because it states only what is verified. */
-  intro: {
-    he: 'ד״ר חליל כנעאני מפעיל מרפאת שיניים ואסתטיקה בג׳דיידה-מכר. המרפאה נותנת מענה בעברית, בערבית ובאנגלית, ומטפלת במגוון טיפולי שיניים משמרים ואסתטיים.',
-    ar: 'يدير د. خليل كنعاني عيادة أسنان وتجميل في الجديدة-المكر. تقدّم العيادة خدماتها بالعربية والعبرية والإنجليزية، وتشمل مجموعة من علاجات الأسنان الترميمية والتجميلية.',
-    en: 'Dr. Khalil Kanani runs a dental and aesthetic clinic in Jadeidi-Makr. The clinic works in Hebrew, Arabic and English and covers a range of restorative and aesthetic dental treatments.',
-  } satisfies Record<Locale, string>,
+  intro: parseManaged(doctorProfileSchema, profile, 'doctor profile').intro,
 
   /** How the clinic works. Operational description, not self-praise. */
-  approach: {
-    he: [
-      'הסבר על הממצאים ועל האפשרויות לפני תחילת כל טיפול.',
-      'תוכנית טיפול שנבנית לפי מצב השיניים והעדפות המטופל.',
-      'שיחה בשפה שנוחה למטופל — עברית, ערבית או אנגלית.',
-    ],
-    ar: [
-      'شرح للنتائج وللخيارات قبل بدء أي علاج.',
-      'خطة علاج تُبنى وفق حالة الأسنان وتفضيلات المريض.',
-      'حديث باللغة التي تريح المريض — العربية أو العبرية أو الإنجليزية.',
-    ],
-    en: [
-      'An explanation of the findings and the options before any treatment begins.',
-      'A treatment plan built around the condition of the teeth and the patient’s preferences.',
-      'A conversation in whichever language the patient prefers — Hebrew, Arabic or English.',
-    ],
-  } satisfies Record<Locale, string[]>,
+  approach: parseManaged(doctorProfileSchema, profile, 'doctor profile').approach,
 
   /**
    * OWNER MUST SUPPLY. Example of the expected shape, intentionally empty:
@@ -61,7 +44,7 @@ export const doctor = {
    *
    * Do not populate with anything that has not been confirmed in writing.
    */
-  credentials: [] as Credential[],
+  credentials: parseManaged(doctorProfileSchema, profile, 'doctor profile').credentials as Credential[],
 
   /** Portrait. Owner must supply; no stock photo stands in for a real doctor. */
   portrait: null as string | null,

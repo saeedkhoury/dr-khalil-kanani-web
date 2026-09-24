@@ -18,6 +18,10 @@
  */
 
 import type { Locale } from './config';
+import copyData from '../data/managed-copy.json' with { type: 'json' };
+import { managedCopySchema, parseManaged } from '../lib/managed-schema.ts';
+
+const managedCopy = parseManaged(managedCopySchema, copyData, 'managed copy');
 
 export const ui = {
   he: {
@@ -511,6 +515,7 @@ export type UIKey = keyof (typeof ui)['en'];
 /** Translator bound to a locale. Falls back to English, never to a raw key. */
 export function useTranslations(locale: Locale) {
   return function t(key: UIKey): string {
+    if (key in managedCopy) return managedCopy[key as keyof typeof managedCopy][locale];
     const table = ui[locale] as Record<string, string>;
     return table[key] ?? (ui.en as Record<string, string>)[key] ?? key;
   };

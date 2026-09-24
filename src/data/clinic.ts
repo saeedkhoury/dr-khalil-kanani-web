@@ -14,7 +14,14 @@
  */
 
 import hoursData from './hours.json' with { type: 'json' };
+import contactData from './contact-facts.json' with { type: 'json' };
 import { assertHoursShape, type OpeningHoursRow } from '../lib/data-schema.ts';
+import { contactFactsSchema, parseManaged } from '../lib/managed-schema.ts';
+
+const contact = parseManaged(contactFactsSchema, contactData, 'contact facts');
+const digits = (value: string): string => value.replace(/\D/g, '');
+const international = (value: string): string => `+972${digits(value).slice(1)}`;
+const schemaPhone = (value: string): string => `+972-${value.slice(1)}`;
 
 export type { OpeningHoursRow };
 
@@ -65,22 +72,22 @@ export const clinic = {
   phone: {
     /** Landline. VERIFIED: flyer + Instagram bio agree exactly. */
     landline: {
-      display: '04-884-8891',
-      tel: '+97248848891',
-      schema: '+972-4-884-8891',
+      display: contact.landline,
+      tel: international(contact.landline),
+      schema: schemaPhone(contact.landline),
     },
     /** Mobile / WhatsApp. VERIFIED: flyer + Instagram bio + post footer agree. */
     mobile: {
-      display: '052-288-5179',
-      tel: '+972522885179',
+      display: contact.mobile,
+      tel: international(contact.mobile),
       /** wa.me requires international format with no '+' and no leading zero. */
-      whatsapp: '972522885179',
-      schema: '+972-52-288-5179',
+      whatsapp: international(contact.mobile).slice(1),
+      schema: schemaPhone(contact.mobile),
     },
   },
 
   /** UNVERIFIED — clinic has no published email address. Owner must supply. */
-  email: '',
+  email: contact.email,
 
   /* ------------------------------------------------------------------------ */
   /*  Location                                                                 */
@@ -94,14 +101,10 @@ export const clinic = {
      * One canonical form per script. Transliteration drift across listings is
      * the single most common NAP failure in Israel.
      */
-    street: { he: 'רחוב 1003', ar: 'شارع 1003', en: 'Street 1003' },
-    locality: {
-      he: 'ג׳דיידה-מכר',
-      ar: 'الجديدة-المكر',
-      en: 'Jadeidi-Makr',
-    },
-    region: { he: 'מחוז הצפון', ar: 'لواء الشمال', en: 'Northern District' },
-    postalCode: '2510500',
+    street: contact.street,
+    locality: contact.locality,
+    region: contact.region,
+    postalCode: contact.postalCode,
     country: 'IL',
     /** Coordinates resolved from the owner's Waze link, not an address search. */
     geo: { lat: 32.9336, lng: 35.148804 } as { readonly lat: number; readonly lng: number },
@@ -141,9 +144,9 @@ export const clinic = {
   requestEndpoint: 'https://drkanani-appointment-email.saed-khoury10.workers.dev' as string,
 
   social: {
-    instagram: 'https://www.instagram.com/dr.khalil.kanani',
+    instagram: contact.instagram,
     /** Hidden until the owner supplies the clinic’s exact Facebook page. */
-    facebook: '' as string,
+    facebook: contact.facebook,
     /**
      * Google Business Profile. UNVERIFIED — no profile was found during
      * discovery and the clinic may not have claimed one yet.
@@ -153,7 +156,7 @@ export const clinic = {
      * site, so the site LINKS OUT here rather than republishing reviews
      * (ADR 0005). Until this is set, the feedback block does not render.
      */
-    googleBusiness: '',
+    googleBusiness: contact.googleBusiness,
   },
 
   /**

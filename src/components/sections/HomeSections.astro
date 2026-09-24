@@ -1,0 +1,26 @@
+---
+import Hero from './Hero.astro';
+import TrustStrip from './TrustStrip.astro';
+import TreatmentsGrid from './TreatmentsGrid.astro';
+import DoctorIntro from './DoctorIntro.astro';
+import ClinicGallery from './ClinicGallery.astro';
+import PatientFeedback from './PatientFeedback.astro';
+import FaqAccordion from './FaqAccordion.astro';
+import FindTheClinic from './FindTheClinic.astro';
+import { getTreatments } from '../../lib/content';
+import { generalFaq } from '../../data/faq';
+import type { Locale } from '../../i18n/config';
+
+interface Props { locale: Locale }
+const { locale } = Astro.props;
+const treatments = await getTreatments(locale);
+const faq = generalFaq.slice(0, 5).map((item) => ({ q: item.q[locale], a: item.a[locale] }));
+---
+<Hero locale={locale} />
+<TrustStrip locale={locale} />
+<TreatmentsGrid locale={locale} treatments={treatments} limit={6} />
+<DoctorIntro locale={locale} />
+<ClinicGallery locale={locale} kind="work" />
+<PatientFeedback locale={locale} />
+<FaqAccordion locale={locale} items={faq} id="home-faq" />
+<FindTheClinic locale={locale} />

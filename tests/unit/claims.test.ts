@@ -19,6 +19,9 @@ test('CLI checks decoded CMS alt and captions in all locales without stripping c
     for (const dir of ['scripts', 'src/lib', 'src/data']) mkdirSync(join(root, dir), { recursive: true });
     for (const file of ['scripts/lint-claims.ts', 'src/lib/claims.ts']) cpSync(file, join(root, file));
     writeFileSync(join(root, 'src/data/hours.json'), '[]');
+    for (const file of ['services', 'general-faq', 'doctor-profile', 'managed-copy', 'contact-facts']) {
+      writeFileSync(join(root, `src/data/${file}.json`), '{}');
+    }
     const manifest = join(root, 'src/data/clinic-photography.json');
     for (const field of ['alt', 'caption']) {
       for (const [locale, claim] of [['he', 'מובטח'], ['ar', 'مضمون'], ['en', 'guaranteed']]) {
