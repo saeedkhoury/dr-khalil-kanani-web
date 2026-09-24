@@ -12,6 +12,8 @@ interface Props {
   kind: Kind;
   focus?: string;
   locale?: Locale;
+  /** The item's own name, for a pencil on one card among many. */
+  name?: string;
 }
 
 const LABELS: Record<string, Record<Locale, string>> = {
@@ -20,6 +22,9 @@ const LABELS: Record<string, Record<Locale, string>> = {
   'copy:contact': { he: 'עריכת טקסט יצירת הקשר', ar: 'تعديل نص التواصل', en: 'Edit contact text' },
   services: { he: 'עריכת טיפולים', ar: 'تعديل العلاجات', en: 'Edit treatments' },
   'services:item': { he: 'עריכת הטיפול הזה', ar: 'تعديل هذا العلاج', en: 'Edit this treatment' },
+  'services:new': { he: 'הוספת טיפול', ar: 'إضافة علاج', en: 'Add treatment' },
+  'services:card': { he: 'עריכה: {name}', ar: 'تعديل: {name}', en: 'Edit: {name}' },
+  'photos:gallery': { he: 'עריכת הגלריה', ar: 'تعديل المعرض', en: 'Edit gallery' },
   doctor: { he: 'עריכת אזור הרופא', ar: 'تعديل قسم الطبيب', en: 'Edit doctor section' },
   faq: { he: 'עריכת שאלות נפוצות', ar: 'تعديل الأسئلة الشائعة', en: 'Edit FAQ' },
   photos: { he: 'עריכת תמונות המרפאה', ar: 'تعديل صور العيادة', en: 'Edit clinic photos' },
@@ -27,12 +32,17 @@ const LABELS: Record<string, Record<Locale, string>> = {
   contact: { he: 'עריכת פרטי ההתקשרות', ar: 'تعديل بيانات الاتصال', en: 'Edit contact details' },
 };
 
-const { kind, focus, locale = 'he' } = Astro.props;
+const { kind, focus, locale = 'he', name } = Astro.props;
 const editing = process.env.VISUAL_CMS === '1';
-const key = kind === 'copy' ? `copy:${focus}` : kind === 'services' && focus ? 'services:item' : kind;
-const text = LABELS[key]?.[locale];
+const key = kind === 'copy' ? `copy:${focus}`
+  : kind === 'services' && focus === 'new' ? 'services:new'
+  : kind === 'services' && focus && name ? 'services:card'
+  : kind === 'services' && focus ? 'services:item'
+  : kind === 'photos' && focus === 'gallery' ? 'photos:gallery'
+  : kind;
+const text = LABELS[key]?.[locale]?.replace('{name}', name ?? '');
 // A new section without a label fails the admin build rather than shipping a
 // bare, ambiguous "Edit".
 if (editing && !text) throw new Error(`EditControl: no label for ${key} in ${locale}`);
 ---
-{editing && <button type="button" class="visual-edit-control" data-edit-kind={kind} data-edit-focus={focus}><svg class="visual-edit-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M4 20h4L19 9l-4-4L4 16v4ZM14 6l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" /></svg><span>{text}</span></button>}
+{editing && <button type="button" class="visual-edit-control" data-edit-kind={kind} data-edit-focus={focus === 'gallery' ? undefined : focus}><svg class="visual-edit-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M4 20h4L19 9l-4-4L4 16v4ZM14 6l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" /></svg><span>{text}</span></button>}

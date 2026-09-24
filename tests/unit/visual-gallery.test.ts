@@ -150,7 +150,7 @@ describe('replacing a photograph', () => {
     const { response, calls } = await callAdmin(
       await adminRequest('/api/photos/replace', {
         method: 'POST',
-        body: { file: 'reception-01.jpg', contentBase64: Buffer.from(JPEG).toString('base64') },
+        body: { file: 'reception-01.jpg', contentBase64: Buffer.from(JPEG).toString('base64'), confirmed: true },
       }),
       // The existing photograph is over 1 MB, as every phone photo is: GitHub
       // answers with its SHA and NO inline content. The old Worker read it as
@@ -174,11 +174,24 @@ describe('replacing a photograph', () => {
     assert.doesNotThrow(() => assertClinicPhotographyShape(manifest, 'committed'));
   });
 
+  test('a replacement without the patient-content confirmation is refused before any read', async () => {
+    const { response, calls } = await callAdmin(
+      await adminRequest('/api/photos/replace', {
+        method: 'POST',
+        body: { file: 'reception-01.jpg', contentBase64: Buffer.from(JPEG).toString('base64') },
+      }),
+      [stored(THREE), asCommit('x')],
+    );
+    assert.equal(response.status, 422);
+    assert.deepEqual((await response.json() as { error: { issues: string[] } }).error.issues, ['confirmation_required']);
+    assert.deepEqual(calls, []);
+  });
+
   test('a mismatched format is refused before any write', async () => {
     const { response, calls } = await callAdmin(
       await adminRequest('/api/photos/replace', {
         method: 'POST',
-        body: { file: 'reception-01.jpg', contentBase64: Buffer.from(PNG).toString('base64') },
+        body: { file: 'reception-01.jpg', contentBase64: Buffer.from(PNG).toString('base64'), confirmed: true },
       }),
       [stored(THREE), asCommit('x')],
     );
@@ -190,7 +203,7 @@ describe('replacing a photograph', () => {
     for (const file of ['../../.github/workflows/deploy.yml', 'sub/dir.jpg']) {
       const { response, calls } = await callAdmin(
         await adminRequest('/api/photos/replace', {
-          method: 'POST', body: { file, contentBase64: Buffer.from(JPEG).toString('base64') },
+          method: 'POST', body: { file, contentBase64: Buffer.from(JPEG).toString('base64'), confirmed: true },
         }),
         [stored(THREE), asCommit('x')],
       );
@@ -262,7 +275,12 @@ describe('the drag affordance', () => {
     assert.match(VISUAL_CLIENT, /pointermove/);
     assert.match(VISUAL_CLIENT, /pointerup/);
     assert.match(VISUAL_CLIENT, /setPointerCapture/);
-    assert.doesNotMatch(VISUAL_CLIENT, /\bdragstart\b|\bdragover\b/);
+    // The SORT code, specifically: HTML5 drag events are allowed only for
+    // dropping files from the desktop onto the upload zone, never for order.
+    const sortCode = VISUAL_CLIENT.slice(VISUAL_CLIENT.indexOf('function sortable('), VISUAL_CLIENT.indexOf('function orderButtons('));
+    assert.ok(sortCode.length > 500, 'sortable() not found');
+    assert.doesNotMatch(sortCode, /\bdragstart\b|\bdragover\b|\bdrop\b/);
+    assert.match(sortCode, /setPointerCapture/);
   });
 
   test('every sortable list keeps its keyboard alternative', () => {
@@ -302,6 +320,8 @@ describe('edit mode, preview and unsaved work', () => {
 
   test('saving clears the unsaved flag', () => {
     assert.match(VISUAL_CLIENT, /dirty=false;tell\('נשמר ב-commit/);
+    // And a save with nothing changed says so, rather than "saved".
+    assert.match(VISUAL_CLIENT, /if \(data\.unchanged\) \{ dirty=false; tell\('אין שינויים לשמירה/);
   });
 
   test('publication status survives closing the dialog', () => {

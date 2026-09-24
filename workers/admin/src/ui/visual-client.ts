@@ -1,0 +1,708 @@
+/**
+ * Edit Mode's browser code. Served only after Access verification; never
+ * bundled into the public site.
+ *
+ * Rebuilt after using the deployed admin as the doctor would. What that found,
+ * and what this file therefore guarantees:
+ *
+ * - Every mutation ends in a visible result: working, saved, nothing to save,
+ *   or an error that says what to do. An error is never overwritten by a
+ *   background status check (it used to be, within five seconds).
+ * - Errors are sentences in Hebrew, naming the item, field and language —
+ *   never "INVALID — row_1_times_required".
+ * - "Edit treatment" opens THAT treatment, at the top, focused. It used to
+ *   render the first treatment 1,700px below the fold.
+ * - A second save in the same sitting works (the new blob SHA is kept).
+ * - One publication tracker at a time.
+ *
+ * Owner text reaches the DOM only as textContent or a form value. No
+ * innerHTML, anywhere — a test enforces it.
+ */
+export const VISUAL_CLIENT = String.raw`
+(() => {
+  'use strict';
+  const bar = document.querySelector('[data-visual-editor-locale]');
+  if (!bar) return;
+  const locale = bar.getAttribute('data-visual-editor-locale') || 'he';
+  const LANGS = ['he', 'ar', 'en'];
+  const names = {he:'עברית', ar:'العربية', en:'English'};
+  const urls = {copy:'/api/content/copy',services:'/api/content/services',doctor:'/api/content/doctor',faq:'/api/content/faq',contact:'/api/content/contact',hours:'/api/hours',photos:'/api/photos'};
+  const titles = {copy:'טקסטים באתר',services:'טיפולים',doctor:'אזור הרופא',faq:'שאלות נפוצות',contact:'פרטי התקשרות',hours:'שעות פעילות',photos:'גלריית תמונות המרפאה'};
+  const MAX_IMAGE = 8 * 1024 * 1024, MIN_EDGE = 1200;
+
+  /* ── Words the doctor reads ─────────────────────────────────────────── */
+  const COPY_LABELS = {
+    'hero.eyebrow':'שורה קטנה מעל הכותרת הראשית','hero.title':'כותרת ראשית','hero.subtitle':'משפט פתיחה מתחת לכותרת',
+    'trust.explanation.title':'נקודה 1 — כותרת','trust.explanation.body':'נקודה 1 — הסבר','trust.languages.title':'נקודה 2 — כותרת','trust.languages.body':'נקודה 2 — הסבר',
+    'trust.availability.title':'נקודה 3 — כותרת','trust.availability.body':'נקודה 3 — הסבר','trust.personal.title':'נקודה 4 — כותרת','trust.personal.body':'נקודה 4 — הסבר',
+    'treatments.title':'כותרת אזור הטיפולים','treatments.intro':'פתיח אזור הטיפולים','doctor.title':'כותרת אזור הרופא','doctor.cta':'כפתור באזור הרופא','faq.title':'כותרת השאלות הנפוצות',
+    'contact.title':'כותרת עמוד יצירת קשר','contact.subtitle':'פתיח עמוד יצירת קשר','location.title':'כותרת אזור המיקום','location.subtitle':'פתיח אזור המיקום',
+    'gallery.eyebrow':'שורה קטנה מעל כותרת הגלריה','gallery.title':'כותרת הגלריה','gallery.intro':'פתיח הגלריה',
+    'action.bookAppointment':'כפתור קביעת תור','action.readMore':'קישור "קראו עוד"','action.allTreatments':'קישור "כל הטיפולים"',
+    'feedback.title':'כותרת אזור המשוב','feedback.body':'טקסט אזור המשוב','feedback.cta':'כפתור אזור המשוב'};
+  const CONTACT_LABELS = {landline:'טלפון קווי (לדוגמה 04-123-4567)',mobile:'טלפון נייד (לדוגמה 050-123-4567)',email:'דוא״ל (לא חובה)',postalCode:'מיקוד',instagram:'קישור Instagram',facebook:'קישור Facebook',googleBusiness:'קישור לפרופיל Google',street:'רחוב ומספר',locality:'יישוב',region:'אזור'};
+  const CATEGORY_LABELS = {exterior:'חזית המרפאה',reception:'קבלה והמתנה','treatment-room':'חדר טיפולים',equipment:'ציוד',"doctor-working":'הרופא בעבודה',team:'צוות',atmosphere:'אווירה'};
+  const ICON_LABELS = {implant:'שתל',crown:'כתר',whitening:'הלבנה',filling:'סתימה',veneer:'ציפוי',aligner:'יישור שיניים',"root-canal":'טיפול שורש',extraction:'עקירה',cleaning:'ניקוי',emergency:'חירום',aesthetic:'אסתטיקה'};
+  const SERVICE_FIELDS = {title:'שם הטיפול (כותרת העמוד)',cardTitle:'שם קצר לכרטיס',summary:'תקציר',candidacy:'למי מתאים',process:'מהלך הטיפול',expect:'למה לצפות',faq:'שאלות על הטיפול',seoTitle:'כותרת לגוגל (לא חובה)',seoDescription:'תיאור קצר לגוגל',reviewedOn:'תאריך בדיקה רפואית',step:'שלב',detail:'פירוט',q:'שאלה',a:'תשובה',slug:'כתובת העמוד',status:'מצב',icon:'סמל'};
+  const DAYS = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  const DAY_OF = {Sunday:'ראשון',Monday:'שני',Tuesday:'שלישי',Wednesday:'רביעי',Thursday:'חמישי',Friday:'שישי',Saturday:'שבת'};
+
+  const ERRORS = {
+    AUTH_REQUIRED:'החיבור למערכת פג. יש לרענן את הדף ולהתחבר שוב. השינויים שלא נשמרו יאבדו — כדאי להעתיק אותם קודם.',
+    AUTH_INVALID:'החיבור למערכת פג. יש לרענן את הדף ולהתחבר שוב.',
+    FORBIDDEN:'הפעולה נחסמה מטעמי אבטחה. יש לרענן את הדף ולנסות שוב.',
+    NOT_FOUND:'הפריט לא נמצא — ייתכן שנמחק. יש לטעון מחדש.',
+    CONFLICT:'התוכן השתנה מאז שנפתח (אולי בחלון או במכשיר אחר). כדי לא לדרוס שינוי, יש לטעון מחדש ולערוך שוב.',
+    UPSTREAM_UNAVAILABLE:'השמירה לא הצליחה — שירות האחסון לא זמין כרגע. השינויים עדיין כאן; נסו שוב בעוד רגע.',
+    NOT_CONFIGURED:'מערכת העריכה אינה מוגדרת כראוי. יש לפנות למפתח.',
+    PAYLOAD_TOO_LARGE:'הקובץ גדול מדי לשליחה.',
+    RATE_LIMITED:'נשלחו יותר מדי בקשות ברצף. המתינו כמה שניות ונסו שוב.',
+    NETWORK:'אין חיבור לרשת. השינויים עדיין כאן; נסו שוב כשהחיבור יחזור.',
+    BAD_REQUEST:'הבקשה לא תקינה. יש לרענן את הדף ולנסות שוב.',
+    SERVER_ERROR:'אירעה שגיאה בלתי צפויה. השינויים עדיין כאן; נסו שוב.',
+    INVALID:'לא נשמר. יש לתקן:'};
+  const ISSUES = {
+    confirmation_required:'יש לאשר שבתמונה אין מטופל, חלק ממטופל או תמונת לפני/אחרי.',
+    category_not_allowed:'יש לבחור סוג תמונה מהרשימה.',
+    alt_he_required:'חסר תיאור בעברית.', alt_ar_required:'חסר תיאור בערבית.', alt_en_required:'חסר תיאור באנגלית.',
+    alt_en_not_english:'התיאור באנגלית צריך להיות כתוב באנגלית.',
+    file_required:'לא נבחר קובץ.', file_too_large:'הקובץ גדול מ-8 מגה-בייט.',
+    unsupported_format:'הקובץ אינו תמונת JPG או PNG תקינה.', image_too_small:'התמונה קטנה מדי — נדרשים לפחות 1200 פיקסלים בצד הארוך.',
+    category_full:'אין מקום לתמונות נוספות מסוג זה.', photo_not_actionable:'לא ניתן לבצע את הפעולה על התמונה הזו. אם היא מוצגת באתר, יש להסתיר אותה קודם.',
+    format_must_match:'התמונה החדשה חייבת להיות באותו פורמט כמו הקודמת.',
+    order_stale:'רשימת התמונות השתנתה בינתיים. יש לטעון מחדש.', order_invalid:'הסדר שנשלח לא תקין. יש לטעון מחדש.',
+    owner_confirmation_required:'יש לסמן את תיבת האישור שמתחת לטופס.',
+    same_location_confirmation_required:'שינוי כתובת דורש לסמן שזו אותה כתובת פיזית.',
+    published_item_or_url_locked:'אי אפשר למחוק פריט שמוצג באתר, או לשנות כתובת של טיפול שכבר נשמר. יש להסתיר אותו, לשמור, ורק אז למחוק.',
+    content_invalid:'התוכן אינו תקין.', wrong_row_count:'רשימת הימים לא שלמה. יש לטעון מחדש.', not_an_array:'רשימת הימים לא תקינה. יש לטעון מחדש.'};
+  const REASONS = {too_small:'חסר',too_big:'ארוך מדי',invalid_format:'בפורמט לא תקין',invalid_string:'בפורמט לא תקין',invalid_type:'חסר או לא תקין',custom:'כפול — כבר קיים פריט עם אותה כתובת',invalid_union:'לא תקין',invalid_union_discriminator:'לא תקין',unrecognized_keys:'מכיל שדה לא מוכר',invalid_value:'לא תקין'};
+
+  /* ── Small DOM helpers (text only) ──────────────────────────────────── */
+  function add(parent, tag, text) { const node=document.createElement(tag); if(text!=null) node.textContent=text; parent.append(node); return node; }
+  function button(label, action, cls) { const node=document.createElement('button'); node.type='button'; node.textContent=label; if(cls) node.className=cls; node.addEventListener('click',action); return node; }
+  function row(parent) { const node=add(parent,'div'); node.className='visual-row'; return node; }
+  function badge(parent, published, text) { const b=add(parent,'span',text||(published?'מוצג באתר':'מוסתר')); b.className='visual-badge'; b.setAttribute('data-state',published?'published':'hidden'); return b; }
+  function field(parent,label,value,change,options={}) {
+    const wrap=add(parent,'label',label); const node=document.createElement(options.textarea?'textarea':'input');
+    if(!options.textarea) node.type=options.type||'text';
+    if(options.lang){ node.lang=options.lang; node.dir=options.lang==='en'?'ltr':'rtl'; }
+    if(options.dir) node.dir=options.dir;
+    if(options.path) node.setAttribute('data-path',options.path);
+    node.value=value==null?'':String(value);
+    node.addEventListener('input',()=>{touch();node.removeAttribute('aria-invalid');change(node.value);}); wrap.append(node); return node;
+  }
+  function select(parent,label,value,choices,change,path){const wrap=add(parent,'label',label);const node=add(wrap,'select');if(path)node.setAttribute('data-path',path);for(const [v,t] of choices){const option=add(node,'option',t);option.value=String(v);}node.value=String(value);node.addEventListener('change',()=>{touch();change(node.value);});return node;}
+  function check(parent,label,value,change,path){const wrap=add(parent,'label');wrap.className='visual-check';const node=document.createElement('input');node.type='checkbox';node.checked=!!value;if(path)node.setAttribute('data-path',path);node.addEventListener('change',()=>{touch();node.removeAttribute('aria-invalid');change(node.checked);});wrap.append(node,document.createTextNode(label));return node;}
+  function group(parent,label){const fs=add(parent,'fieldset');add(fs,'legend',label);return fs;}
+  function translated(parent,label,obj,key,path,textarea=true){const fs=group(parent,label);for(const lang of LANGS){field(fs,names[lang],obj[key][lang],v=>{obj[key][lang]=v;},{textarea,lang,path:path+'.'+lang});}return fs;}
+  const sleep=(ms)=>new Promise(r=>setTimeout(r,ms));
+  const short=(sha)=>String(sha).slice(0,7);
+
+  /* ── Dialog shell: header, scrolling body, sticky footer with the result ─ */
+  const dialog = document.createElement('dialog'); dialog.className='visual-dialog'; dialog.setAttribute('aria-labelledby','visual-dialog-title');
+  const head = add(dialog,'div'); head.className='visual-dialog-head';
+  const title = add(head,'h2'); title.id='visual-dialog-title';
+  /* Closing with unsaved edits is the one destructive thing a doctor can do
+     here by accident — nothing is committed until Save. */
+  const close = button('סגירה', () => {
+    if (dirty && !confirm('יש שינויים שלא נשמרו. לסגור ולאבד אותם?')) return;
+    dirty = false; dialog.close();
+  });
+  head.append(close);
+  const main = add(dialog,'div'); main.className='visual-dialog-main';
+  const warning = add(main,'p','כל תוכן נשמר במאגר ציבורי, גם תוכן מוסתר. אין להזין מידע על מטופלים, פרטים רפואיים אישיים או סודות.'); warning.className='visual-warning';
+  const body = add(main,'div');
+  const foot = add(dialog,'div'); foot.className='visual-dialog-foot';
+  const message = add(foot,'p'); message.className='visual-status'; message.setAttribute('role','status'); message.setAttribute('aria-live','polite');
+  const errorBox = add(foot,'div'); errorBox.className='visual-errors'; errorBox.setAttribute('role','alert'); errorBox.hidden=true;
+  const pubLine = add(foot,'p'); pubLine.className='visual-pub'; pubLine.hidden=true;
+  const footActions = add(foot,'div'); footActions.className='visual-foot-actions';
+  const saveButton = button('שמירה', () => void save(), 'primary');
+  footActions.append(saveButton);
+  document.body.append(dialog);
+  dialog.addEventListener('cancel',(event)=>{ if (dirty && !confirm('יש שינויים שלא נשמרו. לסגור ולאבד אותם?')) event.preventDefault(); else dirty=false; });
+
+  let kind='', sha='', draft=null, original=null, focus='', busy=false, dirty=false, publishing='test';
+  let view={mode:'list',id:'',lang:'he'}, expanded=new Set(), versions={}, edits={}, orderDirty=false, pending=[], sent=null, altOpenSet=new Set();
+  /** Marked on every field change, cleared on save. Guards the close. */
+  function touch(){ dirty=true; }
+
+  function tell(text,state){message.textContent=text;message.setAttribute('data-state',state||'');message.classList.remove('visual-loading');barTell(text,state);}
+  function setBusy(on){busy=on;saveButton.disabled=on;main.inert=on;if(on)main.setAttribute('aria-busy','true');else main.removeAttribute('aria-busy');}
+  function clearErrors(){errorBox.replaceChildren();errorBox.hidden=true;for(const n of dialog.querySelectorAll('[aria-invalid]'))n.removeAttribute('aria-invalid');}
+
+  /* ── Network ────────────────────────────────────────────────────────── */
+  function ApiError(code, issues){ this.code=code; this.issues=issues||[]; }
+  async function api(url, method, payload){
+    let response;
+    try {
+      // redirect:'manual' — an expired Access session answers with a redirect
+      // to the login page, which a fetch would otherwise follow into a CORS
+      // failure and report as "no network".
+      response=await fetch(url,{method,headers:payload?{'Content-Type':'application/json'}:{},body:payload?JSON.stringify(payload):undefined,cache:'no-store',redirect:'manual',credentials:'same-origin'});
+    } catch { throw new ApiError('NETWORK'); }
+    if (response.type==='opaqueredirect' || response.status===0) throw new ApiError('AUTH_REQUIRED');
+    let result=null; try { result=await response.json(); } catch { result=null; }
+    if (!result) throw new ApiError(response.status===413?'PAYLOAD_TOO_LARGE':response.status===429?'RATE_LIMITED':'SERVER_ERROR');
+    if (!response.ok || !result.ok) throw new ApiError(result.error && result.error.code || 'SERVER_ERROR', result.error && result.error.issues);
+    return result.data;
+  }
+
+  /* ── Turning an issue key into a sentence and a field ───────────────── */
+  function reasonOf(r){ if(/^claim_/.test(r)) return 'ניסוח אסור לפי כללי הפרסום הרפואי (למשל הבטחת תוצאה או "הכי טוב")'; return REASONS[r]||'לא תקין'; }
+  function itemName(i){ const item=sent&&sent[i]; if(!item) return 'פריט '+(Number(i)+1); if(kind==='services') return 'טיפול "'+((item.locales&&item.locales.he&&item.locales.he.title)||item.slug)+'"'; if(kind==='faq') return 'שאלה "'+((item.q&&item.q.he)||('מספר '+(Number(i)+1)))+'"'; return 'פריט '+(Number(i)+1); }
+  function describeIssue(issue){
+    if (ISSUES[issue]) return ISSUES[issue];
+    let m=/^row_(\d)_(.*)$/.exec(issue);
+    if (m) { const day='יום '+DAYS[Number(m[1])]; if(m[2]==='times_required') return day+': יש למלא שעת פתיחה ושעת סגירה (או לסמן "סגור").'; if(m[2]==='opens_after_closes') return day+': שעת הפתיחה חייבת להיות לפני שעת הסגירה.'; if(/^time/.test(m[2])) return day+': שעה לא תקינה.'; return day+': ערך לא תקין.'; }
+    m=/^alt_(he|ar|en)_claim_/.exec(issue); if(m) return 'התיאור ב'+names[m[1]]+' מכיל ניסוח אסור לפי כללי הפרסום הרפואי.';
+    const at=issue.lastIndexOf(':'); if(at<0) return 'ערך לא תקין.';
+    const path=issue.slice(0,at).split('.'), reason=reasonOf(issue.slice(at+1));
+    if (kind==='services'||kind==='faq') {
+      const lang=path.find(p=>LANGS.includes(p)); const key=path.slice(1).find(p=>SERVICE_FIELDS[p]);
+      return itemName(path[0])+' · '+(key?SERVICE_FIELDS[key]:'שדה')+(lang?' ('+names[lang]+')':'')+': '+reason;
+    }
+    if (kind==='copy') { const lang=path[path.length-1]; const key=path.slice(0,-1).join('.'); return (COPY_LABELS[key]||key)+(names[lang]?' ('+names[lang]+')':'')+': '+reason; }
+    if (kind==='contact') { const lang=path.find(p=>LANGS.includes(p)); return (CONTACT_LABELS[path[0]]||path[0])+(lang?' ('+names[lang]+')':'')+': '+reason; }
+    if (kind==='doctor') { const lang=path.find(p=>LANGS.includes(p)); const part={intro:'הקדמה',approach:'גישת המרפאה',credentials:'השכלה והסמכות'}[path[0]]||path[0]; return part+(lang?' ('+names[lang]+')':'')+': '+reason; }
+    return reason;
+  }
+  function fieldFor(issue){
+    const at=issue.lastIndexOf(':'); const path=at<0?issue:issue.slice(0,at);
+    const m=/^row_(\d)_/.exec(issue); if(m) return dialog.querySelector('[data-path="row_'+m[1]+'"]');
+    if(issue==='owner_confirmation_required') return dialog.querySelector('#visual-owner-confirm');
+    if(issue==='same_location_confirmation_required') return dialog.querySelector('#visual-same-location');
+    if(issue==='confirmation_required') return dialog.querySelector('#visual-upload-confirm');
+    // The exact field, or the nearest enclosing group (a list that is too
+    // short has no field of its own to point at).
+    for(let cut=path; cut; cut=cut.includes('.')?cut.slice(0,cut.lastIndexOf('.')):''){
+      const node=dialog.querySelector('[data-path="'+CSS.escape(cut)+'"]');
+      if(node) return node;
+    }
+    return null;
+  }
+  /** Put the issue on screen: for a treatment or FAQ, open the item and the language it is in. */
+  function goTo(issue){
+    const at=issue.lastIndexOf(':'); const path=(at<0?issue:issue.slice(0,at)).split('.');
+    if ((kind==='services'||kind==='faq') && sent && /^\d+$/.test(path[0])) {
+      const item=sent[Number(path[0])]; const lang=path.find(p=>LANGS.includes(p));
+      if (item && kind==='services') view={mode:'item',id:item.id,lang:lang||view.lang};
+      if (item && kind==='faq') expanded.add(item.id);
+      render();
+    }
+    const node=fieldFor(issue);
+    if (node) { node.setAttribute('aria-invalid','true'); node.scrollIntoView({block:'center'}); node.focus({preventScroll:true}); }
+  }
+
+  function fail(error){
+    const code=error instanceof ApiError?error.code:'SERVER_ERROR';
+    tell(ERRORS[code]||ERRORS.SERVER_ERROR,'error');
+    errorBox.replaceChildren();
+    if (code==='INVALID' && error.issues.length) {
+      const list=add(errorBox,'ul');
+      for (const issue of error.issues) {
+        const li=add(list,'li'); const text=describeIssue(issue);
+        const node=fieldFor(issue); if(node) node.setAttribute('aria-invalid','true');
+        li.append(button(text,()=>goTo(issue),'visual-link'));
+      }
+      errorBox.hidden=false;
+    } else if (code==='CONFLICT' || code==='NOT_FOUND') {
+      errorBox.append(button('טעינה מחדש של התוכן העדכני',()=>{ if(dirty&&!confirm('השינויים שלא נשמרו יאבדו. לטעון מחדש?'))return; dirty=false; void open(kind,focus,true); },'primary'));
+      errorBox.hidden=false;
+    } else if (code==='AUTH_REQUIRED' || code==='AUTH_INVALID') {
+      errorBox.append(button('רענון הדף והתחברות',()=>location.reload(),'primary'));
+      errorBox.hidden=false;
+    }
+  }
+
+  /* ── Publication: ONE tracker; it never touches the dialog's result line ─ */
+  let trackToken=0;
+  function pubTell(text,state){ pubLine.textContent=text; pubLine.hidden=!text; pubLine.setAttribute('data-state',state||''); barTell(text,state); }
+  async function track(commit){
+    if(!commit) return;
+    const token=++trackToken; let previewSeen=false;
+    pubTell(publishing==='test'?'נשמר בענף הבדיקה ('+short(commit)+'). האתר הציבורי אינו משתנה.':'נשמר ('+short(commit)+'). ממתין לפרסום באתר…','working');
+    for (let attempt=0; attempt<72; attempt++) {
+      await sleep(5000);
+      if (token!==trackToken) return;
+      let data; try { data=await api('/api/status?sha='+encodeURIComponent(commit),'GET'); } catch { continue; }
+      if (token!==trackToken) return;
+      if (data.preview==='ready' && !previewSeen) { previewSeen=true; offerReload(); }
+      if (publishing==='production') {
+        if (data.state==='published') { barTell('פורסם באתר','published'); pubTell('פורסם באתר','published'); if(previewSeen||data.preview!=='building') return; }
+        else if (data.state==='failed') { pubTell('נשמר, אך הפרסום נכשל. האתר מציג את הגרסה הקודמת. יש לפנות למפתח.','failed'); return; }
+        else pubTell('נשמר ('+short(commit)+'). ממתין לפרסום באתר…','working');
+      } else if (data.preview==='building') pubTell('נשמר בענף הבדיקה ('+short(commit)+'). תצוגת העריכה מתעדכנת…','working');
+      else if (data.preview==='failed') { pubTell('נשמר, אך עדכון תצוגת העריכה נכשל. השינוי שמור.','failed'); return; }
+      else if (previewSeen || data.preview==='none' && attempt>=6 || data.preview==='unavailable') { if(!previewSeen) pubTell('נשמר בענף הבדיקה ('+short(commit)+'). הדף יציג את השינוי לאחר עדכון התצוגה.','info'); return; }
+    }
+  }
+  function offerReload(){
+    reloadSlot.replaceChildren();
+    const b=button('התצוגה עודכנה — רענון הדף',()=>{ if(dirty&&!confirm('יש שינויים שלא נשמרו. לרענן בכל זאת?'))return; dirty=false; location.reload(); });
+    reloadSlot.append(b); reloadSlot.hidden=false;
+    pubTell('השינוי מוצג עכשיו בתצוגת העריכה. יש לרענן את הדף כדי לראות אותו.','published');
+  }
+
+  /* ── Opening, loading, saving ───────────────────────────────────────── */
+  function loading(on){message.classList.toggle('visual-loading',on);if(on){message.textContent='טוען את התוכן…';message.setAttribute('data-state','working');const sk=document.createElement('div');sk.className='visual-skeleton';sk.setAttribute('aria-hidden','true');for(let i=0;i<6;i++)sk.append(document.createElement('span'));body.replaceChildren(sk);body.setAttribute('aria-busy','true');}else{body.replaceChildren();body.removeAttribute('aria-busy');}}
+  async function open(next,which='',reload=false){
+    if(dialog.open && dirty && !reload && !confirm('יש שינויים שלא נשמרו. לעבור ולאבד אותם?')) return;
+    kind=next;focus=which;sha='';draft=null;original=null;dirty=false;orderDirty=false;edits={};pending=[];expanded=new Set();sent=null;altOpenSet=new Set();
+    view={mode:'list',id:'',lang:'he'};
+    title.textContent=titles[kind]||kind; clearErrors(); pubLine.hidden=true;
+    saveButton.hidden = kind==='photos';
+    loading(true); if(!dialog.open) dialog.showModal();
+    try {
+      const data=await api(urls[kind],'GET');
+      sha=data.sha; versions=data.versions||{};
+      draft=structuredClone(kind==='hours'?data.rows:kind==='photos'?data.records:data.value);
+      original=structuredClone(draft);
+      if (kind==='services' && focus==='new') { const created=newService(); draft.push(created); dirty=true; view={mode:'item',id:created.id,lang:'he'}; focus=''; }
+      else if (kind==='services' && focus) { const item=draft.find(x=>x.slug===focus); if(item) view={mode:'item',id:item.id,lang:'he'}; }
+      loading(false); tell(''); render(); main.scrollTop=0;
+      const start=body.querySelector('[data-start]'); if(start) start.focus();
+    } catch (error) { loading(false); fail(error); }
+  }
+  function payloadFor(){
+    if(kind==='hours') return {rows:draft,sha};
+    return {value:draft,sha,confirmed:document.querySelector('#visual-owner-confirm')?.checked===true,sameLocation:document.querySelector('#visual-same-location')?.checked===true};
+  }
+  async function save(){
+    if(busy||kind==='photos') return;
+    clearErrors(); sent=structuredClone(draft);
+    setBusy(true); tell('שומר…','working');
+    try {
+      const data=await api(urls[kind],'PUT',payloadFor());
+      if (data.blob) sha=data.blob;
+      if (data.unchanged) { dirty=false; tell('אין שינויים לשמירה — הכול כבר שמור.','info'); return; }
+      original=structuredClone(draft);
+      dirty=false;tell('נשמר ב-commit '+short(data.sha)+(publishing==='test'?' (ענף בדיקה — האתר הציבורי לא משתנה).':'; עדיין לא פורסם באתר.'),'ok');
+      render(); void track(data.sha);
+    } catch (error) { fail(error); } finally { setBusy(false); }
+  }
+  function render(){
+    body.replaceChildren();
+    if(kind==='copy')copyForm();else if(kind==='doctor')doctorForm();else if(kind==='contact')contactForm();else if(kind==='hours')hoursForm();else if(kind==='faq')faqForm();else if(kind==='services')servicesForm();else if(kind==='photos')photosForm();
+  }
+  function focusTop(){ main.scrollTop=0; const start=body.querySelector('[data-start]'); if(start) start.focus(); }
+
+  /* ── Simple forms ───────────────────────────────────────────────────── */
+  function copyForm(){
+    const keys=Object.keys(draft).filter(key=>!focus||key.startsWith(focus+'.')||(focus==='hero'&&key==='action.bookAppointment'));
+    if(focus) body.append(button('הצגת כל הטקסטים באתר',()=>{focus='';render();}));
+    for(const key of keys) translated(body,COPY_LABELS[key]||key,{entry:draft[key]},'entry',key);
+  }
+  function doctorForm(){
+    translated(body,'הקדמה',{entry:draft.intro},'entry','intro');
+    const fs=group(body,'גישת המרפאה — שורה לכל נקודה');
+    for(const lang of LANGS) field(fs,names[lang],draft.approach[lang].join('\n'),v=>{draft.approach[lang]=v.split('\n').map(x=>x.trim()).filter(Boolean);},{textarea:true,lang,path:'approach.'+lang});
+    const cred=group(body,'השכלה והסמכות — רק עובדות מאושרות בכתב');
+    draft.credentials.forEach((item,index)=>{const box=add(cred,'div');box.className='visual-item';for(const lang of LANGS)field(box,names[lang],item.label[lang],v=>{item.label[lang]=v;},{textarea:true,lang,path:'credentials.'+index+'.label.'+lang});field(box,'שנה (לא חובה)',item.year||'',v=>{if(v)item.year=v;else delete item.year;},{path:'credentials.'+index+'.year',dir:'ltr'});box.append(button('הסרת ההסמכה',()=>{draft.credentials.splice(index,1);touch();render();},'danger'));});
+    cred.append(button('הוספת הסמכה',()=>{draft.credentials.push({label:{he:'',ar:'',en:''}});touch();render();}));
+    ownerConfirm();
+  }
+  function ownerConfirm(){const wrap=add(body,'label');wrap.className='visual-check';const input=document.createElement('input');input.type='checkbox';input.id='visual-owner-confirm';wrap.append(input,document.createTextNode('אני מאשר/ת שכל הפרטים ששונו כאן נכונים.'));}
+  function contactForm(){
+    add(body,'p','שינוי הכתובת כאן מיועד לתיקון ניסוח של אותו מקום. אם המרפאה עברה, יש לעדכן גם את המפה וקישור Waze דרך המפתח.').className='visual-hint';
+    for(const key of ['landline','mobile','email','postalCode','instagram','facebook','googleBusiness'])field(body,CONTACT_LABELS[key],draft[key],v=>{draft[key]=v.trim();},{path:key,dir:'ltr'});
+    for(const key of ['street','locality','region'])translated(body,CONTACT_LABELS[key],{entry:draft[key]},'entry',key,false);
+    ownerConfirm();
+    const wrap=add(body,'label');wrap.className='visual-check';const input=document.createElement('input');input.type='checkbox';input.id='visual-same-location';wrap.append(input,document.createTextNode('אני מאשר/ת שזו אותה כתובת פיזית, והמפה וקישור Waze עדיין נכונים.'));
+  }
+  function hoursForm(){
+    draft.forEach((day,index)=>{
+      const fs=group(body,'יום '+(DAY_OF[day.day]||day.day)); fs.setAttribute('data-path','row_'+index); fs.tabIndex=-1;
+      check(fs,'סגור ביום זה',day.closed,v=>{day.closed=v;if(v){day.opens='';day.closes='';}render();});
+      if(!day.closed){const pair=row(fs);field(pair,'פתיחה',day.opens,v=>{day.opens=v;},{type:'time',dir:'ltr'});field(pair,'סגירה',day.closes,v=>{day.closes=v;},{type:'time',dir:'ltr'});}
+    });
+  }
+
+  /* ── Drag to reorder ────────────────────────────────────────────────────
+     Pointer Events so mouse, pen and touch all work — the doctor reorders
+     his gallery on a phone, and HTML5 drag-and-drop never fires there.
+
+     The Up/Down buttons stay. They are not a fallback nobody uses: dragging
+     is unavailable to anyone on a keyboard or a screen reader, so the two
+     are the same feature offered two ways, and the buttons carry the
+     accessible names. */
+  function grip(){
+    const handle=document.createElement('span');
+    handle.className='visual-grip';
+    handle.setAttribute('aria-hidden','true');   // the buttons are the accessible path
+    // Built with DOM calls, not innerHTML — a test enforces the blanket rule.
+    const NS='http://www.w3.org/2000/svg';
+    const icon=document.createElementNS(NS,'svg');
+    icon.setAttribute('width','14');icon.setAttribute('height','14');
+    icon.setAttribute('viewBox','0 0 24 24');icon.setAttribute('fill','currentColor');
+    for(const [cx,cy] of [[9,6],[15,6],[9,12],[15,12],[9,18],[15,18]]){
+      const dot=document.createElementNS(NS,'circle');
+      dot.setAttribute('cx',String(cx));dot.setAttribute('cy',String(cy));dot.setAttribute('r','1.6');
+      icon.append(dot);
+    }
+    handle.append(icon);
+    handle.append(document.createTextNode('גרירה'));
+    return handle;
+  }
+
+  /** Make a list or grid of .visual-item children reorderable by dragging its grips. */
+  function sortable(container, collection, done){
+    container.classList.add('visual-sortable');
+    let dragging=null, from=-1, marked=null;
+    const items=()=>[...container.children].filter(n=>n.classList.contains('visual-item'));
+    const isGrid=()=>getComputedStyle(container).display==='grid';
+    const itemAt=(x,y)=>{
+      let best=null, dist=Infinity;
+      for(const node of items()){
+        if(node===dragging) continue;
+        const r=node.getBoundingClientRect(); const cx=r.left+r.width/2, cy=r.top+r.height/2;
+        const d=(x-cx)*(x-cx)+(y-cy)*(y-cy); if(d<dist){dist=d;best={node,r,cx,cy};}
+      }
+      if(!best) return null;
+      if(isGrid() && y>best.r.top && y<best.r.bottom){
+        const rtl=getComputedStyle(container).direction==='rtl';
+        return {node:best.node,after:rtl?x<best.cx:x>best.cx};
+      }
+      return {node:best.node,after:y>best.cy};
+    };
+    const clear=()=>{ if(marked){marked.node.classList.remove('is-over','is-over-after');marked=null;} };
+    container.addEventListener('pointerdown', (event)=>{
+      const handle=event.target.closest('.visual-grip');
+      if(!handle||!container.contains(handle)) return;
+      dragging=handle.closest('.visual-item');
+      if(!dragging||dragging.parentElement!==container){dragging=null;return;}
+      from=items().indexOf(dragging);
+      dragging.classList.add('is-dragging');
+      handle.setPointerCapture(event.pointerId);
+      event.preventDefault();          // stop the page scrolling under the finger
+    });
+    container.addEventListener('pointermove', (event)=>{
+      if(!dragging) return;
+      // Scroll the dialog when the finger nears its edge, so an item can be
+      // carried past the part of a long list that is on screen.
+      const box=main.getBoundingClientRect();
+      if(event.clientY<box.top+48) main.scrollBy(0,-14); else if(event.clientY>box.bottom-48) main.scrollBy(0,14);
+      const target=itemAt(event.clientX,event.clientY);
+      if(marked && (!target || target.node!==marked.node || target.after!==marked.after)) clear();
+      if(target && !marked){ target.node.classList.add(target.after?'is-over-after':'is-over'); marked=target; }
+    });
+    const finish=()=>{
+      if(!dragging) return;
+      dragging.classList.remove('is-dragging');
+      if(marked && from>-1){
+        let to=items().indexOf(marked.node);
+        if(marked.after) to+=1;
+        if(to>from) to-=1;
+        if(to!==from && to>=0 && to<collection.length){
+          const [moved]=collection.splice(from,1);
+          collection.splice(to,0,moved);
+          done();
+        }
+      }
+      clear(); dragging=null; from=-1;
+    };
+    container.addEventListener('pointerup',finish);
+    container.addEventListener('pointercancel',finish);
+  }
+
+  /** Up/Down for one item in an ordered list; the name makes each button unique for screen readers. */
+  function orderButtons(parent,ordered,index,name,after){
+    const up=button('למעלה',()=>{if(index>0){[ordered[index-1],ordered[index]]=[ordered[index],ordered[index-1]];after();}});
+    up.setAttribute('aria-label','למעלה: '+name); up.disabled=index===0;
+    const down=button('למטה',()=>{if(index<ordered.length-1){[ordered[index+1],ordered[index]]=[ordered[index],ordered[index+1]];after();}});
+    down.setAttribute('aria-label','למטה: '+name); down.disabled=index===ordered.length-1;
+    parent.append(up,down);
+  }
+  const savedStatus=(id)=>{ const item=(original||[]).find(x=>x.id===id); return item?item.status:null; };
+  const byOrder=(list)=>[...list].sort((a,b)=>a.order-b.order);
+  const renumber=(list)=>list.forEach((x,i)=>{x.order=i;});
+
+  /* ── Treatments: a list, and one treatment at a time ────────────────── */
+  function newService(){const ordinal=Date.now().toString(36);return{id:'service-'+ordinal,slug:'service-'+ordinal,status:'unpublished',tier:2,order:draft.reduce((m,x)=>Math.max(m,x.order),-1)+1,icon:'aesthetic',locales:Object.fromEntries(LANGS.map(lang=>[lang,{title:'',cardTitle:'',summary:'',candidacy:[''],process:[{step:'',detail:''},{step:'',detail:''}],expect:[''],faq:[],seoDescription:''}]))};}
+  function serviceName(item){return item.locales.he.title||item.locales.he.cardTitle||'טיפול חדש';}
+  function servicesForm(){
+    const item=view.mode==='item'?draft.find(x=>x.id===view.id):null;
+    if(item) return serviceEditor(item);
+    view={mode:'list',id:'',lang:view.lang};
+    const top=row(body);
+    const addButton=button('+ הוספת טיפול',()=>{const created=newService();draft.push(created);touch();view={mode:'item',id:created.id,lang:'he'};render();focusTop();},'primary');
+    addButton.setAttribute('data-start','');
+    top.append(addButton);
+    add(body,'p','הסדר כאן הוא הסדר באתר. אפשר לגרור טיפול בידית, או להשתמש בכפתורי למעלה/למטה. השינויים נשמרים בלחיצה על "שמירה".').className='visual-order-hint';
+    const ordered=byOrder(draft); const list=add(body,'div');
+    ordered.forEach((service,index)=>{
+      const box=add(list,'div'); box.className='visual-item'; box.setAttribute('data-id',service.id);
+      const heading=add(box,'h3'); heading.append(grip(),document.createTextNode(serviceName(service)+' ')); badge(heading,service.status==='published');
+      const r=row(box);
+      const edit=button('עריכת הטיפול',()=>{view={mode:'item',id:service.id,lang:'he'};render();focusTop();},'primary'); edit.setAttribute('aria-label','עריכת הטיפול: '+serviceName(service)); r.append(edit);
+      orderButtons(r,ordered,index,serviceName(service),()=>{renumber(ordered);touch();render();});
+      visibilityButtons(r,service,serviceName(service));
+    });
+    sortable(list,ordered,()=>{renumber(ordered);touch();render();});
+  }
+  function visibilityButtons(r,item,name){
+    const toggle=button(item.status==='published'?'הסתרה מהאתר':'הצגה באתר',()=>{item.status=item.status==='published'?'unpublished':'published';touch();render();});
+    toggle.setAttribute('aria-label',toggle.textContent+': '+name); r.append(toggle);
+    const saved=savedStatus(item.id);
+    if(item.status==='unpublished' && saved!=='published'){
+      const del=button('מחיקה',()=>{if(confirm('למחוק את "'+name+'"? המחיקה תתבצע בשמירה.')){draft.splice(draft.indexOf(item),1);expanded.delete(item.id);if(kind==='services')renumber(byOrder(draft));touch();render();}},'danger');
+      del.setAttribute('aria-label','מחיקה: '+name); r.append(del);
+    } else if(item.status==='unpublished' && saved==='published'){
+      add(r,'span','כדי למחוק: יש לשמור קודם את ההסתרה.').className='visual-hint';
+    }
+  }
+  function serviceEditor(item){
+    const index=draft.indexOf(item); const isNew=savedStatus(item.id)===null;
+    body.append(button('→ חזרה לרשימת הטיפולים',()=>{view={mode:'list',id:'',lang:view.lang};render();focusTop();}));
+    const heading=add(body,'h3','עריכת טיפול: '+serviceName(item)); heading.tabIndex=-1; heading.setAttribute('data-start',''); heading.className='visual-editor-heading';
+    const state=row(body); badge(state,item.status==='published'); visibilityButtons(state,item,serviceName(item));
+    if(item.status==='unpublished') add(body,'p','טיוטה: אפשר לשמור גם כשחלק מהשדות או מהשפות חסרים. כדי להציג באתר, יש למלא את כל השדות בשלוש השפות.').className='visual-hint';
+    if(isNew){ field(body,'כתובת העמוד באנגלית (למשל dental-crowns). לא ניתן לשנות לאחר השמירה.',item.slug,v=>{const slug=v.toLowerCase().replace(/[^a-z0-9-]+/g,'-').replace(/^-+|-+$/g,'');item.slug=slug;item.id=slug||item.id;},{path:index+'.slug',dir:'ltr'}); }
+    else add(body,'p','כתובת העמוד: /treatments/'+item.slug+'/').className='visual-hint';
+    select(body,'סמל',item.icon,Object.keys(ICON_LABELS).map(x=>[x,ICON_LABELS[x]]),v=>{item.icon=v;},index+'.icon');
+    const tabs=add(body,'div'); tabs.className='visual-tabs'; tabs.setAttribute('role','tablist'); tabs.setAttribute('aria-label','שפה');
+    for(const lang of LANGS){const t=button(names[lang],()=>{view.lang=lang;render();const sel=body.querySelector('.visual-tabs [aria-selected="true"]');if(sel)sel.focus();});t.setAttribute('role','tab');t.setAttribute('aria-selected',String(view.lang===lang));tabs.append(t);}
+    const lang=view.lang; const local=item.locales[lang]; const base=index+'.locales.'+lang;
+    const section=add(body,'div'); section.setAttribute('role','tabpanel'); section.lang=lang; section.dir=lang==='en'?'ltr':'rtl';
+    for(const key of ['title','cardTitle','summary'])field(section,SERVICE_FIELDS[key],local[key]||'',v=>{local[key]=v;},{textarea:key==='summary',lang,path:base+'.'+key});
+    lines(section,SERVICE_FIELDS.candidacy,local,'candidacy',base,lang);
+    pairs(section,SERVICE_FIELDS.process,local,'process','step','detail',base,lang);
+    lines(section,SERVICE_FIELDS.expect,local,'expect',base,lang);
+    pairs(section,SERVICE_FIELDS.faq,local,'faq','q','a',base,lang);
+    field(section,SERVICE_FIELDS.seoTitle,local.seoTitle||'',v=>{if(v)local.seoTitle=v;else delete local.seoTitle;},{lang,path:base+'.seoTitle'});
+    field(section,SERVICE_FIELDS.seoDescription,local.seoDescription||'',v=>{local.seoDescription=v;},{textarea:true,lang,path:base+'.seoDescription'});
+    field(section,SERVICE_FIELDS.reviewedOn,local.reviewedOn||'',v=>{if(v)local.reviewedOn=v;else delete local.reviewedOn;},{type:'date',path:base+'.reviewedOn',dir:'ltr'});
+  }
+  function lines(parent,label,obj,key,base,lang){const fs=group(parent,label);fs.setAttribute('data-path',base+'.'+key);obj[key].forEach((value,index)=>{const r=row(fs);field(r,'פריט '+(index+1),value,v=>{obj[key][index]=v;},{textarea:true,lang,path:base+'.'+key+'.'+index});r.append(button('הסרה',()=>{obj[key].splice(index,1);touch();render();},'danger'));});fs.append(button('הוספת פריט',()=>{obj[key].push('');touch();render();}));}
+  function pairs(parent,label,obj,key,first,second,base,lang){const fs=group(parent,label);fs.setAttribute('data-path',base+'.'+key);obj[key].forEach((value,index)=>{const box=add(fs,'div');box.className='visual-pair';field(box,SERVICE_FIELDS[first],value[first],v=>{value[first]=v;},{textarea:true,lang,path:base+'.'+key+'.'+index+'.'+first});field(box,SERVICE_FIELDS[second],value[second],v=>{value[second]=v;},{textarea:true,lang,path:base+'.'+key+'.'+index+'.'+second});box.append(button('הסרה',()=>{obj[key].splice(index,1);touch();render();},'danger'));});fs.append(button('הוספת פריט',()=>{obj[key].push({[first]:'',[second]:''});touch();render();}));}
+
+  /* ── FAQ: collapsed list, one opens to edit ─────────────────────────── */
+  function faqForm(){
+    const addButton=button('+ הוספת שאלה',()=>{const item={id:'faq-'+Date.now().toString(36),status:'unpublished',order:draft.reduce((m,x)=>Math.max(m,x.order),-1)+1,q:{he:'',ar:'',en:''},a:{he:'',ar:'',en:''}};draft.push(item);expanded.add(item.id);touch();render();const box=body.querySelector('[data-id="'+item.id+'"]');if(box){box.scrollIntoView({block:'start'});const first=box.querySelector('textarea');if(first)first.focus();}},'primary');
+    addButton.setAttribute('data-start',''); body.append(addButton);
+    add(body,'p','שאלה חדשה נשמרת כמוסתרת. אפשר לשמור טיוטה גם בלי כל השפות; כדי להציג באתר נדרש נוסח בעברית, ערבית ואנגלית.').className='visual-order-hint';
+    const ordered=byOrder(draft); const list=add(body,'div');
+    ordered.forEach((item,index)=>{
+      const box=add(list,'div'); box.className='visual-item'; box.setAttribute('data-id',item.id);
+      const name=item.q.he||'שאלה חדשה';
+      const heading=add(box,'h3'); heading.append(grip(),document.createTextNode(name+' ')); badge(heading,item.status==='published');
+      const r=row(box); const open_=expanded.has(item.id);
+      const edit=button(open_?'סגירת העריכה':'עריכה',()=>{if(open_)expanded.delete(item.id);else expanded.add(item.id);render();}); edit.setAttribute('aria-expanded',String(open_)); edit.setAttribute('aria-label',edit.textContent+': '+name); r.append(edit);
+      orderButtons(r,ordered,index,name,()=>{renumber(ordered);touch();render();});
+      visibilityButtons(r,item,name);
+      if(open_){ const i=draft.indexOf(item); translated(box,'שאלה',{entry:item.q},'entry',i+'.q'); translated(box,'תשובה',{entry:item.a},'entry',i+'.a'); }
+    });
+    sortable(list,ordered,()=>{renumber(ordered);touch();render();});
+  }
+
+  /* ── The gallery manager ────────────────────────────────────────────── */
+  async function reloadPhotos(){const data=await api('/api/photos','GET');sha=data.sha;versions=data.versions||{};draft=structuredClone(data.records);original=structuredClone(draft);orderDirty=false;render();}
+  async function photoRequest(url,payload,working,done){
+    if(busy) return; clearErrors(); setBusy(true); tell(working,'working');
+    try {
+      const result=await api(url,'POST',payload);
+      await reloadPhotos();
+      if(result.unchanged){tell('אין שינוי לשמירה.','info');return result;}
+      tell(done+' (commit '+short(result.sha)+(publishing==='test'?', ענף בדיקה).':'; עדיין לא פורסם באתר).'),'ok');
+      void track(result.sha); return result;
+    } catch(error){ fail(error); try{ await reloadPhotos(); }catch{} return null; }
+    finally { setBusy(false); }
+  }
+  async function encode(blob){const bytes=new Uint8Array(await blob.arrayBuffer());let binary='';for(let i=0;i<bytes.length;i+=32768)binary+=String.fromCharCode(...bytes.subarray(i,i+32768));return btoa(binary);}
+  /**
+   * Check a picked image the way the server will, before sending it, and
+   * shrink one that is too large. A phone photo is often over 8 MB; failing
+   * it with "too large" would leave the doctor nothing he could do.
+   */
+  async function prepare(file,mustType){
+    const type=file.type||'';
+    if(/hei[cf]/i.test(type)||/\.hei[cf]$/i.test(file.name)) throw new Error('תמונות HEIC של iPhone אינן נתמכות. בחרו את התמונה דרך "תמונות" (היא תומר אוטומטית ל-JPG), או שמרו אותה כ-JPG.');
+    if(!/^image\/(jpeg|png)$/.test(type)) throw new Error('"'+file.name+'" אינו קובץ JPG או PNG.');
+    let bitmap; try{ bitmap=await createImageBitmap(file); }catch{ throw new Error('לא ניתן לקרוא את "'+file.name+'" כתמונה.'); }
+    const w=bitmap.width,h=bitmap.height,long=Math.max(w,h);
+    if(long<MIN_EDGE){bitmap.close();throw new Error('"'+file.name+'" קטנה מדי ('+w+'×'+h+'). נדרשים לפחות '+MIN_EDGE+' פיקסלים בצד הארוך.');}
+    const target=mustType||type;
+    if(file.size<=MAX_IMAGE && target===type){bitmap.close();return {blob:file,width:w,height:h,type};}
+    for(const edge of [Math.min(long,3200),2400,1800,MIN_EDGE]){
+      const scale=edge/long; const canvas=document.createElement('canvas'); canvas.width=Math.round(w*scale); canvas.height=Math.round(h*scale);
+      canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+      const blob=await new Promise(r=>canvas.toBlob(r,target,0.88));
+      if(blob && blob.size<=MAX_IMAGE){bitmap.close();return {blob,width:canvas.width,height:canvas.height,type:target};}
+    }
+    bitmap.close(); throw new Error('"'+file.name+'" גדולה מדי גם לאחר הקטנה.');
+  }
+  function photoName(item){return (CATEGORY_LABELS[item.category]||item.category)+' · '+(item.alt.he||item.file);}
+  function photosForm(){
+    uploader();
+    const heading=add(body,'h3','התמונות בגלריה ('+draft.length+')'); heading.className='visual-editor-heading';
+    if(!draft.length){ add(body,'p','עדיין אין תמונות בגלריה. אפשר להוסיף תמונות למעלה.').className='visual-hint'; return; }
+    add(body,'p','תמונה חדשה נשמרת כמוסתרת; מציגים אותה בכפתור "הצגה באתר". הסדר כאן הוא הסדר באתר — גררו בידית או השתמשו בלמעלה/למטה, ואז "שמירת הסדר".').className='visual-order-hint';
+    if(orderDirty){ const bar_=add(body,'div'); bar_.className='visual-order-bar'; add(bar_,'span','הסדר השתנה ועדיין לא נשמר.'); bar_.append(button('שמירת הסדר',()=>void savePhotoOrder(),'primary'),button('ביטול',()=>{draft=structuredClone(original);orderDirty=false;render();})); }
+    const list=add(body,'div'); list.className='visual-photo-grid';
+    draft.forEach((item,index)=>{
+      const card=add(list,'div'); card.className='visual-item visual-photo-card'; card.setAttribute('data-file',item.file);
+      const top=add(card,'div'); top.className='visual-photo-top'; top.append(grip()); badge(top,item.status==='published');
+      if(item.needsEnglishReview) add(top,'span','נדרש אישור תיאור באנגלית').className='visual-badge';
+      const figure=add(card,'div'); figure.className='visual-photo-frame';
+      const thumb=add(figure,'img'); thumb.alt=item.alt.he||item.file; thumb.loading='lazy'; thumb.decoding='async';
+      thumb.src='/api/photo?file='+encodeURIComponent(item.file)+'&v='+encodeURIComponent(versions[item.file]||'');
+      thumb.addEventListener('error',()=>{thumb.remove();add(figure,'span','לא ניתן להציג תצוגה מקדימה').className='visual-hint';});
+      add(card,'p',CATEGORY_LABELS[item.category]||item.category).className='visual-hint';
+      const edit=edits[item.file]||(edits[item.file]={he:item.alt.he,ar:item.alt.ar,en:item.alt.en});
+      const changed=()=>edit.he!==item.alt.he||edit.ar!==item.alt.ar||edit.en!==item.alt.en;
+      // Collapsed by default so the manager shows photographs, not a wall of
+      // text boxes; open when there is something to finish.
+      const altOpen=altOpenSet.has(item.file)||changed()||item.needsEnglishReview===true;
+      add(card,'p',item.alt.he).className='visual-photo-alt';
+      const toggle=button(altOpen?'סגירת עריכת התיאור':'עריכת התיאור',()=>{if(altOpen)altOpenSet.delete(item.file);else altOpenSet.add(item.file);render();});
+      toggle.setAttribute('aria-expanded',String(altOpen)); toggle.setAttribute('aria-label',toggle.textContent+': '+photoName(item)); card.append(toggle);
+      if(altOpen){
+        const fs=group(card,'תיאור התמונה (לקוראי מסך ולגוגל)');
+        const saveAlt=button('שמירת התיאור',async()=>{const r=await photoRequest('/api/photos/describe',{file:item.file,altHe:edit.he,altAr:edit.ar,altEn:edit.en},'שומר תיאור…','התיאור נשמר');if(r){delete edits[item.file];altOpenSet.delete(item.file);render();}},'primary');
+        for(const lang of LANGS) field(fs,names[lang],edit[lang],v=>{edit[lang]=v;saveAlt.disabled=!changed()&&!item.needsEnglishReview;},{textarea:true,lang,path:'alt.'+item.file+'.'+lang});
+        saveAlt.disabled=!changed()&&!item.needsEnglishReview; fs.append(saveAlt);
+      }
+      const r=row(card);
+      const up=button('למעלה',()=>{if(index>0){[draft[index-1],draft[index]]=[draft[index],draft[index-1]];orderDirty=true;render();}}); up.setAttribute('aria-label','למעלה: '+photoName(item)); up.disabled=index===0;
+      const down=button('למטה',()=>{if(index<draft.length-1){[draft[index+1],draft[index]]=[draft[index],draft[index+1]];orderDirty=true;render();}}); down.setAttribute('aria-label','למטה: '+photoName(item)); down.disabled=index===draft.length-1;
+      r.append(up,down);
+      const vis=button(item.status==='published'?'הסתרה מהאתר':'הצגה באתר',()=>void photoRequest('/api/photos/'+(item.status==='published'?'unpublish':'publish'),{file:item.file},'שומר…',item.status==='published'?'התמונה הוסתרה מהאתר':'התמונה סומנה להצגה באתר'));
+      if(item.needsEnglishReview&&item.status!=='published'){vis.disabled=true;vis.title='יש לשמור קודם תיאור באנגלית';}
+      vis.setAttribute('aria-label',vis.textContent+': '+photoName(item)); r.append(vis);
+      const picker=document.createElement('input'); picker.type='file'; picker.accept='image/jpeg,image/png'; picker.hidden=true; card.append(picker);
+      picker.addEventListener('change',()=>void replacePhoto(item,picker));
+      const rep=button('החלפת תמונה',()=>picker.click()); rep.setAttribute('aria-label','החלפת תמונה: '+photoName(item)); r.append(rep);
+      if(item.status==='unpublished'){const del=button('מחיקה',()=>{if(confirm('למחוק לצמיתות את התמונה "'+photoName(item)+'"? ההיסטוריה נשמרת במאגר.'))void photoRequest('/api/photos/delete',{file:item.file},'מוחק…','התמונה נמחקה');},'danger');del.setAttribute('aria-label','מחיקה: '+photoName(item));r.append(del);}
+      else add(r,'span','למחיקה יש להסתיר קודם.').className='visual-hint';
+    });
+    sortable(list,draft,()=>{orderDirty=true;render();});
+  }
+  async function savePhotoOrder(){const r=await photoRequest('/api/photos/order',{files:draft.map(x=>x.file)},'שומר את הסדר…','הסדר נשמר');if(r)orderDirty=false;}
+  async function replacePhoto(item,picker){
+    const picked=picker.files&&picker.files[0]; picker.value=''; if(!picked) return;
+    if(!confirm('לאשר שבתמונה החדשה אין מטופל, חלק ממטופל או תמונת לפני/אחרי?')) return;
+    clearErrors(); tell('בודק את התמונה…','working');
+    let ready; try{ ready=await prepare(picked,item.file.toLowerCase().endsWith('.png')?'image/png':'image/jpeg'); }catch(error){ tell(error.message,'error'); return; }
+    await photoRequest('/api/photos/replace',{file:item.file,contentBase64:await encode(ready.blob),confirmed:true},'מעלה את התמונה החדשה…','התמונה הוחלפה');
+  }
+
+  /* Multi-upload: every file gets its own preview, category and descriptions. */
+  function uploader(){
+    const fs=group(body,'הוספת תמונות לגלריה'); fs.className='visual-uploader';
+    const zone=add(fs,'div'); zone.className='visual-dropzone';
+    add(zone,'p','גררו תמונות לכאן, או');
+    const input=document.createElement('input'); input.type='file'; input.accept='image/jpeg,image/png'; input.multiple=true; input.hidden=true; input.id='visual-upload-input';
+    const pick=button('בחירת תמונות',()=>input.click(),'primary'); pick.setAttribute('data-start','');
+    zone.append(pick,input); add(zone,'p','JPG או PNG, לפחות 1200 פיקסלים בצד הארוך. תמונה גדולה מדי תוקטן אוטומטית.').className='visual-hint';
+    input.addEventListener('change',()=>{void addFiles([...(input.files||[])]);input.value='';});
+    // File drop (from the desktop) — a different thing from reordering, which
+    // is pointer events only.
+    zone.addEventListener('dragenter',(e)=>{e.preventDefault();zone.classList.add('is-over');});
+    zone.addEventListener('dragover',(e)=>{e.preventDefault();});
+    zone.addEventListener('dragleave',()=>zone.classList.remove('is-over'));
+    zone.addEventListener('drop',(e)=>{e.preventDefault();zone.classList.remove('is-over');void addFiles([...(e.dataTransfer&&e.dataTransfer.files||[])]);});
+    if(!pending.length) return;
+    const list=add(fs,'div'); list.className='visual-photo-grid';
+    pending.forEach((p)=>{
+      const card=add(list,'div'); card.className='visual-photo-card'; card.setAttribute('data-pending',p.id);
+      const frame=add(card,'div'); frame.className='visual-photo-frame'; const img=add(frame,'img'); img.src=p.url; img.alt='תצוגה מקדימה: '+p.file.name;
+      add(card,'p',p.file.name+(p.ready?' · '+p.ready.width+'×'+p.ready.height:'')).className='visual-hint';
+      if(p.error){ const e=add(card,'p',p.error); e.className='visual-inline-error'; }
+      if(p.state==='uploading') add(card,'p','מעלה…').className='visual-hint';
+      if(p.ready && p.state!=='uploading'){
+        select(card,'סוג התמונה',p.category,Object.keys(CATEGORY_LABELS).map(x=>[x,CATEGORY_LABELS[x]]),v=>{p.category=v;});
+        const d=group(card,'תיאור התמונה (נדרש בשלוש השפות)');
+        for(const lang of LANGS) field(d,names[lang],p.alt[lang],v=>{p.alt[lang]=v;},{textarea:true,lang,path:'pending.'+p.id+'.'+lang});
+      }
+      card.append(button('הסרה מהרשימה',()=>{URL.revokeObjectURL(p.url);pending=pending.filter(x=>x!==p);render();},'danger'));
+    });
+    const confirmWrap=add(fs,'label'); confirmWrap.className='visual-check';
+    const confirmBox=document.createElement('input'); confirmBox.type='checkbox'; confirmBox.id='visual-upload-confirm';
+    confirmWrap.append(confirmBox,document.createTextNode('אני מאשר/ת שבאף אחת מהתמונות אין מטופל, חלק ממטופל או תמונת לפני/אחרי.'));
+    const readyCount=pending.filter(p=>p.ready).length;
+    const go=button('העלאת '+readyCount+' תמונות',()=>void uploadPending(confirmBox.checked),'primary'); go.disabled=readyCount===0; fs.append(go);
+  }
+  async function addFiles(files){
+    for(const file of files){
+      const p={id:Math.random().toString(36).slice(2),file,url:URL.createObjectURL(file),category:'reception',alt:{he:'',ar:'',en:''},ready:null,error:'',state:'new'};
+      pending.push(p);
+      try{ p.ready=await prepare(file); }catch(error){ p.error=error.message; }
+    }
+    render();
+    const box=body.querySelector('.visual-uploader'); if(box) box.scrollIntoView({block:'start'});
+  }
+  async function uploadPending(confirmed){
+    if(busy) return; clearErrors();
+    if(!confirmed){ tell(ISSUES.confirmation_required,'error'); const c=dialog.querySelector('#visual-upload-confirm'); if(c){c.setAttribute('aria-invalid','true');c.focus();} return; }
+    const queue=pending.filter(p=>p.ready); let done=0, last='';
+    setBusy(true);
+    for(const [n,p] of queue.entries()){
+      p.state='uploading'; p.error=''; tell('מעלה תמונה '+(n+1)+' מתוך '+queue.length+'…','working');
+      try{
+        const result=await api('/api/photos','POST',{category:p.category,contentBase64:await encode(p.ready.blob),altHe:p.alt.he,altAr:p.alt.ar,altEn:p.alt.en,confirmed:true});
+        last=result.sha; done++; URL.revokeObjectURL(p.url); pending=pending.filter(x=>x!==p);
+      }catch(error){
+        p.state='error';
+        p.error=error instanceof ApiError?(error.issues.length?error.issues.map(describeIssue).join(' '):(ERRORS[error.code]||ERRORS.SERVER_ERROR)):'העלאה נכשלה.';
+      }
+    }
+    setBusy(false);
+    try{ await reloadPhotos(); }catch(error){ fail(error); return; }
+    const failed=queue.length-done;
+    if(failed===0) tell(done+' תמונות הועלו ונשמרו כמוסתרות (commit '+short(last)+'). כדי להציג תמונה באתר לחצו "הצגה באתר".','ok');
+    else tell('הועלו '+done+' מתוך '+queue.length+'. '+failed+' לא הועלו — הסיבה מופיעה ליד כל תמונה.','error');
+    if(last) void track(last);
+  }
+
+  document.addEventListener('click',event=>{const trigger=event.target.closest('[data-edit-kind]');if(trigger){event.preventDefault();void open(trigger.dataset.editKind,trigger.dataset.editFocus||'');}});
+
+  /* ── Editor bar ─────────────────────────────────────────────────────────
+     Restrained on purpose: the point of this product is that the doctor is
+     looking at his own website, not at a tool. Four things only — what mode
+     he is in, a way to see the page as a patient does, where his last change
+     got to, and a way out. */
+  const barStatus=document.createElement('span');
+  barStatus.className='visual-bar-status';
+  barStatus.setAttribute('role','status');
+  barStatus.setAttribute('aria-live','polite');
+  const barActions=bar.querySelector('.visual-bar-actions')||bar;
+  bar.insertBefore(barStatus,barActions===bar?null:barActions);
+  const reloadSlot=document.createElement('span'); reloadSlot.className='visual-bar-reload'; reloadSlot.hidden=true;
+  bar.insertBefore(reloadSlot,barActions===bar?null:barActions);
+
+  /** Mirrors the latest result so it survives closing the dialog. */
+  function barTell(text,state){
+    barStatus.textContent=text||'';
+    if(state) barStatus.setAttribute('data-state',state); else barStatus.removeAttribute('data-state');
+  }
+
+  for(const [key,label] of [['copy','כל הטקסטים'],['services','טיפולים'],['photos','תמונות']]){barActions.append(button(label,()=>void open(key)));}
+
+  /* Preview hides every control without reloading, so the doctor can check a
+     change the way a patient will see it and come straight back. */
+  let previewing=false;
+  const previewButton=button('תצוגת מטופל',()=>{
+    previewing=!previewing;
+    if(previewing) document.documentElement.setAttribute('data-visual-preview','');
+    else document.documentElement.removeAttribute('data-visual-preview');
+    previewButton.textContent=previewing?'חזרה לעריכה':'תצוגת מטופל';
+    previewButton.setAttribute('aria-pressed',String(previewing));
+  });
+  previewButton.setAttribute('aria-pressed','false');
+  barActions.append(previewButton);
+
+  /* Leaving Edit Mode means leaving the admin host entirely. */
+  const exit=document.createElement('a');
+  exit.textContent='יציאה';
+  exit.href='https://www.drkhalilkanani.com/';
+  exit.rel='noopener';
+  barActions.append(exit);
+
+  /* Where saves go decides what the editor may claim afterwards. */
+  api('/api/session','GET').then(data=>{ publishing=data.publishing==='production'?'production':'test'; if(publishing==='test') barTell('מצב בדיקה: שמירות לא משנות את האתר הציבורי','info'); }).catch(()=>{});
+
+  /* Nothing is committed until Save, so an accidental reload is the one way
+     to lose work that the dialog guard cannot catch. */
+  window.addEventListener('beforeunload',(event)=>{ if(dirty||pending.length){event.preventDefault();event.returnValue='';} });
+})();
+`;

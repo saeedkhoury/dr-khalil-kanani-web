@@ -109,39 +109,75 @@ const blobShas: Record<keyof typeof store, string> = {
 
 let commits = 0;
 
+/*
+ * Images are REAL bytes, and a file over 1 MB behaves the way GitHub's
+ * Contents API really does: metadata and a SHA, no inline content, bytes only
+ * through the raw media type. The earlier fixture answered every image with
+ * the text "image" inline, which is how a Worker that failed on every real
+ * photograph passed its browser tests.
+ */
+const REAL_JPEG = readFileSync(fileURLToPath(new URL('../src/assets/images/work-extraction-01.jpg', import.meta.url)));
+const images = new Map<string, { bytes: Uint8Array; sha: string }>(
+  store.photos.map((record, i) => [record.file, { bytes: new Uint8Array(REAL_JPEG), sha: String(i + 1).padStart(40, 'e') }]),
+);
+const INLINE_LIMIT = 1024 * 1024;
+
 /** Answer the GitHub Contents and Actions APIs from the store above. */
 function mockGitHub(url: string, init?: RequestInit): Response {
   const method = init?.method ?? 'GET';
+  const accept = new Headers(init?.headers).get('Accept') ?? '';
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
   const kind = Object.entries(fileKinds).find(([file]) => url.includes(`/contents/src/data/${file}`))?.[1];
+  const imageName = url.includes('/contents/src/assets/images/')
+    ? decodeURIComponent(new URL(url).pathname.split('/').pop() ?? '')
+    : null;
 
   if (url.includes('/actions/workflows/deploy.yml/runs')) {
     return json({ workflow_runs: [{ head_sha: new URL(url).searchParams.get('head_sha'), status: 'completed', conclusion: 'success', updated_at: new Date().toISOString() }] });
   }
+  if (url.includes('/actions/workflows/admin-preview.yml/runs')) return json({ workflow_runs: [] });
   if (url.includes('/commits?')) {
     return json([{ sha: 'a'.repeat(40), commit: { message: 'cms(hours): update opening hours', author: { date: new Date().toISOString() } } }]);
   }
 
   if (method === 'PUT' || method === 'DELETE') {
     const body = JSON.parse(String(init?.body ?? '{}')) as { content?: string; sha?: string };
+    commits += 1;
+    const commit = String(commits).padStart(40, 'f');
+    if (imageName) {
+      const existing = images.get(imageName);
+      if (existing && body.sha !== existing.sha) return json({ message: 'Conflict' }, 409);
+      if (!existing && body.sha) return json({ message: 'Not found' }, 404);
+      if (method === 'DELETE') { images.delete(imageName); return json({ commit: { sha: commit } }); }
+      const sha = String(commits).padStart(40, 'c');
+      images.set(imageName, { bytes: new Uint8Array(Buffer.from(body.content ?? '', 'base64')), sha });
+      return json({ commit: { sha: commit }, content: { sha } });
+    }
     if (kind && body.sha !== blobShas[kind]) return json({ message: 'Conflict' }, 409);
     if (kind && body.content) {
       (store as Record<string, unknown>)[kind] = JSON.parse(Buffer.from(body.content, 'base64').toString('utf8'));
     }
-    commits += 1;
     if (kind) blobShas[kind] = String(commits).padStart(40, 'd');
-    return json({ commit: { sha: String(commits).padStart(40, 'f') } });
+    return json({ commit: { sha: commit }, content: kind ? { sha: blobShas[kind] } : undefined });
   }
 
   if (kind) {
-    return json({ content: encode(`${JSON.stringify(store[kind], null, 2)}\n`), encoding: 'base64', sha: blobShas[kind] });
+    return json({ type: 'file', content: encode(`${JSON.stringify(store[kind], null, 2)}\n`), encoding: 'base64', sha: blobShas[kind] });
   }
   if (new URL(url).pathname.endsWith('/contents/src/assets/images')) {
-    return json(store.photos.map((record) => ({ name: record.file })));
+    return json([...images.entries()].map(([name, image]) => ({ name, sha: image.sha, type: 'file' })));
   }
-  if (url.includes('/contents/src/assets/images/')) {
-    return json({ content: encode('image'), encoding: 'base64', sha: 'image-sha' });
+  if (imageName) {
+    const image = images.get(imageName);
+    if (!image) return json({ message: 'Not Found' }, 404);
+    if (accept.includes('raw')) return new Response(image.bytes as Uint8Array<ArrayBuffer>, { status: 200 });
+    const inline = image.bytes.length <= INLINE_LIMIT;
+    return json({
+      type: 'file', sha: image.sha, size: image.bytes.length,
+      encoding: inline ? 'base64' : 'none',
+      content: inline ? Buffer.from(image.bytes).toString('base64') : '',
+    });
   }
   return json({ message: 'not found' }, 404);
 }

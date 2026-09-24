@@ -7,7 +7,6 @@ import { hasClinicPhotography } from '../../data/media';
 import { LOCALES, localizePath, type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
 import { doctor } from '../../data/doctor';
-import EditControl from '../../components/editor/EditControl.astro';
 
 export function getStaticPaths() {
   return LOCALES.map((locale) => ({ params: { locale } }));
@@ -33,7 +32,7 @@ const breadcrumbs = [
     <h1>{t('doctor.title')}</h1>
   </div>
   <DoctorIntro locale={locale} standalone />
-  {editing && <div class="shell"><EditControl kind="photos" locale={locale} /></div>}
-  {hasClinicPhotography() && <ClinicGallery locale={locale} kind="clinic" />}
+  {/* In Edit Mode the gallery always renders: it ends with the Edit tile. */}
+  {(hasClinicPhotography() || editing) && <ClinicGallery locale={locale} kind="clinic" />}
   <ContactCta locale={locale} />
 </BaseLayout>

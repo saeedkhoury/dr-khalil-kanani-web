@@ -139,34 +139,8 @@ test('every draggable list also has keyboard controls', async ({ page }) => {
   expect(await rows.first().locator('h3').innerText()).not.toBe(first);
 });
 
-test('the gallery offers replace, visibility and ordering per photograph', async ({ page }) => {
-  await page.goto(`${ADMIN}/he/`);
-  await page.locator('.visual-editor-bar').getByRole('button', { name: 'תמונות', exact: true }).click();
-  const dialog = page.locator('dialog.visual-dialog');
-  await expect(dialog).toBeVisible();
-
-  const first = dialog.locator('.visual-sortable > .visual-item').first();
-  await expect(first.locator('.visual-grip')).toBeVisible();
-  await expect(first.getByRole('button', { name: 'החלפת תמונה' })).toBeVisible();
-  await expect(dialog.getByRole('button', { name: 'שמירת הסדר' })).toBeVisible();
-  // Multi-select upload.
-  await expect(dialog.locator('input[type="file"]').last()).toHaveAttribute('multiple', '');
-});
-
-test('services can be added, reordered and hidden from the treatments area', async ({ page }) => {
-  await page.goto(`${ADMIN}/he/`);
-  await page.locator('[data-edit-kind="services"]').first().click();
-  const dialog = page.locator('dialog.visual-dialog');
-  await expect(dialog).toBeVisible();
-
-  const list = dialog.locator('.visual-sortable > .visual-item');
-  const count = await list.count();
-  expect(count).toBeGreaterThan(1);
-  await expect(list.first().locator('.visual-grip')).toBeVisible();
-
-  await dialog.getByRole('button', { name: 'הוספת טיפול' }).click();
-  await expect(list).toHaveCount(count + 1);
-});
+// The gallery and treatment journeys moved to cms-journeys.spec.ts, where they
+// are exercised end to end rather than checked for the presence of buttons.
 
 test('Edit Mode is usable on a phone', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });

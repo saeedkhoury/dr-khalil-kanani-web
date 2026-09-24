@@ -29,6 +29,7 @@ import { clinic } from '../../data/clinic';
 import { resolveImage } from '../../lib/images';
 import Icon from '../primitives/Icon.astro';
 import Button from '../primitives/Button.astro';
+import EditControl from '../editor/EditControl.astro';
 
 interface Props {
   locale: Locale;
@@ -51,11 +52,30 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
   ...item,
   fullSize: await getImage({ src: item.resolved, width: Math.min(1536, item.resolved.width), format: item.resolved.format === 'svg' ? 'svg' : 'webp', quality: 85 }),
 })));
+
+// ── Edit Mode ─────────────────────────────────────────────────────────────
+// The clinic gallery ends with an Edit tile, so the doctor manages the gallery
+// he is looking at. In Edit Mode the section renders even when empty, or
+// there would be nothing to put the tile at the end of. Treatment work stays
+// developer-managed (patient-result media), so its strip ends with a note
+// saying so instead of a control. None of this exists in the public build.
+const editing = process.env.VISUAL_CMS === '1';
+const editableClinic = editing && kind === 'clinic';
+const WORK_NOTE = {
+  he: 'תמונות הטיפולים מנוהלות על ידי המפתח ואינן ניתנות לעריכה כאן.',
+  ar: 'صور العلاجات يديرها المطوّر ولا يمكن تعديلها هنا.',
+  en: 'Treatment photos are managed by the developer and cannot be edited here.',
+}[locale];
+const EMPTY_NOTE = {
+  he: 'עדיין אין תמונות מרפאה מוצגות באתר. הגלריה תופיע למטופלים כשתוצג בה תמונה ראשונה.',
+  ar: 'لا توجد بعد صور معروضة للعيادة. سيظهر المعرض للزوار عند عرض أول صورة.',
+  en: 'No clinic photos are shown yet. Visitors will see this gallery once the first photo is shown.',
+}[locale];
 ---
 
 {
-  items.length > 0 && (
-    <section class="section-lg bg-[var(--color-mist)]" aria-labelledby="gallery-heading" data-gallery-kind={workGallery ? 'work' : illustrative ? 'illustrations' : 'clinic'}>
+  (items.length > 0 || editableClinic) && (
+    <section class="section-lg bg-[var(--color-mist)]" aria-labelledby="gallery-heading" data-gallery-kind={workGallery ? 'work' : illustrative ? 'illustrations' : 'clinic'} data-visual-only={items.length === 0 ? '' : undefined}>
       <div class="shell">
         <div class="max-w-2xl">
           <p class="eyebrow">{t(workGallery ? 'gallery.workEyebrow' : illustrative ? 'gallery.artEyebrow' : 'gallery.eyebrow')}</p>
@@ -176,7 +196,16 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
               </button>
             </li>
           ))}
+          {editableClinic && (
+            <li class="visual-gallery-edit" data-visual-only>
+              <EditControl kind="photos" focus="gallery" locale={locale} />
+            </li>
+          )}
+          {editing && workGallery && (
+            <li class="visual-work-note shrink-0" data-visual-only>{WORK_NOTE}</li>
+          )}
         </ul>
+        {editableClinic && items.length === 0 && <p class="visual-gallery-empty" data-visual-only>{EMPTY_NOTE}</p>}
         </div>
       </div>
 

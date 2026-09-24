@@ -22,6 +22,10 @@ const body=(h)=>(h.match(/<body[^>]*>([\s\S]*)<\/body>/)?.[1]??h);
 function strip(html){
   let s = body(html)
     .replace(/<div class="visual-editor-bar"[\s\S]*?<\/div>\s*(?=<)/g,'')
+    // Edit Mode-only structure: the gallery's Edit tile, the treatment-work
+    // note, and a gallery section that exists only so the tile has a home.
+    .replace(/<section[^>]*data-visual-only[^>]*>[\s\S]*?<\/section>/g,'')
+    .replace(/<(li|p)[^>]*data-visual-only[^>]*>[\s\S]*?<\/\1>/g,'')
     .replace(/<(button|a)[^>]*class="visual-edit-control"[^>]*>[\s\S]*?<\/\1>/g,'')
     .replace(/\s*data-edit-(kind|focus)="[^"]*"/g,'')
     .replace(/\s*data-visual-editor-locale="[^"]*"/g,'')

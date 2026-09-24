@@ -402,11 +402,16 @@ async function describePhoto({ request, env }: Context): Promise<Response> {
 async function replacePhoto({ request, env }: Context): Promise<Response> {
   if (!sameOrigin(request, env)) return fail('FORBIDDEN');
 
-  const body = await readJson<{ file?: unknown; contentBase64?: unknown }>(request, MAX_PHOTO_BODY);
+  const body = await readJson<{ file?: unknown; contentBase64?: unknown; confirmed?: unknown }>(request, MAX_PHOTO_BODY);
   if (!body.ok) return fail(body.code);
 
   const file = body.body?.file;
   if (typeof file !== 'string' || file === '') return fail('INVALID', ['file_required']);
+
+  // A replacement is a NEW photograph in the repository, so it needs the same
+  // patient-content confirmation an upload does. It used to be recorded as
+  // confirmed in the commit without ever being asked.
+  if (body.body?.confirmed !== true) return fail('INVALID', ['confirmation_required']);
 
   const bytes = decodeBase64(body.body?.contentBase64);
   if (bytes === null) return fail('INVALID', ['file_required']);
