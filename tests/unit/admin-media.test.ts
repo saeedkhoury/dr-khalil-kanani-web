@@ -390,7 +390,7 @@ describe('POST /api/photos — the exact requests that would be sent', () => {
     assert.equal(image.body?.sha, undefined, 'a new file is created, not replaced');
     assert.equal(
       image.body?.message,
-      'cms(media): add clinic photo exterior-01.jpg\n\nChanged by: doctor@example.test\nPatient-content confirmed: yes\n',
+      'cms(media): add clinic photo exterior-01.jpg\n\nChanged by: CMS admin\nPatient-content confirmed: yes\n',
     );
     // The bytes committed are the bytes uploaded, unaltered.
     assert.deepEqual(
@@ -513,7 +513,7 @@ describe('publish / unpublish / delete', () => {
     assert.equal(written[0].status, 'unpublished');
     assert.equal(
       calls[1].body?.message,
-      'cms(media): unpublish clinic photo reception-01.jpg\n\nChanged by: doctor@example.test\n',
+      'cms(media): unpublish clinic photo reception-01.jpg\n\nChanged by: CMS admin\n',
     );
   });
 
@@ -561,7 +561,7 @@ describe('publish / unpublish / delete', () => {
     assert.equal(calls[3].body?.branch, CONTENT_BRANCH);
     assert.equal(
       calls[3].body?.message,
-      'cms(media): delete clinic photo reception-01.jpg\n\nChanged by: doctor@example.test\n',
+      'cms(media): delete clinic photo reception-01.jpg\n\nChanged by: CMS admin\n',
     );
   });
 

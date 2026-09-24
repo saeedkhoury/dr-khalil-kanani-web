@@ -69,7 +69,7 @@ describe('reordering the gallery', () => {
     assert.equal(put.body?.branch, CONTENT_BRANCH);
     assert.notEqual(put.body?.branch, 'main');
     assert.equal(put.body?.sha, 'manifest-sha', 'uses the sha it read');
-    assert.equal(put.body?.message, 'cms(media): reorder clinic photos\n\nChanged by: doctor@example.test\n');
+    assert.equal(put.body?.message, 'cms(media): reorder clinic photos\n\nChanged by: CMS admin\n');
     assert.deepEqual(
       (JSON.parse(decodeContent(put.body)) as ClinicPhotographRecord[]).map((r) => r.file),
       ['exterior-01.jpg', 'reception-01.jpg', 'reception-02.jpg'],
@@ -162,7 +162,7 @@ describe('replacing a photograph', () => {
     assert.equal(image.body?.sha, 'image-blob-sha', 'replaces a known blob, not blind');
     assert.equal(
       image.body?.message,
-      'cms(media): replace clinic photo reception-01.jpg\n\nChanged by: doctor@example.test\nPatient-content confirmed: yes\n',
+      'cms(media): replace clinic photo reception-01.jpg\n\nChanged by: CMS admin\nPatient-content confirmed: yes\n',
     );
     assert.deepEqual(Uint8Array.from(atob(String(image.body?.content)), (c) => c.charCodeAt(0)), JPEG);
 

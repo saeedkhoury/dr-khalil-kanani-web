@@ -67,7 +67,7 @@ async function withGitHub<T>(
 const okWrite = { status: 200, body: { commit: { sha: 'commit-sha-1' } } };
 
 const write = (target: WriteTarget, over: Record<string, unknown> = {}) =>
-  writeFile(env, { target, content: '[]', verb: 'update opening hours', actor: DOCTOR, ...over } as never);
+  writeFile(env, { target, content: '[]', verb: 'update opening hours', ...over } as never);
 
 /* ────────────────────────────────────────────────────────────────────────── */
 
@@ -153,8 +153,8 @@ describe('a caller cannot name a path', () => {
     assert.equal(pathFor({ kind: 'image', file: `${'a'.repeat(5000)}-01.jpg` }), null);
 
     // And the commit-message subject is bounded by the same rule.
-    assert.equal(commitMessage('publish clinic photo', DOCTOR, over), null);
-    assert.ok(commitMessage('publish clinic photo', DOCTOR, at));
+    assert.equal(commitMessage('publish clinic photo', over), null);
+    assert.ok(commitMessage('publish clinic photo', at));
   });
 
   test('the length bound does not weaken traversal or extension checks', () => {
@@ -191,7 +191,7 @@ describe('a refusal never reaches the network', () => {
     const { result, calls } = await withGitHub([okWrite], () =>
       deleteFile(env, {
         target: { kind: 'image', file: '../../../.github/workflows/deploy.yml' },
-        verb: 'delete clinic photo', actor: DOCTOR, sha: 'x',
+        verb: 'delete clinic photo', sha: 'x',
       }),
     );
     assert.equal(result.ok === false && result.reason, 'refused');
@@ -201,7 +201,7 @@ describe('a refusal never reaches the network', () => {
   test('a delete without a sha is refused before any call', async () => {
     const { result, calls } = await withGitHub([okWrite], () =>
       deleteFile(env, {
-        target: { kind: 'hours' }, verb: 'delete clinic photo', actor: DOCTOR, sha: '',
+        target: { kind: 'hours' }, verb: 'delete clinic photo', sha: '',
       }),
     );
     assert.equal(result.ok === false && result.reason, 'refused');
@@ -210,56 +210,45 @@ describe('a refusal never reaches the network', () => {
 });
 
 describe('commit messages contain no user-controlled text', () => {
-  test('the template is fixed and names only a verb and the actor', () => {
+  test('the template is fixed and names only a verb and the fixed CMS label', () => {
     assert.equal(
-      commitMessage('update opening hours', 'doctor@example.test'),
-      'cms(hours): update opening hours\n\nChanged by: doctor@example.test\n',
+      commitMessage('update opening hours'),
+      'cms(hours): update opening hours\n\nChanged by: CMS admin\n',
     );
     assert.equal(
-      commitMessage('publish clinic photo', 'doctor@example.test', 'reception-03.jpg'),
-      'cms(media): publish clinic photo reception-03.jpg\n\nChanged by: doctor@example.test\n',
+      commitMessage('publish clinic photo', 'reception-03.jpg'),
+      'cms(media): publish clinic photo reception-03.jpg\n\nChanged by: CMS admin\n',
     );
   });
 
   test('a verb outside the union is refused', () => {
     for (const verb of ['rm -rf', 'update opening hours\n\nevil', '', 'toString']) {
-      assert.equal(commitMessage(verb as never, DOCTOR), null, `accepted ${verb}`);
-    }
-  });
-
-  test('an actor that could inject a commit body is refused', () => {
-    // The address comes from a verified token, but a newline inside it would
-    // grow a commit body nobody wrote.
-    for (const actor of [
-      'a@b.test\n\nCo-authored-by: someone else <x@y.test>',
-      'a@b.test\rChanged by: admin@evil.test',
-      'not an email',
-      '',
-      '<script>@b.test',
-      'a@b.test ',
-    ]) {
-      assert.equal(commitMessage('update opening hours', actor), null, `accepted ${JSON.stringify(actor)}`);
+      assert.equal(commitMessage(verb as never), null, `accepted ${verb}`);
     }
   });
 
   test('a subject outside the filename convention is refused', () => {
     for (const subject of ['../../evil.yml', 'reception-01.svg', 'anything at all', 'a\nb-01.jpg']) {
-      assert.equal(commitMessage('publish clinic photo', DOCTOR, subject), null, `accepted ${subject}`);
+      assert.equal(commitMessage('publish clinic photo', subject), null, `accepted ${subject}`);
     }
   });
 
-  test('a write with an unusable actor is refused before any call', async () => {
-    const { result, calls } = await withGitHub([okWrite], () =>
-      write({ kind: 'hours' }, { actor: 'evil\nChanged by: someone@else.test' }),
+  // The repository is public. An identity smuggled into the request object —
+  // by a future caller, or a refactor restoring the old field — must still
+  // never reach the message GitHub stores.
+  test('an identity passed alongside a write never reaches the commit', async () => {
+    const { calls } = await withGitHub([okWrite], () =>
+      write({ kind: 'hours' }, { sha: 'old', actor: DOCTOR, email: DOCTOR } as never),
     );
-    assert.equal(result.ok === false && result.reason, 'refused');
-    assert.deepEqual(calls, []);
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].body?.message, 'cms(hours): update opening hours\n\nChanged by: CMS admin\n');
+    assert.ok(!JSON.stringify(calls[0].body).includes('@'), 'an address reached the GitHub request');
   });
 
   test('the message sent to GitHub is the built template, verbatim', async () => {
     const { calls } = await withGitHub([okWrite], () => write({ kind: 'hours' }, { sha: 'old' }));
     assert.equal(calls.length, 1);
-    assert.equal(calls[0].body?.message, 'cms(hours): update opening hours\n\nChanged by: doctor@example.test\n');
+    assert.equal(calls[0].body?.message, 'cms(hours): update opening hours\n\nChanged by: CMS admin\n');
   });
 });
 
@@ -279,7 +268,7 @@ describe('the request is built entirely from constants', () => {
     for (const branch of [undefined, '', '   ']) {
       const e = { ...env, ...(branch === undefined ? { CONTENT_BRANCH: undefined } : { CONTENT_BRANCH: branch }) };
       const { result, calls } = await withGitHub([okWrite], () =>
-        writeFile(e as Env, { target: { kind: 'hours' }, content: '[]', verb: 'update opening hours', actor: DOCTOR }),
+        writeFile(e as Env, { target: { kind: 'hours' }, content: '[]', verb: 'update opening hours' }),
       );
       assert.equal(result.ok === false && result.reason, 'not_configured', `branch=${JSON.stringify(branch)}`);
       assert.deepEqual(calls, []);
@@ -289,7 +278,7 @@ describe('the request is built entirely from constants', () => {
   test('a missing token refuses without calling GitHub', async () => {
     const { result, calls } = await withGitHub([okWrite], () =>
       writeFile({ ...env, GITHUB_TOKEN: undefined } as Env, {
-        target: { kind: 'hours' }, content: '[]', verb: 'update opening hours', actor: DOCTOR,
+        target: { kind: 'hours' }, content: '[]', verb: 'update opening hours',
       }),
     );
     assert.equal(result.ok === false && result.reason, 'not_configured');
@@ -301,7 +290,7 @@ describe('the request is built entirely from constants', () => {
     // is normalisation, and refusing it would be a confusing failure mode.
     const { result, calls } = await withGitHub([okWrite], () =>
       writeFile({ ...env, CONTENT_BRANCH: '  cms-test-branch\n' } as Env, {
-        target: { kind: 'hours' }, content: '[]', verb: 'update opening hours', actor: DOCTOR, sha: 'old',
+        target: { kind: 'hours' }, content: '[]', verb: 'update opening hours', sha: 'old',
       }),
     );
     assert.equal(result.ok, true);
@@ -314,7 +303,7 @@ describe('the request is built entirely from constants', () => {
     for (const branch of ['../main', 'a..b', 'main;rm -rf', 'main branch', 'ma\nin', 'main\u0000x', 'refs/heads/../x']) {
       const { result, calls } = await withGitHub([okWrite], () =>
         writeFile({ ...env, CONTENT_BRANCH: branch } as Env, {
-          target: { kind: 'hours' }, content: '[]', verb: 'update opening hours', actor: DOCTOR,
+          target: { kind: 'hours' }, content: '[]', verb: 'update opening hours',
         }),
       );
       assert.equal(result.ok === false && result.reason, 'not_configured', `accepted branch ${JSON.stringify(branch)}`);
@@ -400,7 +389,7 @@ describe('conflicts never overwrite a newer revision', () => {
     const { result, calls } = await withGitHub([{ status: 409, body: {} }, okWrite], () =>
       writeFile(env, {
         target: { kind: 'photography' }, content: '[]',
-        verb: 'add clinic photo', actor: DOCTOR, sha: 'stale',
+        verb: 'add clinic photo', sha: 'stale',
       }),
     );
     assert.equal(result.ok === false && result.reason, 'conflict');
@@ -411,7 +400,7 @@ describe('conflicts never overwrite a newer revision', () => {
     const { result, calls } = await withGitHub([{ status: 409, body: {} }, okWrite], () =>
       deleteFile(env, {
         target: { kind: 'image', file: 'reception-01.jpg' },
-        verb: 'delete clinic photo', actor: DOCTOR, subject: 'reception-01.jpg', sha: 'stale',
+        verb: 'delete clinic photo', subject: 'reception-01.jpg', sha: 'stale',
       }),
     );
     assert.equal(result.ok === false && result.reason, 'conflict');
@@ -492,7 +481,7 @@ describe('binary content', () => {
     const { calls } = await withGitHub([okWrite], () =>
       writeFile(env, {
         target: { kind: 'image', file: 'reception-01.png' }, content: bytes,
-        verb: 'add clinic photo', actor: DOCTOR, subject: 'reception-01.png',
+        verb: 'add clinic photo', subject: 'reception-01.png',
       }),
     );
     const sent = String(calls[0].body?.content);

@@ -279,8 +279,12 @@ describe('PUT /api/hours — the exact request that would be sent', () => {
     // ── sanitised commit message: fixed template, no user text ──
     assert.equal(
       put.body?.message,
-      'cms(hours): update opening hours\n\nChanged by: doctor@example.test\n',
+      'cms(hours): update opening hours\n\nChanged by: CMS admin\n',
     );
+    // ── the signed-in address never reaches the public repository ──
+    for (const call of calls) {
+      assert.ok(!JSON.stringify(call.body ?? {}).includes(DOCTOR), `${call.url} carried the identity`);
+    }
     // ── encoded content: exactly the serialised week ──
     const decoded = Buffer.from(String(put.body?.content), 'base64').toString('utf8');
     assert.equal(decoded, `${JSON.stringify(SAVE.map((r) => ({

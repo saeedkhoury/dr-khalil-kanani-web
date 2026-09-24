@@ -63,7 +63,6 @@ export async function managedContent(
     target,
     content: `${JSON.stringify(value, null, 2)}\n`,
     verb: 'update visual content',
-    actor: identity.email,
     sha: current.data.sha,
   });
   if (!result.ok) return result.reason === 'conflict' ? fail('CONFLICT') : fail('UPSTREAM_UNAVAILABLE');

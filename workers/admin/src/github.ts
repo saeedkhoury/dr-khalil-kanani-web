@@ -158,25 +158,27 @@ const SCOPE: Record<CommitVerb, 'hours' | 'media' | 'content'> = {
 };
 
 /**
- * An email safe to place in a commit message.
+ * Who changed it, as far as the public repository is concerned.
  *
- * The address arrives from a verified Access token, so it is not attacker
- * chosen — but "not attacker chosen" is an assumption about Cloudflare and an
- * identity provider, and a newline inside it would let a commit message grow a
- * body that nobody wrote. Conservative shape, checked at the point of use.
+ * Fixed and non-identifying on purpose. The repository is public, and the
+ * authenticated address is a personal inbox: written into a commit it is
+ * scraped within days and cannot be taken back. Not the address, not part of
+ * it, not a name derived from it, not a hash of it (two candidates make any
+ * hash trivially reversible). Who actually signed in is known server-side
+ * from the verified Access token and the Worker logs, never from Git.
  */
-const ACTOR = /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/;
+export const CMS_ACTOR = 'CMS admin';
 
 /**
  * Build the commit message. No user-supplied text reaches it: a verb from the
- * union, an optional filename that has already passed IMAGE_FILE, and an
- * address that has passed ACTOR.
+ * union, an optional filename that has already passed IMAGE_FILE, and the
+ * fixed CMS_ACTOR label. There is deliberately no parameter an identity could
+ * be passed through.
  *
  * Returns null if any of those fails, and the caller must then not commit.
  */
 export function commitMessage(
   verb: CommitVerb,
-  actor: string,
   subject?: string,
   /**
    * Records that the patient-content confirmation was ticked.
@@ -193,12 +195,11 @@ export function commitMessage(
   // 'toString', 'constructor' and friends would pass and produce a commit
   // message reading `cms(undefined): toString`.
   if (!Object.hasOwn(SCOPE, verb)) return null;
-  if (!ACTOR.test(actor)) return null;
   if (subject !== undefined && (subject.length > MAX_IMAGE_FILENAME || !IMAGE_FILE.test(subject))) return null;
 
   const headline = subject === undefined ? verb : `${verb} ${subject}`;
   const confirmation = patientContentConfirmed === true ? 'Patient-content confirmed: yes\n' : '';
-  return `cms(${SCOPE[verb]}): ${headline}\n\nChanged by: ${actor}\n${confirmation}`;
+  return `cms(${SCOPE[verb]}): ${headline}\n\nChanged by: ${CMS_ACTOR}\n${confirmation}`;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -411,8 +412,6 @@ export interface WriteRequest {
   target: WriteTarget;
   content: string | Uint8Array;
   verb: CommitVerb;
-  /** Authenticated email. Validated before it reaches a commit message. */
-  actor: string;
   /** Filename for media verbs. Validated against IMAGE_FILE. */
   subject?: string;
   /** Records the patient-content confirmation in the commit message. */
@@ -427,7 +426,7 @@ export async function writeFile(env: Env, request: WriteRequest): Promise<Result
   if (path === null) return refuse('refused');
 
   const message = commitMessage(
-    request.verb, request.actor, request.subject, request.patientContentConfirmed,
+    request.verb, request.subject, request.patientContentConfirmed,
   );
   if (message === null) return refuse('refused');
 
@@ -459,7 +458,6 @@ export async function writeFile(env: Env, request: WriteRequest): Promise<Result
 export interface DeleteRequest {
   target: WriteTarget;
   verb: CommitVerb;
-  actor: string;
   subject?: string;
   /** Required. Deleting without naming the blob being removed is not offered. */
   sha: string;
@@ -469,7 +467,7 @@ export async function deleteFile(env: Env, request: DeleteRequest): Promise<Resu
   const path = pathFor(request.target);
   if (path === null) return refuse('refused');
 
-  const message = commitMessage(request.verb, request.actor, request.subject);
+  const message = commitMessage(request.verb, request.subject);
   if (message === null) return refuse('refused');
 
   if (typeof request.sha !== 'string' || request.sha === '') return refuse('refused');

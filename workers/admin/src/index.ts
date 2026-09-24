@@ -107,7 +107,6 @@ async function putHours({ request, env, identity }: Context): Promise<Response> 
     target: { kind: 'hours' },
     content: serialiseHours(validated.rows),
     verb: 'update opening hours',
-    actor: identity.email,
     sha: current.data.sha,
   });
   if (!result.ok) return upstream(result.reason);
@@ -211,7 +210,6 @@ async function postPhoto({ request, env, identity }: Context): Promise<Response>
     target: { kind: 'image', file: record.file },
     content: bytes,
     verb: 'add clinic photo',
-    actor: identity.email,
     subject: record.file,
     patientContentConfirmed: true,
     // NEVER retried: an append is not idempotent and a retry could double-add.
@@ -222,7 +220,6 @@ async function postPhoto({ request, env, identity }: Context): Promise<Response>
     target: { kind: 'photography' },
     content: serialiseRecords(updated),
     verb: 'add clinic photo',
-    actor: identity.email,
     subject: record.file,
     patientContentConfirmed: true,
     sha: loaded.sha,
@@ -267,7 +264,6 @@ async function photoAction(
     target: { kind: 'photography' },
     content: serialiseRecords(updated),
     verb,
-    actor: identity.email,
     subject: file,
     sha: loaded.sha,
   });
@@ -291,7 +287,6 @@ async function photoAction(
   const removed = await deleteFile(env, {
     target: { kind: 'image', file },
     verb: 'delete clinic photo',
-    actor: identity.email,
     subject: file,
     sha: current.data.sha,
   });
@@ -332,7 +327,6 @@ async function reorderPhotos({ request, env, identity }: Context): Promise<Respo
     target: { kind: 'photography' },
     content: serialiseRecords(reordered),
     verb: 'reorder clinic photos',
-    actor: identity.email,
     sha: loaded.sha,
   });
   if (!manifest.ok) return upstream(manifest.reason);
@@ -375,7 +369,6 @@ async function replacePhoto({ request, env, identity }: Context): Promise<Respon
     target: { kind: 'image', file },
     content: bytes,
     verb: 'replace clinic photo',
-    actor: identity.email,
     subject: file,
     patientContentConfirmed: true,
     sha: current.data.sha,
@@ -386,7 +379,6 @@ async function replacePhoto({ request, env, identity }: Context): Promise<Respon
     target: { kind: 'photography' },
     content: serialiseRecords(validated.records),
     verb: 'replace clinic photo',
-    actor: identity.email,
     subject: file,
     sha: loaded.sha,
   });

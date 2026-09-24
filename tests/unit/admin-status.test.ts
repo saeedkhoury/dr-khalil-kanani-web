@@ -86,7 +86,7 @@ describe('finding the last CMS change', () => {
   test('picks the most recent cms( commit', () => {
     const result = findLatestCmsCommit([
       commit('b'.repeat(40), 'chore: unrelated developer commit'),
-      commit('c'.repeat(40), 'cms(hours): update opening hours\n\nChanged by: doctor@example.test'),
+      commit('c'.repeat(40), 'cms(hours): update opening hours\n\nChanged by: CMS admin'),
       commit('d'.repeat(40), 'cms(media): add clinic photo reception-01.jpg'),
     ]);
     assert.deepEqual(result, { sha: 'c'.repeat(40), at: '2026-09-23T09:00:00Z' });
