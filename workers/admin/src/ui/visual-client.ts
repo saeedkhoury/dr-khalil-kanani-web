@@ -532,7 +532,8 @@ export const VISUAL_CLIENT = String.raw`
     if(long<MIN_EDGE){bitmap.close();throw new Error('"'+file.name+'" קטנה מדי ('+w+'×'+h+'). נדרשים לפחות '+MIN_EDGE+' פיקסלים בצד הארוך.');}
     const target=mustType||type;
     if(file.size<=SEND_LIMIT && target===type){bitmap.close();return {blob:file,width:w,height:h,type};}
-    for(const edge of [Math.min(long,SEND_EDGE),2048,1600,MIN_EDGE]){
+    // Largest first, and never larger than the original.
+    for(const edge of [SEND_EDGE,2048,1600,MIN_EDGE].map(e=>Math.min(e,long)).filter((e,i,all)=>all.indexOf(e)===i)){
       const scale=edge/long; const canvas=document.createElement('canvas'); canvas.width=Math.round(w*scale); canvas.height=Math.round(h*scale);
       canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
       const blob=await new Promise(r=>canvas.toBlob(r,target,0.88));

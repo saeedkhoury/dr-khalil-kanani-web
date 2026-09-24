@@ -227,10 +227,11 @@ test('gallery: multi-upload, describe, publish, replace, unpublish, delete, reor
   const srcBefore = await room.locator('img').getAttribute('src');
   const chooser = page.waitForEvent('filechooser');
   await room.getByRole('button', { name: /^החלפת תמונה/ }).click();
-  await (await chooser).setFiles({ name: 'room-2.png', mimeType: 'image/png', buffer: noisePng(1800, 1200, 11) });
+  // Under the 6 MB send limit, so it goes as-is (a larger one is resized).
+  await (await chooser).setFiles({ name: 'room-2.png', mimeType: 'image/png', buffer: noisePng(1500, 1300, 11) });
   await expect(statusOf(page)).toContainText('התמונה הוחלפה', { timeout: 60_000 });
   await expect(room.locator('img')).not.toHaveAttribute('src', srcBefore!);
-  await expect.poll(() => room.locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBe(1800);
+  await expect.poll(() => room.locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBe(1500);
 
   // Unpublish and delete it.
   await room.getByRole('button', { name: /^הסתרה מהאתר/ }).click();
@@ -256,6 +257,17 @@ test('gallery: multi-upload, describe, publish, replace, unpublish, delete, reor
   await page.getByRole('button', { name: 'עריכת הגלריה' }).click();
   await expect(cards).toHaveCount(before + 1);
   expect(await names()).toEqual(reordered);
+});
+
+test('a photo over the send limit is resized, never enlarged, and still uploads', async ({ page }) => {
+  await page.goto('/he/about/');
+  await page.getByRole('button', { name: 'עריכת הגלריה' }).click();
+  const dialog = dialogOf(page);
+  // ~6.5 MB of incompressible pixels at 1800px: over the limit, under 2048.
+  await dialog.locator('#visual-upload-input').setInputFiles({ name: 'big.png', mimeType: 'image/png', buffer: noisePng(1800, 1200, 21) });
+  await expect(dialog.locator('[data-pending] .visual-hint').first()).toContainText('1600×1067');
+  await dialog.getByRole('button', { name: 'הסרה מהרשימה' }).click();
+  await expect(dialog.locator('[data-pending]')).toHaveCount(0);
 });
 
 test('an image that is too small is refused before upload, with the reason', async ({ page }) => {
