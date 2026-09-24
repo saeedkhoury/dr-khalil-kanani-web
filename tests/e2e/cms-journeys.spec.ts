@@ -349,3 +349,18 @@ test('on a 390px phone the editor fills the screen and Save is always reachable'
     document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
   expect(overflow).toBe(false);
 });
+
+test('on a phone every card pencil sits on ITS card and is a full touch target', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/he/treatments/');
+  const cards = page.locator('li:has(> .visual-card-edit)');
+  const count = await cards.count();
+  expect(count).toBeGreaterThan(1);
+  for (let i = 0; i < count; i += 1) {
+    const card = (await cards.nth(i).locator('> a').boundingBox())!;
+    const pencil = (await cards.nth(i).locator('.visual-edit-control').boundingBox())!;
+    expect(pencil.y).toBeGreaterThanOrEqual(card.y);
+    expect(pencil.y + pencil.height).toBeLessThanOrEqual(card.y + card.height);
+    expect(pencil.height).toBeGreaterThanOrEqual(44);
+  }
+});

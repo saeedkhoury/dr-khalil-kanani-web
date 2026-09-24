@@ -106,7 +106,12 @@ html[data-visual-preview] .visual-editor-bar{background:#26506b}
 .visual-gallery-edit .visual-edit-control{flex:1;flex-direction:column;justify-content:center;gap:.6rem;min-height:12rem;margin:0;border:2px dashed #0c5283;border-radius:var(--radius-media,16px);background:#f3f9fd;font-size:1rem}
 .visual-gallery-edit .visual-edit-control svg{width:28px;height:28px}
 .visual-gallery-empty{padding:1rem 0 0;color:#4a6274}
-.visual-card-edit{position:relative;z-index:3;margin-top:.5rem}
+/* The pencil sits ON its own card's top corner. Placed after the card it
+   overflowed the grid cell and landed on the NEXT card on a phone, where it
+   read as editing the wrong treatment. */
+li:has(>.visual-card-edit){position:relative}
+.visual-card-edit{position:absolute;z-index:3;inset-block-start:.75rem;inset-inline-end:.75rem}
+.visual-card-edit .visual-edit-control{margin:0;background:#fff}
 .visual-work-note{align-self:center;max-width:14rem;padding:1rem;border:1px dashed #7891a0;border-radius:12px;color:#26506b;font:500 .9rem/1.5 system-ui}
 html[data-visual-preview] .visual-gallery-edit,html[data-visual-preview] .visual-work-note,html[data-visual-preview] .visual-gallery-empty{display:none!important}
 
@@ -116,6 +121,7 @@ html[data-visual-preview] .visual-gallery-edit,html[data-visual-preview] .visual
   .visual-dialog-foot{padding:.6rem .8rem calc(.6rem + env(safe-area-inset-bottom))}
   .visual-foot-actions button{flex:1}
   .visual-dialog button{min-height:44px}
+  .visual-edit-control{min-height:44px}
   .visual-photo-grid{grid-template-columns:1fr}
 }
 

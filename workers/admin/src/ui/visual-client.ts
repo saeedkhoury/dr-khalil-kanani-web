@@ -209,6 +209,8 @@ export const VISUAL_CLIENT = String.raw`
         const node=fieldFor(issue); if(node) node.setAttribute('aria-invalid','true');
         li.append(button(text,()=>goTo(issue),'visual-link'));
       }
+      // The Worker reports at most twenty at a time.
+      if(error.issues.length>=20) add(errorBox,'p','ייתכן שיש בעיות נוספות; הן יוצגו אחרי תיקון אלה ושמירה חוזרת.').className='visual-hint';
       errorBox.hidden=false;
     } else if (code==='CONFLICT' || code==='NOT_FOUND') {
       errorBox.append(button('טעינה מחדש של התוכן העדכני',()=>{ if(dirty&&!confirm('השינויים שלא נשמרו יאבדו. לטעון מחדש?'))return; dirty=false; void open(kind,focus,true); },'primary'));
