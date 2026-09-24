@@ -1,12 +1,38 @@
 ---
+/**
+ * The contextual pencil. Its visible text names the section it edits, and that
+ * text IS the accessible name: no aria-label, so what a screen reader announces
+ * and what the doctor reads can never drift apart (WCAG 2.5.3 Label in Name).
+ * Six identical "Edit" buttons on one page told neither of them anything.
+ */
+type Kind = 'copy' | 'services' | 'doctor' | 'faq' | 'photos' | 'hours' | 'contact';
+type Locale = 'he' | 'ar' | 'en';
+
 interface Props {
-  kind: 'copy' | 'services' | 'doctor' | 'faq' | 'photos' | 'hours' | 'contact';
+  kind: Kind;
   focus?: string;
-  locale?: 'he' | 'ar' | 'en';
-  label?: string;
+  locale?: Locale;
 }
-const { kind, focus, locale, label } = Astro.props;
+
+const LABELS: Record<string, Record<Locale, string>> = {
+  'copy:hero': { he: 'עריכת הכותרת הראשית', ar: 'تعديل العنوان الرئيسي', en: 'Edit main heading' },
+  'copy:trust': { he: 'עריכת נקודות המרפאה', ar: 'تعديل مزايا العيادة', en: 'Edit clinic highlights' },
+  'copy:contact': { he: 'עריכת טקסט יצירת הקשר', ar: 'تعديل نص التواصل', en: 'Edit contact text' },
+  services: { he: 'עריכת טיפולים', ar: 'تعديل العلاجات', en: 'Edit treatments' },
+  'services:item': { he: 'עריכת הטיפול הזה', ar: 'تعديل هذا العلاج', en: 'Edit this treatment' },
+  doctor: { he: 'עריכת אזור הרופא', ar: 'تعديل قسم الطبيب', en: 'Edit doctor section' },
+  faq: { he: 'עריכת שאלות נפוצות', ar: 'تعديل الأسئلة الشائعة', en: 'Edit FAQ' },
+  photos: { he: 'עריכת תמונות המרפאה', ar: 'تعديل صور العيادة', en: 'Edit clinic photos' },
+  hours: { he: 'עריכת שעות הפעילות', ar: 'تعديل ساعات العمل', en: 'Edit opening hours' },
+  contact: { he: 'עריכת פרטי ההתקשרות', ar: 'تعديل بيانات الاتصال', en: 'Edit contact details' },
+};
+
+const { kind, focus, locale = 'he' } = Astro.props;
 const editing = process.env.VISUAL_CMS === '1';
-const text = label ?? ({ he: 'עריכה', ar: 'تعديل', en: 'Edit' }[locale ?? 'he']);
+const key = kind === 'copy' ? `copy:${focus}` : kind === 'services' && focus ? 'services:item' : kind;
+const text = LABELS[key]?.[locale];
+// A new section without a label fails the admin build rather than shipping a
+// bare, ambiguous "Edit".
+if (editing && !text) throw new Error(`EditControl: no label for ${key} in ${locale}`);
 ---
-{editing && <button type="button" class="visual-edit-control" data-edit-kind={kind} data-edit-focus={focus} aria-label={text}>{text}</button>}
+{editing && <button type="button" class="visual-edit-control" data-edit-kind={kind} data-edit-focus={focus}><svg class="visual-edit-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M4 20h4L19 9l-4-4L4 16v4ZM14 6l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round" /></svg><span>{text}</span></button>}

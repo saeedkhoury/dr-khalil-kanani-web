@@ -33,7 +33,7 @@ const breadcrumbs = [
     <h1>{t('doctor.title')}</h1>
   </div>
   <DoctorIntro locale={locale} standalone />
-  {editing && <div class="shell"><EditControl kind="photos" locale={locale} label={locale === 'he' ? 'ניהול תמונות המרפאה' : locale === 'ar' ? 'إدارة صور العيادة' : 'Manage clinic photos'} /></div>}
+  {editing && <div class="shell"><EditControl kind="photos" locale={locale} /></div>}
   {hasClinicPhotography() && <ClinicGallery locale={locale} kind="clinic" />}
   <ContactCta locale={locale} />
 </BaseLayout>

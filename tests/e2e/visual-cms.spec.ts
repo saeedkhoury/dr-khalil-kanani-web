@@ -192,3 +192,84 @@ test('Edit Mode has no accessibility violations', async ({ page }) => {
     .analyze();
   expect(audit.violations).toEqual([]);
 });
+
+// Six buttons all announced as "Edit" told a screen-reader user nothing. The
+// visible label is the accessible name, so the two can never drift apart.
+for (const [locale, generic] of [['he', 'עריכה'], ['ar', 'تعديل'], ['en', 'Edit']] as const) {
+  test(`every edit control names its section (${locale})`, async ({ page }) => {
+    for (const path of [`/${locale}/`, `/${locale}/contact/`, `/${locale}/about/`]) {
+      await page.goto(`${ADMIN}${path}`);
+      const controls = page.locator('.visual-edit-control');
+      const count = await controls.count();
+      expect(count, path).toBeGreaterThan(0);
+      // A name may repeat only where the button does the same thing — the
+      // contact page offers the contact editor beside both places it renders.
+      // That is WCAG 3.2.4 consistency, not ambiguity.
+      const opens = new Map<string, string>();
+      for (let i = 0; i < count; i += 1) {
+        const control = controls.nth(i);
+        await expect(control).not.toHaveAttribute('aria-label', /.*/);
+        const name = (await control.innerText()).trim();
+        expect(name, `${path} control ${i}`).not.toBe(generic);
+        expect(name.length, `${path} control ${i}`).toBeGreaterThan(generic.length);
+        const target = `${await control.getAttribute('data-edit-kind')}:${await control.getAttribute('data-edit-focus') ?? ''}`;
+        expect(opens.get(name) ?? target, `${path}: "${name}" opens two different editors`).toBe(target);
+        opens.set(name, target);
+      }
+      const targets = new Set(opens.values());
+      expect(targets.size, `${path}: two editors share a name`).toBe(opens.size);
+    }
+  });
+}
+
+test('the Edit Mode bar stays compact on a phone', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto(`${ADMIN}/he/`);
+  const bar = page.locator('.visual-editor-bar');
+  await expect(bar).toBeVisible();
+
+  // Short notice, one line; the long one is for wide screens.
+  await expect(bar.locator('.visual-bar-notice-short')).toBeVisible();
+  await expect(bar.locator('.visual-bar-notice-long')).toBeHidden();
+  const notice = await bar.locator('.visual-bar-notice').boundingBox();
+  expect(notice!.height).toBeLessThanOrEqual(24);
+
+  // The whole bar no taller than three compact rows over the page.
+  expect((await bar.boundingBox())!.height).toBeLessThanOrEqual(140);
+
+  // Every action remains a comfortable touch target.
+  for (const action of await bar.locator('a, button').all()) {
+    expect((await action.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  }
+
+  // The action strip may scroll sideways; the page must not.
+  const overflow = await page.evaluate(() =>
+    document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+  expect(overflow).toBe(false);
+
+  // Wide screens keep the full notice.
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await expect(bar.locator('.visual-bar-notice-long')).toBeVisible();
+  await expect(bar.locator('.visual-bar-notice-short')).toBeHidden();
+});
+
+test('a dialog shows a loading state until its content arrives', async ({ page }) => {
+  await page.goto(`${ADMIN}/he/`);
+  let release: () => void = () => {};
+  const held = new Promise<void>((resolve) => { release = resolve; });
+  await page.route('**/api/content/faq', async (route) => { await held; await route.continue(); });
+
+  await page.locator('[data-edit-kind="faq"]').first().click();
+  const dialog = page.locator('dialog.visual-dialog');
+  const status = dialog.locator('.visual-loading[role="status"]');
+  await expect(status).toBeVisible();
+  await expect(status).toHaveText('טוען את התוכן…');
+  await expect(dialog.locator('.visual-skeleton[aria-hidden="true"]')).toBeVisible();
+  await expect(dialog.locator('[aria-busy="true"]')).toHaveCount(1);
+
+  release();
+  await expect(dialog.locator('.visual-skeleton')).toHaveCount(0);
+  await expect(dialog.locator('.visual-loading')).toHaveCount(0);
+  await expect(dialog.locator('[aria-busy]')).toHaveCount(0);
+  await expect(dialog.locator('.visual-sortable > .visual-item').first()).toBeVisible();
+});

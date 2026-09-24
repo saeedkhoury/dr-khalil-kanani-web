@@ -1,8 +1,20 @@
 /** Served only after Access verification; never bundled into the public site. */
 export const VISUAL_STYLES = String.raw`
-.visual-editor-bar{position:sticky;top:0;z-index:1000;display:flex;flex-wrap:wrap;align-items:center;gap:.8rem;padding:.55rem 1rem;background:#0c5283;color:white;font:600 14px system-ui;box-shadow:0 1px 4px #0002}
-.visual-editor-bar span{font-weight:400;flex:1}.visual-editor-bar a,.visual-editor-bar button{color:white;border:1px solid #fff8;border-radius:6px;padding:.35rem .6rem;background:transparent;text-decoration:none;cursor:pointer}
-.visual-edit-control{position:relative;z-index:2;display:inline-flex;align-items:center;min-height:36px;margin:.4rem .4rem .4rem 0;padding:.3rem .8rem;border:1px solid #0c5283;border-radius:999px;background:#fff;color:#0c5283;font:600 13px system-ui;cursor:pointer}
+/* ── Edit Mode bar ────────────────────────────────────────────────────────
+   Wide screens: one row. Phones: a title row carrying the short notice, the
+   publication status only when there is one, and a single strip of actions
+   that scrolls sideways rather than wrapping into a tall block over the page.
+   Only the strip scrolls; the page itself never gains horizontal overflow. */
+.visual-editor-bar{position:sticky;top:0;z-index:1000;display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .8rem;padding:.5rem 1rem;background:#0c5283;color:white;font:600 14px/1.35 system-ui;box-shadow:0 1px 4px #0002}
+.visual-bar-head{display:flex;align-items:baseline;gap:.7rem;flex:1 1 18rem;min-width:0}
+.visual-bar-head strong{flex:none}
+.visual-bar-notice{min-width:0;font-weight:400;font-size:13px;opacity:.92}
+.visual-bar-notice-short{display:none}
+.visual-bar-actions{display:flex;align-items:center;gap:.45rem;flex:none}
+.visual-editor-bar a,.visual-editor-bar button{display:inline-flex;align-items:center;min-height:36px;color:white;border:1px solid #fff8;border-radius:6px;padding:.3rem .65rem;background:transparent;font:600 13px system-ui;text-decoration:none;white-space:nowrap;cursor:pointer}
+.visual-editor-bar a:hover,.visual-editor-bar button:hover{background:#ffffff1f}
+.visual-editor-bar a:focus-visible,.visual-editor-bar button:focus-visible{outline:2px solid white;outline-offset:2px}
+.visual-edit-control{position:relative;z-index:2;display:inline-flex;align-items:center;gap:.4rem;min-height:36px;margin-block:.4rem;margin-inline-end:.4rem;padding:.3rem .8rem;border:1px solid #0c5283;border-radius:999px;background:#fff;color:#0c5283;font:600 13px system-ui;cursor:pointer}
 .visual-edit-control:hover,.visual-edit-control:focus-visible{background:#e9f5fb;outline:2px solid #0c5283;outline-offset:2px}
 .visual-dialog{width:min(780px,calc(100vw - 24px));max-height:calc(100dvh - 24px);padding:0;border:1px solid #aac9d9;border-radius:14px;background:white;color:#183448;box-shadow:0 20px 60px #061f3d44}
 .visual-dialog::backdrop{background:#071d2ab0}.visual-dialog-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:1rem;padding:1rem 1.2rem;background:white;border-bottom:1px solid #d5e1e7}.visual-dialog-head h2{font:700 1.25rem system-ui;margin:0;flex:1}.visual-dialog-main{padding:1.2rem;overflow-y:auto;max-height:calc(100dvh - 160px)}.visual-dialog .visual-warning{padding:.7rem;background:#fff4d9;border-inline-start:4px solid #a36c00;font:500 .85rem/1.45 system-ui}
@@ -29,11 +41,35 @@ export const VISUAL_STYLES = String.raw`
    reader in preview hears the same page a visitor would. */
 html[data-visual-preview] .visual-edit-control{display:none!important}
 html[data-visual-preview] .visual-editor-bar{background:#26506b}
-.visual-bar-status{flex:none;padding:.2rem .55rem;border-radius:999px;background:#ffffff22;font:600 12px system-ui}
+.visual-bar-status{flex:0 1 auto;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:.2rem .6rem;border-radius:999px;background:#ffffff22;font:600 12px system-ui}
+.visual-bar-status:empty{display:none}
 .visual-bar-status[data-state=published]{background:#0f6e3d}
 .visual-bar-status[data-state=failed]{background:#9c2a2a}
 
-@media(max-width:600px){.visual-grip{min-height:44px}.visual-editor-bar{font-size:12px}.visual-dialog-main{padding:.8rem}.visual-dialog .visual-row>*{flex-basis:100%}}
+/* ── Loading ──────────────────────────────────────────────────────────────
+   The status line keeps the words (it is the live region a screen reader
+   hears); the spinner and the skeleton are decoration and are hidden from
+   assistive technology. Both stand still under reduced motion. */
+.visual-loading{display:flex;align-items:center;gap:.6rem;color:#26506b;font:600 .9rem system-ui}
+.visual-loading::before{content:"";flex:none;width:18px;height:18px;border-radius:50%;border:2px solid #c9dbe6;border-block-start-color:#0c5283;animation:visual-spin .8s linear infinite}
+.visual-skeleton{display:grid;gap:.8rem;margin-block:1rem}
+.visual-skeleton span{display:block;height:14px;border-radius:6px;background:linear-gradient(90deg,#eef4f8 25%,#dce8ef 50%,#eef4f8 75%);background-size:200% 100%;animation:visual-shimmer 1.3s ease-in-out infinite}
+.visual-skeleton span:nth-child(3n+2){inline-size:65%}.visual-skeleton span:nth-child(3n){block-size:64px}
+@keyframes visual-spin{to{transform:rotate(360deg)}}
+@keyframes visual-shimmer{from{background-position:100% 0}to{background-position:-100% 0}}
+@media(prefers-reduced-motion:reduce){.visual-loading::before,.visual-skeleton span{animation:none}}
+
+@media(max-width:900px){
+  .visual-editor-bar{padding:.45rem .75rem}
+  .visual-bar-head{flex-basis:100%}
+  .visual-bar-notice{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .visual-bar-notice-long{display:none}.visual-bar-notice-short{display:inline}
+  .visual-bar-status{flex-basis:100%;text-align:start}
+  .visual-bar-actions{flex:1 1 100%;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding-block:2px}
+  .visual-bar-actions::-webkit-scrollbar{display:none}
+  .visual-editor-bar a,.visual-editor-bar button{min-height:44px}
+}
+@media(max-width:600px){.visual-grip{min-height:44px}.visual-dialog-main{padding:.8rem}.visual-dialog .visual-row>*{flex-basis:100%}}
 `;
 
 export const VISUAL_CLIENT = String.raw`
@@ -80,11 +116,13 @@ export const VISUAL_CLIENT = String.raw`
   function translated(parent,label,obj,key,textarea=true){const fs=group(parent,label);for(const lang of LANGS){field(fs,names[lang],obj[key][lang],v=>{obj[key][lang]=v;},{textarea,lang});}}
   function listText(parent,label,obj,key){const fs=group(parent,label);for(const lang of LANGS){field(fs,names[lang]+' — שורה לכל פריט',obj[key][lang].join('\n'),v=>{obj[key][lang]=v.split('\n').map(x=>x.trim()).filter(Boolean);},{textarea:true,lang});}}
   async function api(url, method, payload){const response=await fetch(url,{method,headers:{'Content-Type':'application/json'},body:payload?JSON.stringify(payload):undefined,cache:'no-store'});let result;try{result=await response.json();}catch{throw new Error('תגובה לא תקינה מהשרת');}if(!response.ok||!result.ok){const code=result.error?.code||response.status;const issues=result.error?.issues?.join(', ')||'';throw new Error(String(code)+(issues?' — '+issues:''));}return result.data;}
+  const short=(sha)=>String(sha).slice(0,7);
   function tell(text,state){message.textContent=text;barTell(text,state);}
-  async function track(commit){if(!commit)return;for(let attempt=0;attempt<24;attempt++){await new Promise(r=>setTimeout(r,5000));if(!dialog.open)return;try{const data=await api('/api/status?sha='+encodeURIComponent(commit),'GET');if(data.state==='published'){tell('פורסם באתר','published');return;}if(data.state==='failed'){tell('נשמר, אך הפרסום נכשל. האתר מציג את הגרסה הקודמת.','failed');return;}tell('נשמר: '+commit+' · ממתין לפרסום');}catch{tell('נשמר: '+commit+' · לא ניתן לבדוק פרסום כעת');return;}}tell('נשמר: '+commit+' · הפרסום עדיין בבדיקה');}
+  async function track(commit){if(!commit)return;for(let attempt=0;attempt<24;attempt++){await new Promise(r=>setTimeout(r,5000));if(!dialog.open)return;try{const data=await api('/api/status?sha='+encodeURIComponent(commit),'GET');if(data.state==='published'){tell('פורסם באתר','published');return;}if(data.state==='failed'){tell('נשמר, אך הפרסום נכשל. האתר מציג את הגרסה הקודמת.','failed');return;}tell('נשמר: '+short(commit)+' · ממתין לפרסום');}catch{tell('נשמר: '+short(commit)+' · לא ניתן לבדוק פרסום כעת');return;}}tell('נשמר: '+short(commit)+' · הפרסום עדיין בבדיקה');}
   function actions(){const strip=add(body,'div','');strip.className='visual-actions';strip.append(button('שמירה',save,'primary'));}
-  async function open(next,which=''){kind=next;focus=which;selected=0;sha='';draft=null;title.textContent=titles[kind]||kind;body.replaceChildren();tell('טוען…');if(!dialog.open)dialog.showModal();try{const data=await api(urls[kind],'GET');sha=data.sha;draft=structuredClone(kind==='hours'?data.rows:kind==='photos'?data.records:data.value);tell('');render();}catch(error){tell(error.message);}}
-  async function save(){if(busy)return;busy=true;tell('בודק ושומר…');try{let payload;if(kind==='hours')payload={rows:draft,sha};else payload={value:draft,sha,confirmed:document.querySelector('#visual-owner-confirm')?.checked===true,sameLocation:document.querySelector('#visual-same-location')?.checked===true};const data=await api(urls[kind],'PUT',payload);dirty=false;tell('נשמר ב-commit '+data.sha+'; עדיין לא פורסם.');void track(data.sha);}catch(error){tell(error.message);}finally{busy=false;}}
+  function loading(on){message.classList.toggle('visual-loading',on);if(on){message.textContent='טוען את התוכן…';const sk=document.createElement('div');sk.className='visual-skeleton';sk.setAttribute('aria-hidden','true');for(let i=0;i<6;i++)sk.append(document.createElement('span'));body.replaceChildren(sk);body.setAttribute('aria-busy','true');}else{body.replaceChildren();body.removeAttribute('aria-busy');}}
+  async function open(next,which=''){kind=next;focus=which;selected=0;sha='';draft=null;title.textContent=titles[kind]||kind;loading(true);if(!dialog.open)dialog.showModal();try{const data=await api(urls[kind],'GET');sha=data.sha;draft=structuredClone(kind==='hours'?data.rows:kind==='photos'?data.records:data.value);loading(false);tell('');render();}catch(error){loading(false);tell(error.message);}}
+  async function save(){if(busy)return;busy=true;tell('בודק ושומר…');try{let payload;if(kind==='hours')payload={rows:draft,sha};else payload={value:draft,sha,confirmed:document.querySelector('#visual-owner-confirm')?.checked===true,sameLocation:document.querySelector('#visual-same-location')?.checked===true};const data=await api(urls[kind],'PUT',payload);dirty=false;tell('נשמר ב-commit '+short(data.sha)+'; עדיין לא פורסם.');void track(data.sha);}catch(error){tell(error.message);}finally{busy=false;}}
   function render(){body.replaceChildren();if(kind==='copy')copyForm();else if(kind==='doctor')doctorForm();else if(kind==='contact')contactForm();else if(kind==='hours')hoursForm();else if(kind==='faq')faqForm();else if(kind==='services')servicesForm();else if(kind==='photos')photosForm();if(kind!=='photos')actions();}
   function copyForm(){const keys=Object.keys(draft).filter(key=>!focus||key.startsWith(focus+'.')||(focus==='hero'&&key==='action.bookAppointment'));if(focus)body.append(button('כל הטקסטים',()=>{focus='';render();}));for(const key of keys)translated(body,key,{entry:draft[key]},'entry');}
   function doctorForm(){translated(body,'הקדמה',{entry:draft.intro},'entry');listText(body,'גישת המרפאה',{entry:draft.approach},'entry');const fs=group(body,'השכלה והסמכות — עובדות מאושרות בכתב בלבד');draft.credentials.forEach((item,index)=>{const box=add(fs,'div','');box.className='visual-item';for(const lang of LANGS)field(box,names[lang],item.label[lang],v=>{item.label[lang]=v;},{textarea:true,lang});field(box,'שנה',item.year||'',v=>{if(v)item.year=v;else delete item.year;},{required:false});box.append(button('הסרה',()=>{draft.credentials.splice(index,1);render();},'danger'));});fs.append(button('הוספת הסמכה',()=>{draft.credentials.push({label:{he:'',ar:'',en:''}});render();}));ownerConfirm();}
@@ -188,9 +226,9 @@ export const VISUAL_CLIENT = String.raw`
   function newService(){const ordinal=Date.now().toString(36);return{id:'service-'+ordinal,slug:'service-'+ordinal,status:'unpublished',tier:2,order:draft.length,icon:'aesthetic',locales:Object.fromEntries(LANGS.map(lang=>[lang,{title:'',cardTitle:'',summary:'',candidacy:[''],process:[{step:'',detail:''},{step:'',detail:''}],expect:[''],faq:[],seoDescription:''}]))};}
   function servicesForm(){const sorted=draft.sort((a,b)=>a.tier-b.tier||a.order-b.order);body.append(button('הוספת טיפול',()=>{touch();draft.push(newService());selected=draft.length-1;render();}));add(body,'p','אפשר לגרור טיפול כדי לשנות את סדר ההצגה, או להשתמש בכפתורי למעלה/למטה.').className='visual-order-hint';const list=add(body,'div','');for(const [index,item] of sorted.entries()){const box=add(list,'div','');box.className='visual-item';const heading=add(box,'h3','');heading.append(grip(),document.createTextNode((item.locales[locale]?.title||item.slug)+' · '+(item.status==='published'?'מוצג':'מוסתר')));const buttons=row(box);buttons.append(button('עריכת טיפול',()=>{selected=index;render();}));itemButtons(box,item,index,draft);}sortable(list,draft,()=>{draft.forEach((x,i)=>{x.order=i;});touch();render();});const item=draft[selected];if(!item)return;const editor=group(body,'עריכת טיפול: '+item.slug);field(editor,'כתובת URL (לטיפול חדש בלבד)',item.slug,v=>{item.slug=v;item.id=v;});select(editor,'עדיפות',item.tier,[[1,'1'],[2,'2']],v=>{item.tier=Number(v);});select(editor,'אייקון',item.icon,['implant','crown','whitening','filling','veneer','aligner','root-canal','extraction','cleaning','emergency','aesthetic'].map(x=>[x,x]),v=>{item.icon=v;});for(const lang of LANGS){const section=group(editor,names[lang]);section.lang=lang;section.dir=lang==='en'?'ltr':'rtl';const local=item.locales[lang];for(const key of ['title','cardTitle','summary','seoTitle','seoDescription'])field(section,key,local[key]||'',v=>{if(v||key!=='seoTitle')local[key]=v;else delete local[key];},{textarea:key==='summary'||key==='seoDescription',required:key!=='seoTitle',lang});lines(section,'למי מתאים',local,'candidacy',1);pairs(section,'מהלך הטיפול',local,'process','step','detail');lines(section,'למה לצפות',local,'expect',1);pairs(section,'שאלות נפוצות',local,'faq','q','a');field(section,'תאריך בדיקה רפואית YYYY-MM-DD',local.reviewedOn||'',v=>{if(v)local.reviewedOn=v;else delete local.reviewedOn;},{required:false,lang:'en'});}}
   async function reloadPhotos(){const data=await api('/api/photos','GET');sha=data.sha;draft=structuredClone(data.records);render();}
-  async function photoAction(file,action){if(action==='delete'&&!confirm('מחיקה לצמיתות מהמאגר הציבורי? ההיסטוריה נשמרת ב-Git.'))return;try{tell('שומר…');const result=await api('/api/photos/'+action,'POST',{file});await reloadPhotos();tell('נשמר ב-commit '+result.sha+'; עדיין לא פורסם.');void track(result.sha);}catch(error){tell(error.message);}}
-  async function savePhotoOrder(){try{tell('שומר סדר…');const result=await api('/api/photos/order','POST',{files:draft.map(x=>x.file)});await reloadPhotos();tell('הסדר נשמר ב-commit '+result.sha+'; עדיין לא פורסם.');void track(result.sha);}catch(error){tell(error.message);await reloadPhotos();}}
-  async function replacePhoto(file,input){const picked=input.files?.[0];if(!picked){tell('יש לבחור תמונה להחלפה.');return;}try{tell('בודק ומחליף…');const result=await api('/api/photos/replace','POST',{file,contentBase64:await encode(picked)});await reloadPhotos();tell('התמונה הוחלפה ב-commit '+result.sha+'; עדיין לא פורסם.');void track(result.sha);}catch(error){tell(error.message);}}
+  async function photoAction(file,action){if(action==='delete'&&!confirm('מחיקה לצמיתות מהמאגר הציבורי? ההיסטוריה נשמרת ב-Git.'))return;try{tell('שומר…');const result=await api('/api/photos/'+action,'POST',{file});await reloadPhotos();tell('נשמר ב-commit '+short(result.sha)+'; עדיין לא פורסם.');void track(result.sha);}catch(error){tell(error.message);}}
+  async function savePhotoOrder(){try{tell('שומר סדר…');const result=await api('/api/photos/order','POST',{files:draft.map(x=>x.file)});await reloadPhotos();tell('הסדר נשמר ב-commit '+short(result.sha)+'; עדיין לא פורסם.');void track(result.sha);}catch(error){tell(error.message);await reloadPhotos();}}
+  async function replacePhoto(file,input){const picked=input.files?.[0];if(!picked){tell('יש לבחור תמונה להחלפה.');return;}try{tell('בודק ומחליף…');const result=await api('/api/photos/replace','POST',{file,contentBase64:await encode(picked)});await reloadPhotos();tell('התמונה הוחלפה ב-commit '+short(result.sha)+'; עדיין לא פורסם.');void track(result.sha);}catch(error){tell(error.message);}}
   async function encode(file){if(file.size>8*1024*1024)throw new Error('הקובץ גדול מדי (עד 8 מגהבייט).');const bytes=new Uint8Array(await file.arrayBuffer());let binary='';for(let i=0;i<bytes.length;i+=32768)binary+=String.fromCharCode(...bytes.subarray(i,i+32768));return btoa(binary);}
   function photosForm(){add(body,'p','תמונה חדשה נשמרת כמוסתרת. פריט מוסתר אינו סודי ונשאר במאגר הציבורי.');
     add(body,'p','הסדר כאן הוא הסדר באתר. אפשר לגרור תמונה למקום אחר, או להשתמש בכפתורי למעלה/למטה, ואז לשמור את הסדר.').className='visual-order-hint';
@@ -214,7 +252,7 @@ export const VISUAL_CLIENT = String.raw`
     const form=group(body,'העלאת תמונות');const input=field(form,'JPG / PNG — אפשר לבחור כמה קבצים', '',()=>{},{type:'file',required:true});input.accept='image/jpeg,image/png';input.multiple=true;const preview=add(form,'img','');preview.alt='תצוגה מקדימה';preview.hidden=true;let previewUrl='';input.addEventListener('change',()=>{if(previewUrl)URL.revokeObjectURL(previewUrl);const first=input.files?.[0];if(first){previewUrl=URL.createObjectURL(first);preview.src=previewUrl;preview.hidden=false;}else{preview.hidden=true;}});
     const category=select(form,'סוג תמונה','reception',['exterior','reception','treatment-room','equipment','doctor-working','team','atmosphere'].map(x=>[x,x]),()=>{});
     const alt={};for(const lang of LANGS)field(form,'תיאור תמונה — '+names[lang],'',v=>{alt[lang]=v;},{textarea:true,lang});const confirmed=check(form,'אני מאשר/ת שבתמונה אין מטופל, חלק ממטופל או תמונת לפני/אחרי.',false,()=>{});
-    form.append(button('העלאה כמוסתר',async()=>{const files=[...(input.files||[])];if(!files.length){tell('יש לבחור תמונה.');return;}let last='';try{for(const [n,file] of files.entries()){tell('בודק ומעלה '+(n+1)+' מתוך '+files.length+'…');const result=await api('/api/photos','POST',{category:category.value,contentBase64:await encode(file),altHe:alt.he,altAr:alt.ar,altEn:alt.en,confirmed:confirmed.checked});last=result.sha;}await reloadPhotos();tell(files.length+' תמונות נשמרו כמוסתרות. האחרונה ב-commit '+last+'. יש להציג אותן בנפרד.');void track(last);}catch(error){tell(error.message);await reloadPhotos();}},'primary'));
+    form.append(button('העלאה כמוסתר',async()=>{const files=[...(input.files||[])];if(!files.length){tell('יש לבחור תמונה.');return;}let last='';try{for(const [n,file] of files.entries()){tell('בודק ומעלה '+(n+1)+' מתוך '+files.length+'…');const result=await api('/api/photos','POST',{category:category.value,contentBase64:await encode(file),altHe:alt.he,altAr:alt.ar,altEn:alt.en,confirmed:confirmed.checked});last=result.sha;}await reloadPhotos();tell(files.length+' תמונות נשמרו כמוסתרות. האחרונה ב-commit '+short(last)+'. יש להציג אותן בנפרד.');void track(last);}catch(error){tell(error.message);await reloadPhotos();}},'primary'));
   }
   document.addEventListener('click',event=>{const trigger=event.target.closest('[data-edit-kind]');if(trigger){event.preventDefault();void open(trigger.dataset.editKind,trigger.dataset.editFocus||'');}});
   /* ── Editor bar ─────────────────────────────────────────────────────────
@@ -226,7 +264,8 @@ export const VISUAL_CLIENT = String.raw`
   barStatus.className='visual-bar-status';
   barStatus.setAttribute('role','status');
   barStatus.setAttribute('aria-live','polite');
-  bar.append(barStatus);
+  const barActions=bar.querySelector('.visual-bar-actions')||bar;
+  bar.insertBefore(barStatus,barActions===bar?null:barActions);
 
   /** Mirrors the dialog's status so it survives closing the dialog. */
   function barTell(text,state){
@@ -234,7 +273,7 @@ export const VISUAL_CLIENT = String.raw`
     if(state) barStatus.setAttribute('data-state',state); else barStatus.removeAttribute('data-state');
   }
 
-  for(const [key,label] of [['copy','כל הטקסטים'],['services','טיפולים'],['photos','תמונות']]){bar.append(button(label,()=>void open(key)));}
+  for(const [key,label] of [['copy','כל הטקסטים'],['services','טיפולים'],['photos','תמונות']]){barActions.append(button(label,()=>void open(key)));}
 
   /* Preview hides every control without reloading, so the doctor can check a
      change the way a patient will see it and come straight back. */
@@ -247,14 +286,14 @@ export const VISUAL_CLIENT = String.raw`
     previewButton.setAttribute('aria-pressed',String(previewing));
   });
   previewButton.setAttribute('aria-pressed','false');
-  bar.append(previewButton);
+  barActions.append(previewButton);
 
   /* Leaving Edit Mode means leaving the admin host entirely. */
   const exit=document.createElement('a');
   exit.textContent='יציאה';
   exit.href='https://www.drkhalilkanani.com/';
   exit.rel='noopener';
-  bar.append(exit);
+  barActions.append(exit);
 
   /* Nothing is committed until Save, so an accidental reload is the one way
      to lose work that the dialog guard cannot catch. */

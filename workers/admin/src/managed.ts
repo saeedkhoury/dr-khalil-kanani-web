@@ -2,7 +2,6 @@
 import { readFile, writeFile, type WriteTarget } from './github.ts';
 import { fail, ok, readJson, sameOrigin, type Env } from './http.ts';
 import { parseManaged, servicesSchema, faqSchema, doctorProfileSchema, managedCopySchema, contactFactsSchema } from '../../../src/lib/managed-schema.ts';
-import type { AccessIdentity } from './auth.ts';
 
 type Kind = 'services' | 'generalFaq' | 'doctorProfile' | 'managedCopy' | 'contactFacts';
 const PARSERS: Record<Kind, (value: unknown) => unknown> = {
@@ -32,7 +31,7 @@ function transitionAllowed(kind: Kind, before: unknown, after: unknown): boolean
 }
 
 export async function managedContent(
-  request: Request, env: Env, identity: AccessIdentity, kind: Kind,
+  request: Request, env: Env, kind: Kind,
 ): Promise<Response> {
   const target: WriteTarget = { kind };
   if (request.method === 'PUT' && !sameOrigin(request, env)) return fail('FORBIDDEN');

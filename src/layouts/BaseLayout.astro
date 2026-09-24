@@ -122,7 +122,7 @@ const editing = process.env.VISUAL_CMS === '1';
   </head>
 
   <body>
-    {editing && <div class="visual-editor-bar" data-visual-editor-locale={locale}><strong>עריכת האתר</strong><span>תוכן מוסתר אינו סודי: המאגר ציבורי. אין להזין מידע על מטופלים או סודות.</span><a href="/panel">לוח שעות ותמונות</a></div>}
+    {editing && <div class="visual-editor-bar" data-visual-editor-locale={locale}><span class="visual-bar-head"><strong>עריכת האתר</strong><span class="visual-bar-notice"><span class="visual-bar-notice-long">תוכן מוסתר אינו סודי: המאגר ציבורי. אין להזין מידע על מטופלים או סודות.</span><span class="visual-bar-notice-short">המאגר ציבורי: אין להזין מידע על מטופלים</span></span></span><span class="visual-bar-actions"><a href="/panel">לוח שעות ותמונות</a></span></div>}
     <a class="skip-link" href="#main">{t('a11y.skipToContent')}</a>
 
     <Header locale={locale} />

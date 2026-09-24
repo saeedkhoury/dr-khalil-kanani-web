@@ -104,3 +104,24 @@ test('static admin assets are authenticated before fetch and carry private heade
   assert.match(allowed.response.headers.get('Content-Security-Policy') || '', /sha256-/);
   assert.doesNotMatch(allowed.response.headers.get('Content-Security-Policy') || '', /script-src[^;]*unsafe-inline/);
 });
+
+test('edit controls name their section in every locale and never fall back to a bare "Edit"', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const source = await readFile(new URL('../../src/components/editor/EditControl.astro', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /aria-label=/, 'the visible label must be the accessible name');
+  assert.match(source, /throw new Error\(`EditControl: no label/);
+  for (const key of ["'copy:hero'", "'copy:trust'", "'copy:contact'", 'services:', "'services:item'", 'doctor:', 'faq:', 'photos:', 'hours:', 'contact:']) {
+    const line = source.split('\n').find((row) => row.trimStart().startsWith(key));
+    assert.ok(line, `missing label row ${key}`);
+    for (const locale of ['he:', 'ar:', 'en:']) assert.ok(line.includes(locale), `${key} lacks ${locale}`);
+    assert.doesNotMatch(line, /'(עריכה|تعديل|Edit)'/, `${key} uses a generic label`);
+  }
+});
+
+test('dialog loading is announced in words, decorated silently, and still under reduced motion', async () => {
+  const { VISUAL_CLIENT, VISUAL_STYLES } = await import('../../workers/admin/src/ui/visual.ts');
+  assert.match(VISUAL_CLIENT, /setAttribute\('aria-busy','true'\)/);
+  assert.match(VISUAL_CLIENT, /sk\.setAttribute\('aria-hidden','true'\)/);
+  assert.match(VISUAL_CLIENT, /removeAttribute\('aria-busy'\)/);
+  assert.match(VISUAL_STYLES, /prefers-reduced-motion:reduce\)\{\.visual-loading::before,\.visual-skeleton span\{animation:none\}/);
+});

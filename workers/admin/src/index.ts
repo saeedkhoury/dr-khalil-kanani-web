@@ -78,7 +78,7 @@ async function getHours({ env }: Context): Promise<Response> {
   return ok({ rows, sha: file.data.sha });
 }
 
-async function putHours({ request, env, identity }: Context): Promise<Response> {
+async function putHours({ request, env }: Context): Promise<Response> {
   if (!sameOrigin(request, env)) return fail('FORBIDDEN');
 
   const body = await readJson<unknown>(request, MAX_HOURS_BODY);
@@ -165,7 +165,7 @@ interface UploadBody {
   confirmed?: unknown;
 }
 
-async function postPhoto({ request, env, identity }: Context): Promise<Response> {
+async function postPhoto({ request, env }: Context): Promise<Response> {
   if (!sameOrigin(request, env)) return fail('FORBIDDEN');
 
   const body = await readJson<UploadBody>(request, MAX_PHOTO_BODY);
@@ -231,7 +231,7 @@ async function postPhoto({ request, env, identity }: Context): Promise<Response>
 
 /** publish / unpublish / delete all name one existing file. */
 async function photoAction(
-  { request, env, identity }: Context,
+  { request, env }: Context,
   action: 'publish' | 'unpublish' | 'delete',
 ): Promise<Response> {
   if (!sameOrigin(request, env)) return fail('FORBIDDEN');
@@ -304,7 +304,7 @@ async function photoAction(
  * rewritten wholesale, which is safe because a reorder is idempotent: the
  * doctor's complete intent is "this list, in this order".
  */
-async function reorderPhotos({ request, env, identity }: Context): Promise<Response> {
+async function reorderPhotos({ request, env }: Context): Promise<Response> {
   if (!sameOrigin(request, env)) return fail('FORBIDDEN');
 
   const body = await readJson<{ files?: unknown }>(request, MAX_ACTION_BODY);
@@ -342,7 +342,7 @@ async function reorderPhotos({ request, env, identity }: Context): Promise<Respo
  * first and the manifest second, the same ordering an upload uses and for the
  * same reason: a failure between them leaves a file nothing references.
  */
-async function replacePhoto({ request, env, identity }: Context): Promise<Response> {
+async function replacePhoto({ request, env }: Context): Promise<Response> {
   if (!sameOrigin(request, env)) return fail('FORBIDDEN');
 
   const body = await readJson<{ file?: unknown; contentBase64?: unknown }>(request, MAX_PHOTO_BODY);
@@ -498,11 +498,11 @@ const ROUTES: Readonly<Record<string, Route>> = Object.freeze({
     methods: ['GET', 'PUT'],
     handle: (context) => (context.request.method === 'GET' ? getHours(context) : putHours(context)),
   },
-  '/api/content/services': { methods: ['GET', 'PUT'], handle: ({ request, env, identity }) => managedContent(request, env, identity, 'services') },
-  '/api/content/faq': { methods: ['GET', 'PUT'], handle: ({ request, env, identity }) => managedContent(request, env, identity, 'generalFaq') },
-  '/api/content/doctor': { methods: ['GET', 'PUT'], handle: ({ request, env, identity }) => managedContent(request, env, identity, 'doctorProfile') },
-  '/api/content/copy': { methods: ['GET', 'PUT'], handle: ({ request, env, identity }) => managedContent(request, env, identity, 'managedCopy') },
-  '/api/content/contact': { methods: ['GET', 'PUT'], handle: ({ request, env, identity }) => managedContent(request, env, identity, 'contactFacts') },
+  '/api/content/services': { methods: ['GET', 'PUT'], handle: ({ request, env }) => managedContent(request, env, 'services') },
+  '/api/content/faq': { methods: ['GET', 'PUT'], handle: ({ request, env }) => managedContent(request, env, 'generalFaq') },
+  '/api/content/doctor': { methods: ['GET', 'PUT'], handle: ({ request, env }) => managedContent(request, env, 'doctorProfile') },
+  '/api/content/copy': { methods: ['GET', 'PUT'], handle: ({ request, env }) => managedContent(request, env, 'managedCopy') },
+  '/api/content/contact': { methods: ['GET', 'PUT'], handle: ({ request, env }) => managedContent(request, env, 'contactFacts') },
   '/api/photos': {
     methods: ['GET', 'POST'],
     handle: (context) => (context.request.method === 'GET' ? getPhotos(context) : postPhoto(context)),

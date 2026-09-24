@@ -44,7 +44,7 @@ const items = limit ? treatments.slice(0, limit) : treatments;
 
 <section class="section bg-[var(--color-mist)]" aria-labelledby="treatments-heading">
   <div class="shell">
-    <EditControl kind="services" locale={locale} label={locale === 'he' ? 'ניהול טיפולים' : locale === 'ar' ? 'إدارة العلاجات' : 'Manage services'} />
+    <EditControl kind="services" locale={locale} />
     <div class="max-w-2xl">
       <p class="eyebrow">{t('nav.treatments')}</p>
       <Heading id="treatments-heading" class="mt-2">{t('treatments.title')}</Heading>
