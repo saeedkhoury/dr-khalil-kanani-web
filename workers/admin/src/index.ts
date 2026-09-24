@@ -14,15 +14,17 @@ import { authenticate, type AccessIdentity } from './auth.ts';
 import { fail, ok, readJson, sameOrigin, type Env } from './http.ts';
 import { parseHours, serialiseHours, validateHoursPayload } from './hours.ts';
 import {
-  addRecord, parseRecords, removeRecord, serialiseRecords, setStatus, validateUpload,
-  MAX_IMAGE_BYTES, nextFilename,
+  addRecord, parseRecords, removeRecord, reorderRecords, serialiseRecords, setStatus,
+  validateReplacement, validateUpload, MAX_IMAGE_BYTES, nextFilename,
 } from './media.ts';
-import { deleteFile, listImageFiles, readFile, writeFile, type CommitVerb } from './github.ts';
+import { deleteFile, listImageFiles, pathFor, readFile, writeFile, type CommitVerb } from './github.ts';
 import { latestStatus, statusForSha } from './status.ts';
 import { renderPanel } from './ui/page.ts';
 import { CLIENT } from './ui/client.ts';
 import { PANEL_CSP, SECURITY_HEADERS } from './http.ts';
 import { STYLES } from './ui/styles.ts';
+import { managedContent } from './managed.ts';
+import { VISUAL_CLIENT, VISUAL_STYLES } from './ui/visual.ts';
 
 /** Hours are seven short rows. Anything larger is not a week. */
 const MAX_HOURS_BODY = 8 * 1024;
@@ -160,6 +162,7 @@ interface UploadBody {
   contentBase64?: unknown;
   altHe?: unknown;
   altAr?: unknown;
+  altEn?: unknown;
   confirmed?: unknown;
 }
 
@@ -182,6 +185,7 @@ async function postPhoto({ request, env, identity }: Context): Promise<Response>
       bytes,
       altHe: body.body?.altHe,
       altAr: body.body?.altAr,
+      altEn: body.body?.altEn,
       confirmed: body.body?.confirmed,
     },
     loaded.records.map((r) => r.file),
@@ -297,6 +301,131 @@ async function photoAction(
   return ok({ sha: manifest.data.commit, file });
 }
 
+/**
+ * Reorder the gallery.
+ *
+ * The browser sends the filenames in their new sequence — identifiers it
+ * already received from GET /api/photos, never paths. The manifest is
+ * rewritten wholesale, which is safe because a reorder is idempotent: the
+ * doctor's complete intent is "this list, in this order".
+ */
+async function reorderPhotos({ request, env, identity }: Context): Promise<Response> {
+  if (!sameOrigin(request, env)) return fail('FORBIDDEN');
+
+  const body = await readJson<{ files?: unknown }>(request, MAX_ACTION_BODY);
+  if (!body.ok) return fail(body.code);
+
+  const files = body.body?.files;
+  if (!Array.isArray(files) || files.some((f) => typeof f !== 'string')) {
+    return fail('INVALID', ['order_invalid']);
+  }
+
+  const loaded = await loadRecords(env);
+  if (!loaded.ok) return loaded.response;
+
+  const reordered = reorderRecords(loaded.records, files as string[]);
+  // null means the browser was working from a stale list. Refusing beats
+  // silently dropping or duplicating a photograph the doctor did not touch.
+  if (reordered === null) return fail('INVALID', ['order_stale']);
+
+  const manifest = await writeFile(env, {
+    target: { kind: 'photography' },
+    content: serialiseRecords(reordered),
+    verb: 'reorder clinic photos',
+    actor: identity.email,
+    sha: loaded.sha,
+  });
+  if (!manifest.ok) return upstream(manifest.reason);
+
+  return ok({ sha: manifest.data.commit });
+}
+
+/**
+ * Replace the bytes behind an existing photograph.
+ *
+ * Identity, category, status, alt text and position are all preserved — only
+ * the pixels and the intrinsic dimensions change. The image is committed
+ * first and the manifest second, the same ordering an upload uses and for the
+ * same reason: a failure between them leaves a file nothing references.
+ */
+async function replacePhoto({ request, env, identity }: Context): Promise<Response> {
+  if (!sameOrigin(request, env)) return fail('FORBIDDEN');
+
+  const body = await readJson<{ file?: unknown; contentBase64?: unknown }>(request, MAX_PHOTO_BODY);
+  if (!body.ok) return fail(body.code);
+
+  const file = body.body?.file;
+  if (typeof file !== 'string' || file === '') return fail('INVALID', ['file_required']);
+
+  const bytes = decodeBase64(body.body?.contentBase64);
+  if (bytes === null) return fail('INVALID', ['file_required']);
+
+  const loaded = await loadRecords(env);
+  if (!loaded.ok) return loaded.response;
+
+  const validated = validateReplacement(loaded.records, file, bytes);
+  if (!validated.ok) return fail('INVALID', validated.issues);
+
+  // The blob SHA of the file being replaced — required, and read from the
+  // repository rather than supplied by the browser.
+  const current = await readFile(env, { kind: 'image', file });
+  if (!current.ok) return upstream(current.reason);
+
+  const image = await writeFile(env, {
+    target: { kind: 'image', file },
+    content: bytes,
+    verb: 'replace clinic photo',
+    actor: identity.email,
+    subject: file,
+    patientContentConfirmed: true,
+    sha: current.data.sha,
+  });
+  if (!image.ok) return upstream(image.reason);
+
+  const manifest = await writeFile(env, {
+    target: { kind: 'photography' },
+    content: serialiseRecords(validated.records),
+    verb: 'replace clinic photo',
+    actor: identity.email,
+    subject: file,
+    sha: loaded.sha,
+  });
+  if (!manifest.ok) return upstream(manifest.reason);
+
+  return ok({ sha: manifest.data.commit, file });
+}
+
+/**
+ * Serve one clinic photograph to the editor.
+ *
+ * Needed because an UNPUBLISHED photograph is in the repository but not in
+ * the built site, so the editor cannot link to it — and a doctor choosing
+ * which picture to hide or replace has to see the picture.
+ *
+ * The caller names a FILE, never a path: it goes through the same allow-list
+ * every write uses. Authenticated like everything else, and never cached.
+ */
+async function getPhotoBytes({ request, env }: Context): Promise<Response> {
+  const file = new URL(request.url).searchParams.get('file');
+  if (file === null || pathFor({ kind: 'image', file }) === null) return fail('BAD_REQUEST');
+
+  const stored = await readFile(env, { kind: 'image', file });
+  if (!stored.ok) return upstream(stored.reason);
+
+  // readFile decodes to text; re-encode to the original bytes.
+  const bytes = Uint8Array.from(stored.data.text, (c) => c.charCodeAt(0));
+  const type = file.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+  return new Response(bytes, {
+    status: 200,
+    headers: {
+      ...SECURITY_HEADERS,
+      'Content-Type': type,
+      // Not a public asset: it is repository content behind Access.
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Publication status                                                         */
 /* -------------------------------------------------------------------------- */
@@ -353,7 +482,9 @@ function document_(body: string, contentType: string): Response {
 }
 
 const ROUTES: Readonly<Record<string, Route>> = Object.freeze({
-  '/': {
+  '/visual-editor.js': { methods: ['GET'], handle: () => document_(VISUAL_CLIENT, 'text/javascript; charset=utf-8') },
+  '/visual-editor.css': { methods: ['GET'], handle: () => document_(VISUAL_STYLES, 'text/css; charset=utf-8') },
+  '/panel': {
     methods: ['GET'],
     handle: ({ identity }) => document_(renderPanel(identity.email), 'text/html; charset=utf-8'),
   },
@@ -375,6 +506,11 @@ const ROUTES: Readonly<Record<string, Route>> = Object.freeze({
     methods: ['GET', 'PUT'],
     handle: (context) => (context.request.method === 'GET' ? getHours(context) : putHours(context)),
   },
+  '/api/content/services': { methods: ['GET', 'PUT'], handle: ({ request, env, identity }) => managedContent(request, env, identity, 'services') },
+  '/api/content/faq': { methods: ['GET', 'PUT'], handle: ({ request, env, identity }) => managedContent(request, env, identity, 'generalFaq') },
+  '/api/content/doctor': { methods: ['GET', 'PUT'], handle: ({ request, env, identity }) => managedContent(request, env, identity, 'doctorProfile') },
+  '/api/content/copy': { methods: ['GET', 'PUT'], handle: ({ request, env, identity }) => managedContent(request, env, identity, 'managedCopy') },
+  '/api/content/contact': { methods: ['GET', 'PUT'], handle: ({ request, env, identity }) => managedContent(request, env, identity, 'contactFacts') },
   '/api/photos': {
     methods: ['GET', 'POST'],
     handle: (context) => (context.request.method === 'GET' ? getPhotos(context) : postPhoto(context)),
@@ -389,6 +525,18 @@ const ROUTES: Readonly<Record<string, Route>> = Object.freeze({
   '/api/photos/unpublish': {
     methods: ['POST'],
     handle: (context) => photoAction(context, 'unpublish'),
+  },
+  '/api/photo': {
+    methods: ['GET'],
+    handle: getPhotoBytes,
+  },
+  '/api/photos/order': {
+    methods: ['POST'],
+    handle: reorderPhotos,
+  },
+  '/api/photos/replace': {
+    methods: ['POST'],
+    handle: replacePhoto,
   },
   '/api/photos/delete': {
     methods: ['POST'],
@@ -407,6 +555,32 @@ const ROUTES: Readonly<Record<string, Route>> = Object.freeze({
   },
 });
 
+async function protectedAsset(request: Request, env: Env): Promise<Response> {
+  if (!env.ASSETS) return fail('NOT_CONFIGURED');
+  const asset = await env.ASSETS.fetch(request);
+  const headers = new Headers(asset.headers);
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    if (key !== 'Content-Type' && key !== 'Content-Security-Policy') headers.set(key, value);
+  }
+  headers.set('X-Robots-Tag', 'noindex, noarchive');
+  if (!headers.get('Content-Type')?.includes('text/html')) return new Response(asset.body, { status: asset.status, headers });
+
+  const html = await asset.text();
+  const hashes: string[] = [];
+  for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)) {
+    if (!match[2] || /type=["']application\/ld\+json["']/i.test(match[1])) continue;
+    const bytes = new TextEncoder().encode(match[2]);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    hashes.push(`'sha256-${btoa(String.fromCharCode(...new Uint8Array(digest)))}'`);
+  }
+  headers.set('Content-Security-Policy',
+    `default-src 'none'; script-src 'self' ${hashes.join(' ')}; style-src 'self' 'unsafe-inline'; ` +
+    "img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; frame-src https://www.google.com; " +
+    "base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  );
+  return new Response(html, { status: asset.status, headers });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     try {
@@ -417,11 +591,12 @@ export default {
       // that do not exist cost no asymmetric crypto and no key lookup. This is
       // also where a rate limiter would go if the WAF rule on the hostname
       // ever proves insufficient.
-      if (!route) return fail('NOT_FOUND');
+      const isAsset = !route && pathname !== '/api' && !pathname.startsWith('/api/');
+      if (!route && !isAsset) return fail('NOT_FOUND');
 
       // Includes OPTIONS. The panel is same-origin and same-origin requests do
       // not preflight, so an OPTIONS arriving means a cross-origin caller.
-      if (!route.methods.includes(request.method)) return fail('METHOD_NOT_ALLOWED');
+      if (route ? !route.methods.includes(request.method) : request.method !== 'GET') return fail('METHOD_NOT_ALLOWED');
 
       const auth = await authenticate(request, env);
       if (!auth.ok) {
@@ -434,7 +609,7 @@ export default {
         return fail(auth.code);
       }
 
-      return await route.handle({ request, env, identity: auth.identity });
+      return route ? await route.handle({ request, env, identity: auth.identity }) : protectedAsset(request, env);
     } catch (error) {
       // Nothing from here reaches the browser but the code.
       console.error(

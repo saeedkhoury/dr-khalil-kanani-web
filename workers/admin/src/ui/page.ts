@@ -122,6 +122,10 @@ export function renderPanel(email: string): string {
         <span>${escapeHtml(UI.gallery.altAr)}</span>
         <textarea id="photo-alt-ar" lang="ar" dir="rtl"></textarea>
       </label>
+      <label class="field">
+        <span>${escapeHtml(UI.gallery.altEn)}</span>
+        <textarea id="photo-alt-en" lang="en" dir="ltr"></textarea>
+      </label>
       <label class="toggle">
         <input type="checkbox" id="photo-confirm">
         <span>${escapeHtml(UI.gallery.confirm)}</span>

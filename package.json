@@ -23,7 +23,8 @@
     "test": "node --experimental-strip-types --test \"tests/unit/*.test.ts\"",
     "test:watch": "node --experimental-strip-types --test --watch \"tests/unit/*.test.ts\"",
     "lint:a11y": "node scripts/audit-html.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "verify:same-site": "node scripts/compare-admin-public.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

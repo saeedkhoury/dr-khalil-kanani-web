@@ -52,10 +52,18 @@ const USER_AGENT = 'drkanani-admin-worker';
 export type WriteTarget =
   | { kind: 'hours' }
   | { kind: 'photography' }
+  | { kind: 'services' | 'generalFaq' | 'doctorProfile' | 'managedCopy' | 'contactFacts' }
   | { kind: 'image'; file: string };
 
 const HOURS_PATH = 'src/data/hours.json';
 const PHOTOGRAPHY_PATH = 'src/data/clinic-photography.json';
+const MANAGED_PATHS = Object.freeze({
+  services: 'src/data/services.json',
+  generalFaq: 'src/data/general-faq.json',
+  doctorProfile: 'src/data/doctor-profile.json',
+  managedCopy: 'src/data/managed-copy.json',
+  contactFacts: 'src/data/contact-facts.json',
+});
 const IMAGE_DIR = 'src/assets/images';
 
 /**
@@ -95,6 +103,8 @@ export function pathFor(target: WriteTarget): string | null {
       return HOURS_PATH;
     case 'photography':
       return PHOTOGRAPHY_PATH;
+    case 'services': case 'generalFaq': case 'doctorProfile': case 'managedCopy': case 'contactFacts':
+      return MANAGED_PATHS[target.kind];
     case 'image': {
       const file = target.file;
       if (typeof file !== 'string') return null;
@@ -131,14 +141,20 @@ export type CommitVerb =
   | 'add clinic photo'
   | 'publish clinic photo'
   | 'unpublish clinic photo'
-  | 'delete clinic photo';
+  | 'delete clinic photo'
+  | 'reorder clinic photos'
+  | 'replace clinic photo'
+  | 'update visual content';
 
-const SCOPE: Record<CommitVerb, 'hours' | 'media'> = {
+const SCOPE: Record<CommitVerb, 'hours' | 'media' | 'content'> = {
   'update opening hours': 'hours',
   'add clinic photo': 'media',
   'publish clinic photo': 'media',
   'unpublish clinic photo': 'media',
   'delete clinic photo': 'media',
+  'reorder clinic photos': 'media',
+  'replace clinic photo': 'media',
+  'update visual content': 'content',
 };
 
 /**

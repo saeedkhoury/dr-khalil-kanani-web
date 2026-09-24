@@ -14,6 +14,8 @@
  * repository operations. It is never exposed through this response layer.
  */
 export interface Env {
+  /** Static admin build. Worker-first routing authenticates every asset. */
+  ASSETS?: { fetch(request: Request): Promise<Response> };
   /** `<team>.cloudflareaccess.com`. Issuer and JWKS URL are derived from it. */
   ACCESS_TEAM_DOMAIN: string;
   /** The Access application's AUD tag. An identifier, not a credential. */

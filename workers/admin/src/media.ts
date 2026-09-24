@@ -37,6 +37,7 @@ export interface UploadRequest {
   bytes: Uint8Array;
   altHe: unknown;
   altAr: unknown;
+  altEn: unknown;
   /** The patient-content confirmation. Must be exactly true. */
   confirmed: unknown;
 }
@@ -94,6 +95,8 @@ export function validateUpload(request: UploadRequest, existing: readonly string
 
   if (!isFilledString(request.altHe)) issues.push('alt_he_required');
   if (!isFilledString(request.altAr)) issues.push('alt_ar_required');
+  if (!isFilledString(request.altEn)) issues.push('alt_en_required');
+  else if (!/[A-Za-z]/.test(request.altEn) || /[\u0590-\u05ff\u0600-\u06ff]/.test(request.altEn)) issues.push('alt_en_not_english');
 
   // ── The same rules CI enforces, applied before a commit exists ──
   //
@@ -106,7 +109,7 @@ export function validateUpload(request: UploadRequest, existing: readonly string
   // It imports the SAME rule list rather than restating it. A second copy
   // would drift, and a drifted copy reports "checked" while checking
   // something else.
-  for (const [locale, text] of [['he', request.altHe], ['ar', request.altAr]] as const) {
+  for (const [locale, text] of [['he', request.altHe], ['ar', request.altAr], ['en', request.altEn]] as const) {
     if (!isFilledString(text)) continue;
     for (const finding of blockingClaims(text)) {
       issues.push(`alt_${locale}_claim_${finding.rule.replace(/-/g, '_')}`);
@@ -135,19 +138,15 @@ export function validateUpload(request: UploadRequest, existing: readonly string
 
   const he = (request.altHe as string).trim();
   const ar = (request.altAr as string).trim();
+  const en = (request.altEn as string).trim();
 
   const record: ClinicPhotographRecord = {
     file,
     category: category as ClinicPhotographRecord['category'],
     width: image.width,
     height: image.height,
-    status: 'published',
-    // English is seeded from Arabic and FLAGGED. An empty alt is never
-    // correct for a meaningful image, and asking the doctor for a third
-    // language he may not write would cost more than it returns. The flag is
-    // the remediation path: whoever writes real English deletes the key.
-    needsEnglishReview: true,
-    alt: { he, ar, en: ar },
+    status: 'unpublished',
+    alt: { he, ar, en },
   };
 
   return { ok: true, record, image };
@@ -193,6 +192,7 @@ export function setStatus(
   status: 'published' | 'unpublished',
 ): ClinicPhotographRecord[] | null {
   if (!records.some((r) => r.file === file)) return null;
+  if (status === 'published' && records.some((r) => r.file === file && r.needsEnglishReview === true)) return null;
   return records.map((r) => (r.file === file ? { ...r, status } : r));
 }
 
@@ -210,4 +210,79 @@ export function removeRecord(
   if (target === undefined) return null;
   if (target.status !== 'unpublished') return null;
   return records.filter((r) => r.file !== file);
+}
+
+/**
+ * Reorder the manifest to match a caller-supplied sequence of filenames.
+ *
+ * Array order IS display order, so this is how the gallery is sorted. The
+ * caller sends IDENTIFIERS, never paths or indices into a file — and the
+ * sequence must be a permutation of exactly what is stored. A name that is
+ * missing, unknown or repeated means the browser was working from a stale
+ * list, and silently dropping or duplicating a photograph is worse than
+ * refusing: the doctor would see a gallery he did not arrange.
+ */
+export function reorderRecords(
+  records: readonly ClinicPhotographRecord[],
+  order: readonly string[],
+): ClinicPhotographRecord[] | null {
+  if (order.length !== records.length) return null;
+  if (new Set(order).size !== order.length) return null;
+
+  const byFile = new Map(records.map((record) => [record.file, record]));
+  const next: ClinicPhotographRecord[] = [];
+  for (const file of order) {
+    const record = byFile.get(file);
+    if (record === undefined) return null;
+    next.push(record);
+    byFile.delete(file);
+  }
+  // Belt and braces: length and uniqueness already guarantee this is empty.
+  return byFile.size === 0 ? next : null;
+}
+
+/**
+ * Swap the bytes behind an existing photograph, keeping its identity.
+ *
+ * The filename, category, status, alt text and position all stay — only the
+ * pixels and the intrinsic dimensions change. That is what "replace" means to
+ * the doctor: the same picture slot, a better photograph.
+ *
+ * The new bytes are validated exactly as an upload is, because they are one.
+ * The replacement must also be the SAME FORMAT: the filename carries the
+ * extension, and a PNG living at `.jpg` would be served with the wrong type.
+ */
+export type ReplaceValidation =
+  | { ok: true; records: ClinicPhotographRecord[]; image: ImageInfo }
+  | { ok: false; issues: MediaIssue[] };
+
+export function validateReplacement(
+  records: readonly ClinicPhotographRecord[],
+  file: string,
+  bytes: Uint8Array,
+): ReplaceValidation {
+  const existing = records.find((record) => record.file === file);
+  if (existing === undefined) return { ok: false, issues: ['photo_not_actionable'] };
+
+  if (bytes.length === 0) return { ok: false, issues: ['file_required'] };
+  if (bytes.length > MAX_IMAGE_BYTES) return { ok: false, issues: ['file_too_large'] };
+
+  const image = inspectImage(bytes);
+  if (image === null) return { ok: false, issues: ['unsupported_format'] };
+  if (Math.max(image.width, image.height) < MIN_LONG_EDGE) {
+    return { ok: false, issues: ['image_too_small'] };
+  }
+  if (!file.toLowerCase().endsWith(`.${image.extension}`)) {
+    // Serving PNG bytes from a .jpg path is a content-type mismatch that the
+    // build would not catch and a browser would have to guess about.
+    return { ok: false, issues: ['format_must_match'] };
+  }
+
+  return {
+    ok: true,
+    image,
+    records: records.map((record) =>
+      record.file === file ? { ...record, width: image.width, height: image.height } : record,
+    ),
+  };
 }

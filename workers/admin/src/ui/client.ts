@@ -317,6 +317,7 @@ $('add-form').addEventListener('submit', async (event) => {
         contentBase64: btoa(binary),
         altHe: $('photo-alt-he').value,
         altAr: $('photo-alt-ar').value,
+        altEn: $('photo-alt-en').value,
         confirmed: $('photo-confirm').checked,
       }),
     });

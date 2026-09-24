@@ -2,6 +2,11 @@ name = "drkanani-admin"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
 
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+run_worker_first = true
+
 # ── NOTHING PRIVATE IN THIS FILE ───────────────────────────────────────────
 # This repository is PUBLIC.
 #
