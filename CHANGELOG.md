@@ -1,5 +1,17 @@
 # Changelog
 
+## Visual CMS — 2026-09-24
+
+- `admin.drkhalilkanani.com` becomes the website with Edit Mode rather than a
+  separate dashboard; the same-site claim is enforced by
+  `npm run verify:same-site`.
+- Site copy, doctor profile, treatments, FAQ, opening hours, contact facts and
+  clinic photography are editable in place, in Hebrew, Arabic and English.
+- Photographs: upload, multi-upload, replace, publish/unpublish, delete and
+  drag to reorder, with Up/Down as the keyboard equivalent.
+- `treatmentWork` stays developer-managed and structurally unwritable.
+- Public output unchanged apart from `/` adopting the `/he/` composition.
+
 ## 2026-09-24
 
 ### Admin CMS local audit remediation (unmerged)

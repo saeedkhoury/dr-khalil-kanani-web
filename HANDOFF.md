@@ -152,6 +152,35 @@ Four utilities from docs/.claude prose predate the CMS. They were deliberately
 left unchanged under the owner's scope restriction. Worker and test sources
 remain excluded from public Tailwind scanning.
 
+### Branch `codex/visual-cms` — Visual CMS, local implementation complete
+
+`admin.drkhalilkanani.com` is now **the website with Edit Mode on**, not a
+dashboard. Same Astro components, same 47 pages; a pencil appears beside each
+editable section. See [docs/VISUAL-CMS.md](docs/VISUAL-CMS.md).
+
+This supersedes the earlier "hours and gallery only" design and ADR 0004's
+"no CMS" position.
+
+Editable: site copy, doctor profile, treatments (add/edit/reorder/publish/
+delete), FAQ (same), opening hours, contact facts, clinic photography
+(upload, multi-upload, replace, publish/unpublish, delete, drag to reorder).
+
+`treatmentWork` remains developer-managed and structurally unwritable by the
+Worker. Legal, privacy, accessibility and security copy likewise.
+
+**Proven mechanically:** `npm run verify:same-site` strips the editor chrome
+from all 47 admin pages and requires what remains to equal the public page
+exactly — 47/47. The public build carries no editor string or asset.
+
+**Public output:** 128 files, 47 pages. The only change from the frozen
+audited HEAD is `/`, which now renders the same composition as `/he/` with its
+canonical still pointing there.
+
+**Still blocked:** no Access application, custom domain, DNS, WAF rule or
+GitHub token, and no commit has ever been made to a real repository. Every
+unset value makes the Worker refuse. BLOCKED — REQUIRES PRODUCTION
+CONFIGURATION.
+
 ## What exists
 
 - Astro 7.3 + Tailwind 4.3, fully static, no adapter, no server
