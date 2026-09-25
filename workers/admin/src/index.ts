@@ -495,7 +495,7 @@ async function getStatus({ request, env }: Context): Promise<Response> {
 
   const result = await statusForSha(env, sha);
   if (!result.ok) return upstream(result.reason);
-  return ok({ ...result.data, preview: await previewForSha(env, sha, await deployedBuild(env)) });
+  return ok({ ...result.data, preview: await previewForSha(env, sha, await deployedBuild(env), env.ADMIN_REBUILD?.trim() === 'on') });
 }
 
 /**

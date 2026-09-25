@@ -9,6 +9,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "build:admin": "VISUAL_CMS=1 ASTRO_SITE=https://admin.drkhalilkanani.com astro build",
+    "build:admin:ci": "node scripts/build-admin-ci.mjs",
     "build:preview": "VERIFY_RELAX=1 astro build",
     "preview": "astro preview",
     "check": "astro check",

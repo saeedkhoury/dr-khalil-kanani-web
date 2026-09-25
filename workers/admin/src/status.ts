@@ -169,6 +169,7 @@ export async function previewForSha(
   env: Parameters<typeof query>[0],
   sha: string,
   deployed: string | null = null,
+  rebuildOn = false,
 ): Promise<PreviewState> {
   // The truth is what is being SERVED. The admin build records the commit it
   // was built from; if that is this commit, or a later one on the branch
@@ -180,6 +181,10 @@ export async function previewForSha(
       if (compared.ok && (compared.data?.status === 'ahead' || compared.data?.status === 'identical')) return 'ready';
     }
   }
+  // Rebuilt by Cloudflare Workers Builds: the served build is the only
+  // signal, and it does not contain this commit yet — so it is still coming.
+  // (The editor stops waiting, and says so, if it takes unusually long.)
+  if (rebuildOn) return 'building';
   const result = await query<{ workflow_runs?: WorkflowRun[] }>(env, { kind: 'previewRuns', headSha: sha });
   if (!result.ok) return 'unavailable';
   const runs = result.data?.workflow_runs;

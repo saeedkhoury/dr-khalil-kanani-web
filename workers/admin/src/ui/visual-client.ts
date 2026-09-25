@@ -218,6 +218,8 @@ const SOURCE = String.raw`
         if (data.state==='published') { barTell(t('publishedSite'),'published'); }
       }
       if (data.preview==='building' && !announced) pubTell(t('updating'),'working');
+      // About six minutes in: still waiting, but say it is slow rather than spin.
+      if (data.preview==='building' && attempt===60) { announced=true; pubTell(t('updateSlow'),'info'); }
     }
   }
   /** The page now contains the change: reload into it, unless that would lose work. */

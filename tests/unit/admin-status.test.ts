@@ -172,6 +172,22 @@ describe('GET /api/status', () => {
     assert.equal((await r.response.json() as { data: { preview: string } }).data.preview, 'building');
   });
 
+  test('with Workers Builds rebuilding, only the served build decides', async () => {
+    const env = (served: string | null) => ({
+      ...adminEnv,
+      ADMIN_REBUILD: 'on',
+      ASSETS: { fetch: async () => (served === null ? new Response('', { status: 404 }) : new Response(served)) },
+    });
+    const noRuns = { status: 200, body: { workflow_runs: [] } };
+    // Not served yet: building, and no GitHub Actions lookup is made.
+    let r = await callAdmin(await adminRequest(`/api/status?sha=${SHA}`), [noRuns, { status: 200, body: { status: 'behind' } }], env('c'.repeat(40)));
+    assert.equal((await r.response.json() as { data: { preview: string } }).data.preview, 'building');
+    assert.ok(r.calls.every((c) => !c.url.includes('admin-preview.yml')));
+    // Served: ready.
+    r = await callAdmin(await adminRequest(`/api/status?sha=${SHA}`), [noRuns], env(SHA));
+    assert.equal((await r.response.json() as { data: { preview: string } }).data.preview, 'ready');
+  });
+
   test('a failed preview lookup does not fail the publication status', async () => {
     const { response } = await callAdmin(await adminRequest(`/api/status?sha=${SHA}`), [
       { status: 200, body: { workflow_runs: [run('completed', 'success')] } },

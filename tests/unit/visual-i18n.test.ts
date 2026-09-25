@@ -59,3 +59,15 @@ test('the dialog takes the page language and direction; the dictionary is inline
   assert.doesNotMatch(VISUAL_CLIENT, /<\/script/i);
   assert.doesNotThrow(() => new Function(VISUAL_CLIENT));
 });
+
+test('the Workers Builds step refuses to build without an exact commit to record', async () => {
+  const { spawnSync } = await import('node:child_process');
+  const script = new URL('../../scripts/build-admin-ci.mjs', import.meta.url).pathname;
+  for (const sha of [undefined, '', 'main', 'abc123']) {
+    const env = { ...process.env };
+    if (sha === undefined) delete env.WORKERS_CI_COMMIT_SHA; else env.WORKERS_CI_COMMIT_SHA = sha;
+    const result = spawnSync(process.execPath, [script], { env, encoding: 'utf8' });
+    assert.equal(result.status, 1, `built with ${String(sha)}`);
+    assert.match(result.stderr, /refusing to build/);
+  }
+});

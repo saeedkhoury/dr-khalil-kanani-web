@@ -49,6 +49,8 @@ export interface Env {
    * means refuse.
    */
   CONTENT_BRANCH?: string;
+  /** 'on' when Workers Builds rebuilds this Worker after every content commit. */
+  ADMIN_REBUILD?: string;
 }
 
 /**
