@@ -75,6 +75,8 @@ export const PHOTOS_SOURCE = String.raw`
     pm.issues.hidden=true; pm.issues.replaceChildren(); pmTell('');
     if(!pm.el.open) pm.el.showModal();
     pm.grid.replaceChildren(); const sk=add(pm.grid,'div'); sk.className='visual-loading'; sk.textContent=t('loading');
+    // Nothing to save until the gallery has loaded.
+    pm.saveBtn.disabled=true; pm.summary.textContent=''; pm.confirmWrap.hidden=true;
     try{
       const data=await api('/api/photos','GET');
       pm.sha=data.sha; pm.versions=data.versions||{}; pm.deletes=[];
