@@ -286,8 +286,8 @@ describe('the drag affordance', () => {
   test('every sortable list keeps its keyboard alternative', () => {
     // Dragging is unavailable to anyone on a keyboard or a screen reader, so
     // the buttons are the same feature offered a second way — not a fallback.
-    const ups = VISUAL_CLIENT.match(/'למעלה'/g) ?? [];
-    const downs = VISUAL_CLIENT.match(/'למטה'/g) ?? [];
+    const ups = VISUAL_CLIENT.match(/button\(t\('up'\)/g) ?? [];
+    const downs = VISUAL_CLIENT.match(/button\(t\('down'\)/g) ?? [];
     assert.ok(ups.length >= 2, `expected Up on several lists, found ${ups.length}`);
     assert.equal(ups.length, downs.length, 'every Up needs a Down');
     // The grip itself is hidden from assistive tech; the buttons carry the names.
@@ -319,9 +319,9 @@ describe('edit mode, preview and unsaved work', () => {
   });
 
   test('saving clears the unsaved flag', () => {
-    assert.match(VISUAL_CLIENT, /dirty=false;tell\('נשמר ב-commit/);
+    assert.match(VISUAL_CLIENT, /dirty=false;tell\(t\(publishing==='test'\?'savedTest':'savedProd'/);
     // And a save with nothing changed says so, rather than "saved".
-    assert.match(VISUAL_CLIENT, /if \(data\.unchanged\) \{ dirty=false; tell\('אין שינויים לשמירה/);
+    assert.match(VISUAL_CLIENT, /if \(data\.unchanged\) \{ dirty=false; tell\(t\('nothingToSave'\)/);
   });
 
   test('publication status survives closing the dialog', () => {
@@ -332,6 +332,9 @@ describe('edit mode, preview and unsaved work', () => {
   test('a commit is never announced as published', () => {
     // "saved" and "published on the site" are different sentences.
     assert.match(VISUAL_CLIENT, /עדיין לא פורסם/);
-    assert.match(VISUAL_CLIENT, /'פורסם באתר','published'/);
+    assert.match(VISUAL_CLIENT, /barTell\(t\('publishedSite'\),'published'\)/);
+    // "Updated" only from preview 'ready', which the Worker reports only when
+    // the build it serves contains the commit.
+    assert.match(VISUAL_CLIENT, /if \(data\.preview==='ready'\) \{ reloadWhenSafe\(commit\); return; \}/);
   });
 });

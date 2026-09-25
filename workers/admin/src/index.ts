@@ -495,7 +495,24 @@ async function getStatus({ request, env }: Context): Promise<Response> {
 
   const result = await statusForSha(env, sha);
   if (!result.ok) return upstream(result.reason);
-  return ok({ ...result.data, preview: await previewForSha(env, sha) });
+  return ok({ ...result.data, preview: await previewForSha(env, sha, await deployedBuild(env)) });
+}
+
+/**
+ * The commit this Worker's own pages were built from, written into the build
+ * by the admin preview workflow. null for a build without one (a manual
+ * deploy), which makes the status fall back to the workflow runs.
+ */
+async function deployedBuild(env: Env): Promise<string | null> {
+  if (!env.ASSETS) return null;
+  try {
+    const response = await env.ASSETS.fetch(new Request('https://admin.invalid/build.txt'));
+    if (!response.ok) return null;
+    const text = (await response.text()).trim();
+    return /^[0-9a-f]{40}$/.test(text) ? text : null;
+  } catch {
+    return null;
+  }
 }
 
 async function getLatestStatus({ env }: Context): Promise<Response> {

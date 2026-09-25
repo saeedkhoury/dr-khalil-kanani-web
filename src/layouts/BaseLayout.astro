@@ -27,6 +27,7 @@ import { buildGraph } from '../lib/schema';
 import Header from '../components/sections/Header.astro';
 import Footer from '../components/sections/Footer.astro';
 import StickyActionBar from '../components/sections/StickyActionBar.astro';
+import { BAR_STRINGS } from '../components/editor/bar-strings';
 
 interface Props {
   locale: Locale;
@@ -59,6 +60,8 @@ const fullTitle = title === t('site.title') ? title : `${title} | ${t('site.shor
 
 const graph = buildGraph({ locale, pathname, title: fullTitle, description, breadcrumbs });
 const editing = process.env.VISUAL_CMS === '1';
+// Edit Mode's own words, in the page's language. Rendered only when editing.
+const bar = BAR_STRINGS[locale as keyof typeof BAR_STRINGS] ?? BAR_STRINGS.he;
 ---
 
 <!doctype html>
@@ -122,7 +125,7 @@ const editing = process.env.VISUAL_CMS === '1';
   </head>
 
   <body>
-    {editing && <div class="visual-editor-bar" data-visual-editor-locale={locale}><span class="visual-bar-head"><strong>עריכת האתר</strong><span class="visual-bar-notice"><span class="visual-bar-notice-long">תוכן מוסתר אינו סודי: המאגר ציבורי. אין להזין מידע על מטופלים או סודות.</span><span class="visual-bar-notice-short">המאגר ציבורי: אין להזין מידע על מטופלים</span></span></span><span class="visual-bar-actions"><a href="/panel">לוח שעות ותמונות</a></span></div>}
+    {editing && <div class="visual-editor-bar" data-visual-editor-locale={locale} lang={locale}><span class="visual-bar-head"><strong>{bar.title}</strong><span class="visual-bar-notice"><span class="visual-bar-notice-long">{bar.notice}</span><span class="visual-bar-notice-short">{bar.noticeShort}</span></span></span><span class="visual-bar-actions"></span></div>}
     <a class="skip-link" href="#main">{t('a11y.skipToContent')}</a>
 
     <Header locale={locale} />

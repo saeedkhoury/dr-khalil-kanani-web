@@ -132,7 +132,9 @@ describe('GET /api/status', () => {
   test('the preview state follows the Edit Mode rebuild', async () => {
     for (const [runs, expected] of [
       [[run('in_progress', null)], 'building'],
-      [[run('completed', 'success')], 'ready'],
+      // Finished, but this Worker does not serve a build containing it yet:
+      // still propagating. "ready" comes only from the served build.
+      [[run('completed', 'success')], 'building'],
       [[run('completed', 'failure')], 'failed'],
       [[run('completed', 'cancelled')], 'building'],
       // Skipped = preview not configured for this branch; never "failed".
@@ -146,6 +148,28 @@ describe('GET /api/status', () => {
       assert.equal(body.data.preview, expected);
       assert.equal(body.data.state, 'committed', 'a preview is never a publication');
     }
+  });
+
+  test('ready means the build being SERVED contains the commit', async () => {
+    const served = (sha: string | null) => ({
+      ...adminEnv,
+      ASSETS: { fetch: async () => (sha === null ? new Response('', { status: 404 }) : new Response(`${sha}\n`)) },
+    });
+    const later = 'b'.repeat(40);
+    const noRuns = { status: 200, body: { workflow_runs: [] } };
+    // The exact commit is deployed.
+    let r = await callAdmin(await adminRequest(`/api/status?sha=${SHA}`), [noRuns], served(SHA));
+    assert.equal((await r.response.json() as { data: { preview: string } }).data.preview, 'ready');
+    // A later commit is deployed and GitHub says it contains this one.
+    r = await callAdmin(await adminRequest(`/api/status?sha=${SHA}`), [noRuns, { status: 200, body: { status: 'ahead' } }], served(later));
+    assert.equal((await r.response.json() as { data: { preview: string } }).data.preview, 'ready');
+    assert.equal(r.calls[1].url, `https://api.github.com/repos/saeedkhoury/dr-khalil-kanani-web/compare/${SHA}...${later}`);
+    // The deployed build is OLDER than this commit: not ready, whatever the run says.
+    r = await callAdmin(await adminRequest(`/api/status?sha=${SHA}`), [noRuns, { status: 200, body: { status: 'behind' } }, { status: 200, body: { workflow_runs: [run('completed', 'success')] } }], served(later));
+    assert.equal((await r.response.json() as { data: { preview: string } }).data.preview, 'building');
+    // A build without a recorded commit falls back to the workflow runs.
+    r = await callAdmin(await adminRequest(`/api/status?sha=${SHA}`), [noRuns, { status: 200, body: { workflow_runs: [run('in_progress', null)] } }], served(null));
+    assert.equal((await r.response.json() as { data: { preview: string } }).data.preview, 'building');
   });
 
   test('a failed preview lookup does not fail the publication status', async () => {

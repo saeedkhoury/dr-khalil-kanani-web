@@ -61,6 +61,11 @@ jobs:
           # Same acknowledged fields as the public build (see deploy.yml).
           ACK_UNVERIFIED: 'doctor.ar,doctor.en,tagline.ar'
         run: npm run build:admin
+      - name: Record which commit this build contains
+        if: env.HAS_TOKEN == 'true'
+        # The Worker reads this to tell the editor, truthfully, when the page
+        # being served includes a saved change.
+        run: echo "$GITHUB_SHA" > workers/admin/dist/build.txt
       - name: Deploy the admin Worker
         if: env.HAS_TOKEN == 'true'
         working-directory: workers/admin

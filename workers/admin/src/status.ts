@@ -165,7 +165,21 @@ export type PreviewState = 'none' | 'building' | 'ready' | 'failed' | 'unavailab
  * A cancelled run was superseded by a newer commit (the workflow cancels in
  * progress), and the newer run includes this one's change.
  */
-export async function previewForSha(env: Parameters<typeof query>[0], sha: string): Promise<PreviewState> {
+export async function previewForSha(
+  env: Parameters<typeof query>[0],
+  sha: string,
+  deployed: string | null = null,
+): Promise<PreviewState> {
+  // The truth is what is being SERVED. The admin build records the commit it
+  // was built from; if that is this commit, or a later one on the branch
+  // (which contains it), the page the doctor reloads shows the change.
+  if (deployed !== null && /^[0-9a-f]{40}$/.test(deployed)) {
+    if (deployed === sha) return 'ready';
+    if (/^[0-9a-f]{40}$/.test(sha)) {
+      const compared = await query<{ status?: string }>(env, { kind: 'compare', base: sha, head: deployed });
+      if (compared.ok && (compared.data?.status === 'ahead' || compared.data?.status === 'identical')) return 'ready';
+    }
+  }
   const result = await query<{ workflow_runs?: WorkflowRun[] }>(env, { kind: 'previewRuns', headSha: sha });
   if (!result.ok) return 'unavailable';
   const runs = result.data?.workflow_runs;
@@ -175,8 +189,10 @@ export async function previewForSha(env: Parameters<typeof query>[0], sha: strin
   // or no deploy credential exists — preview is not set up, which is not a
   // failure and must not be reported as one.
   if (runs.every((run) => run.conclusion === 'skipped')) return 'none';
-  if (runs.some((run) => run.status === 'completed' && run.conclusion === 'success')) return 'ready';
   if (runs.some((run) => run.status !== 'completed')) return 'building';
-  if (runs.every((run) => run.conclusion === 'cancelled')) return 'building';
+  // Finished successfully but the served build does not have it yet: the
+  // deploy is still propagating. A cancelled run was superseded by a newer
+  // commit, whose run carries this change.
+  if (runs.some((run) => run.conclusion === 'success' || run.conclusion === 'cancelled')) return 'building';
   return 'failed';
 }

@@ -75,12 +75,12 @@ test('editing a treatment saves, saves again, and says when nothing changed', as
   const summary = dialog.locator('[data-path$=".locales.he.summary"]');
   await summary.fill('תקציר שעודכן בבדיקה.');
   await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
-  await expect(statusOf(page)).toContainText('נשמר ב-commit');
+  await expect(statusOf(page)).toContainText('נשמר (commit');
 
   // The second save in the same sitting used to be refused as a conflict.
   await summary.fill('תקציר שעודכן פעם שנייה.');
   await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
-  await expect(statusOf(page)).toContainText('נשמר ב-commit');
+  await expect(statusOf(page)).toContainText('נשמר (commit');
   await expect(statusOf(page)).not.toContainText('השתנה');
 
   await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
@@ -107,7 +107,7 @@ test('a new treatment saves as a draft; publishing it incomplete names what is m
   await dialog.locator('[data-path$=".slug"]').fill('test-crowns');
   await dialog.locator('[data-path$=".locales.he.title"]').fill('כתרים לבדיקה');
   await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
-  await expect(statusOf(page)).toContainText('נשמר ב-commit');
+  await expect(statusOf(page)).toContainText('נשמר (commit');
 
   await dialog.getByRole('button', { name: 'הצגה באתר: כתרים לבדיקה' }).click();
   await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
@@ -125,7 +125,7 @@ test('a new treatment saves as a draft; publishing it incomplete names what is m
   await dialog.getByRole('button', { name: 'הסתרה מהאתר: כתרים לבדיקה' }).click();
   await dialog.getByRole('button', { name: 'מחיקה: כתרים לבדיקה' }).click();
   await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
-  await expect(statusOf(page)).toContainText('נשמר ב-commit');
+  await expect(statusOf(page)).toContainText('נשמר (commit');
   await expect(dialog.getByText('כתרים לבדיקה')).toHaveCount(0);
 });
 
@@ -138,7 +138,7 @@ test('treatments reorder by dragging, and the order persists', async ({ page }) 
   await dragOnto(page, items.nth(1).locator('.visual-grip'), items.nth(0));
   await expect(items.nth(1)).toHaveText(firstBefore!);
   await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
-  await expect(statusOf(page)).toContainText('נשמר ב-commit');
+  await expect(statusOf(page)).toContainText('נשמר (commit');
   await dialog.getByRole('button', { name: 'סגירה' }).click();
   await page.locator('[data-edit-kind="services"]:not([data-edit-focus])').first().click();
   await expect(items.nth(1)).toHaveText(firstBefore!);
@@ -154,7 +154,7 @@ test('FAQ: add, edit, save, reopen, delete', async ({ page }) => {
   const fresh = dialog.locator('.visual-item').filter({ hasText: 'שאלה חדשה' });
   await fresh.locator('[data-path$=".q.he"]').fill('שאלת בדיקה?');
   await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
-  await expect(statusOf(page)).toContainText('נשמר ב-commit');
+  await expect(statusOf(page)).toContainText('נשמר (commit');
 
   await dialog.getByRole('button', { name: 'סגירה' }).click();
   await page.getByRole('button', { name: 'עריכת שאלות נפוצות' }).click();
@@ -162,7 +162,7 @@ test('FAQ: add, edit, save, reopen, delete', async ({ page }) => {
   await expect(saved).toContainText('מוסתר');
   await saved.getByRole('button', { name: 'מחיקה: שאלת בדיקה?' }).click();
   await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
-  await expect(statusOf(page)).toContainText('נשמר ב-commit');
+  await expect(statusOf(page)).toContainText('נשמר (commit');
   await expect(dialog.getByText('שאלת בדיקה?')).toHaveCount(0);
 });
 
@@ -292,7 +292,7 @@ test('hours: a mistake is explained in words and stays on screen; a fix saves', 
   await expect(dialog).not.toContainText('row_1');
   await monday.locator('input[type="time"]').first().fill('08:30');
   await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
-  await expect(statusOf(page)).toContainText('נשמר ב-commit');
+  await expect(statusOf(page)).toContainText('נשמר (commit');
   await dialog.getByRole('button', { name: 'סגירה' }).click();
   await page.getByRole('button', { name: 'עריכת שעות הפעילות' }).first().click();
   await expect(dialog.locator('[data-path="row_1"] input[type="time"]').first()).toHaveValue('08:30');
@@ -318,7 +318,7 @@ test('contact: a factual change needs the confirmation, and says so', async ({ p
   await dialog.locator('#visual-owner-confirm').check();
   await dialog.locator('#visual-same-location').check();
   await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
-  await expect(statusOf(page)).toContainText('נשמר ב-commit');
+  await expect(statusOf(page)).toContainText('נשמר (commit');
 });
 
 /* ── Preview and phone ──────────────────────────────────────────────────── */
@@ -363,4 +363,79 @@ test('on a phone every card pencil sits on ITS card and is a full touch target',
     expect(pencil.y + pencil.height).toBeLessThanOrEqual(card.y + card.height);
     expect(pencil.height).toBeGreaterThanOrEqual(44);
   }
+});
+
+/* ── The editor speaks the page's language ──────────────────────────────── */
+
+for (const [locale, dir, words] of [
+  ['ar', 'rtl', { bar: 'تعديل الموقع', treatments: 'العلاجات', save: 'حفظ', close: 'إغلاق', add: '+ إضافة علاج', preview: 'عرض المريض', status: 'وضع تجريبي' }],
+  ['en', 'ltr', { bar: 'Editing the site', treatments: 'Treatments', save: 'Save', close: 'Close', add: '+ Add treatment', preview: 'Patient view', status: 'Test mode' }],
+  ['he', 'rtl', { bar: 'עריכת האתר', treatments: 'טיפולים', save: 'שמירה', close: 'סגירה', add: '+ הוספת טיפול', preview: 'תצוגת מטופל', status: 'מצב בדיקה' }],
+] as const) {
+  test(`the editor interface is in ${locale}, ${dir}`, async ({ page }) => {
+    await page.goto(`/${locale}/`);
+    const bar = page.locator('.visual-editor-bar');
+    await expect(bar).toContainText(words.bar);
+    await expect(bar.getByRole('button', { name: words.preview })).toBeVisible();
+    await expect(bar.locator('.visual-bar-status')).toContainText(words.status);
+    await bar.getByRole('button', { name: words.treatments, exact: true }).click();
+    const dialog = dialogOf(page);
+    await expect(dialog).toHaveAttribute('dir', dir);
+    await expect(dialog).toHaveAttribute('lang', locale);
+    await expect(dialog.getByRole('heading', { name: words.treatments, exact: true })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: words.save, exact: true })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: words.close, exact: true })).toBeVisible();
+    await expect(dialog.getByRole('button', { name: words.add })).toBeVisible();
+    // A treatment opens on the page's own language tab.
+    await dialog.locator('.visual-sortable > .visual-item').first().getByRole('button').first().click();
+    await expect(dialog.locator('[role="tab"][aria-selected="true"]')).toHaveText(
+      { he: 'עברית', ar: 'العربية', en: 'English' }[locale],
+    );
+    // No Hebrew interface text on the Arabic or English page. Language tabs
+    // name each language in its own script, which is correct.
+    if (locale !== 'he') {
+      const text = await dialog.evaluate((d) => {
+        const copy = d.cloneNode(true) as HTMLElement;
+        copy.querySelectorAll('[role="tab"], textarea, input').forEach((n) => n.remove());
+        return copy.textContent ?? '';
+      });
+      expect(text).not.toMatch(/[\u0590-\u05ff]{2,}/);
+    }
+  });
+}
+
+test('an English validation error is in English', async ({ page }) => {
+  await page.goto('/en/');
+  await page.getByRole('button', { name: 'Edit opening hours' }).first().click();
+  const dialog = dialogOf(page);
+  await dialog.locator('[data-path="row_1"] input[type="time"]').first().fill('');
+  await dialog.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(dialog.locator('.visual-errors')).toContainText('Monday: enter opening and closing times');
+  await expect(statusOf(page)).toContainText('Not saved');
+});
+
+/* ── Save → updating → updated → the page reloads itself ────────────────── */
+
+test('after a save the editor waits for the rebuild, then reloads into it', async ({ page, request }) => {
+  test.setTimeout(60_000);
+  await page.goto('/he/');
+  await page.getByRole('button', { name: 'עריכת הכותרת הראשית' }).click();
+  const dialog = dialogOf(page);
+  const eyebrow = dialog.locator('[data-path="hero.eyebrow.he"]');
+  const original = await eyebrow.inputValue();
+  await eyebrow.fill(`${original} ·`);
+  await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
+  await expect(statusOf(page)).toContainText('נשמר');
+  await expect(dialog.locator('.visual-pub')).toContainText('מעדכן את תצוגת האתר');
+
+  // The preview workflow finishes: the served build now contains the commit.
+  await request.post('/__fixture/deploy');
+  await page.waitForEvent('load', { timeout: 30_000 });
+  await expect(page.locator('.visual-bar-status')).toContainText('הדף מציג את השינוי האחרון שנשמר');
+
+  // Restore.
+  await page.getByRole('button', { name: 'עריכת הכותרת הראשית' }).click();
+  await dialog.locator('[data-path="hero.eyebrow.he"]').fill(original);
+  await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
+  await expect(statusOf(page)).toContainText('נשמר');
 });

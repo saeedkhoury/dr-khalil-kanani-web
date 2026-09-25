@@ -43,8 +43,20 @@ if (process.env.NODE_ENV === 'production') {
 const PORT = 4332;
 const ASSET_ROOT = resolve(fileURLToPath(new URL('../workers/admin/dist/', import.meta.url)));
 
+/*
+ * "The rebuild has deployed", on demand. A browser test saves, then POSTs to
+ * /__fixture/deploy (answered here, never by the Worker) to make the served
+ * build contain the latest commit — exactly what the preview workflow does
+ * for real. Until then there is no build.txt, as after a manual deploy.
+ */
+let lastCommit = '';
+let deployedCommit: string | null = null;
+
 function asset(request: Request): Response {
   const pathname = new URL(request.url).pathname;
+  if (pathname === '/build.txt') {
+    return deployedCommit === null ? new Response('Not found', { status: 404 }) : new Response(`${deployedCommit}\n`);
+  }
   const relative = pathname.endsWith('/') ? `${pathname}index.html` : pathname;
   const path = resolve(join(ASSET_ROOT, relative.slice(1)));
   if (!path.startsWith(`${ASSET_ROOT}/`)) return new Response('Not found', { status: 404 });
@@ -137,6 +149,12 @@ function mockGitHub(url: string, init?: RequestInit): Response {
     return json({ workflow_runs: [{ head_sha: new URL(url).searchParams.get('head_sha'), status: 'completed', conclusion: 'success', updated_at: new Date().toISOString() }] });
   }
   if (url.includes('/actions/workflows/admin-preview.yml/runs')) return json({ workflow_runs: [] });
+  // Fixture commits are numbered ('fff…12'), so "contains" is a comparison.
+  if (url.includes('/compare/')) {
+    const [base = '', head = ''] = (new URL(url).pathname.split('/compare/')[1] ?? '').split('...');
+    const n = (sha: string) => Number.parseInt(sha.replace(/^f+/, '') || '0', 10);
+    return json({ status: n(head) > n(base) ? 'ahead' : n(head) === n(base) ? 'identical' : 'behind' });
+  }
   if (url.includes('/commits?')) {
     return json([{ sha: 'a'.repeat(40), commit: { message: 'cms(hours): update opening hours', author: { date: new Date().toISOString() } } }]);
   }
@@ -145,6 +163,7 @@ function mockGitHub(url: string, init?: RequestInit): Response {
     const body = JSON.parse(String(init?.body ?? '{}')) as { content?: string; sha?: string };
     commits += 1;
     const commit = String(commits).padStart(40, 'f');
+    lastCommit = commit;
     if (imageName) {
       const existing = images.get(imageName);
       if (existing && body.sha !== existing.sha) return json({ message: 'Conflict' }, 409);
@@ -200,6 +219,12 @@ const server = createServer((incoming, outgoing) => {
   incoming.on('data', (chunk: Buffer) => chunks.push(chunk));
   incoming.on('end', () => {
     void (async () => {
+      if (incoming.url === '/__fixture/deploy' && incoming.method === 'POST') {
+        deployedCommit = lastCommit || null;
+        outgoing.statusCode = 204;
+        outgoing.end();
+        return;
+      }
       const token = await makeToken({ email: DOCTOR });
       const headers = new Headers();
       for (const [key, value] of Object.entries(incoming.headers)) {

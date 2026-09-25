@@ -330,6 +330,7 @@ function toBase64(content: string | Uint8Array): string {
 export type ReadQuery =
   | { kind: 'runs'; headSha: string }
   | { kind: 'previewRuns'; headSha: string }
+  | { kind: 'compare'; base: string; head: string }
   | { kind: 'commits'; page?: number; headSha?: string };
 
 /** A git object name. Hex only, so it cannot carry a path or a parameter. */
@@ -347,6 +348,13 @@ function queryUrl(query: ReadQuery, branch: string): string | null {
       // "the preview shows it" and "visitors see it" are different facts.
       if (typeof query.headSha !== 'string' || !SHA.test(query.headSha)) return null;
       return `${base}/actions/workflows/admin-preview.yml/runs?head_sha=${query.headSha}&per_page=20`;
+    }
+    case 'compare': {
+      // Does the build being served contain a given commit? Both ends are
+      // full object names, validated here like every other caller value.
+      const FULL = /^[0-9a-f]{40}$/;
+      if (!FULL.test(String(query.base)) || !FULL.test(String(query.head))) return null;
+      return `${base}/compare/${query.base}...${query.head}`;
     }
     case 'commits': {
       const page = query.page ?? 1;
