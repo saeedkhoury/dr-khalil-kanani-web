@@ -93,7 +93,14 @@ html[data-visual-preview] .visual-editor-bar{background:#26506b}
 /* ── On the page: the gallery's Edit control, and per-card pencils ─────────
    The gallery control sits at the end of the title row: the far left in Hebrew
    and Arabic, the right in English (logical properties, flex order). */
-.gallery-title-row>.visual-edit-control{flex:none;margin:0;margin-block-start:.4rem}
+/* Each managed gallery ends with its own Edit tile: part of the gallery, the
+   same shape as its photos, and absent from the public build. */
+.visual-gallery-edit{display:flex}
+.visual-gallery-edit .visual-edit-control{flex:1;flex-direction:column;justify-content:center;gap:.6rem;min-height:12rem;margin:0;padding:1rem;border:2px dashed #0c5283;border-radius:var(--radius-media,16px);background:#f3f9fd;font-size:1rem;text-align:center;white-space:normal}
+.visual-gallery-edit .visual-edit-control svg{width:28px;height:28px}
+.visual-gallery-edit-strip{inline-size:13rem}
+/* Stretches to the strip's row, so it is exactly as tall as the photo cards. */
+.visual-gallery-edit-strip .visual-edit-control{min-height:18rem}
 .visual-gallery-empty{padding:1rem 0 0;color:#4a6274}
 /* The pencil sits ON its own card's top corner. Placed after the card it
    overflowed the grid cell and landed on the NEXT card on a phone, where it
@@ -101,8 +108,7 @@ html[data-visual-preview] .visual-editor-bar{background:#26506b}
 li:has(>.visual-card-edit){position:relative}
 .visual-card-edit{position:absolute;z-index:3;inset-block-start:.75rem;inset-inline-end:.75rem}
 .visual-card-edit .visual-edit-control{margin:0;background:#fff}
-.visual-work-note{align-self:center;max-width:14rem;padding:1rem;border:1px dashed #7891a0;border-radius:12px;color:#26506b;font:500 .9rem/1.5 system-ui}
-html[data-visual-preview] .visual-work-note,html[data-visual-preview] .visual-gallery-empty{display:none!important}
+html[data-visual-preview] .visual-gallery-edit,html[data-visual-preview] .visual-gallery-empty{display:none!important}
 
 @media(max-width:600px){
   .visual-dialog{width:100vw;max-width:100vw;height:100dvh;max-height:100dvh;border:0;border-radius:0}
@@ -140,27 +146,41 @@ html[data-visual-preview] .visual-work-note,html[data-visual-preview] .visual-ga
 .pm .pm-save:disabled{background:#0c5283;color:white}
 .pm .pm-danger{border-color:#9c2a2a;color:#9c2a2a}
 .pm .pm-mini{min-height:40px;padding:.3rem .7rem;font-size:.88rem}
-.pm-head{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem 1rem;padding:1rem 1.4rem;padding-block-start:max(1rem,env(safe-area-inset-top));background:white;border-block-end:1px solid #d5e1e7}
+.pm-head{display:flex;align-items:flex-start;gap:1rem;padding:1.1rem 1.4rem;padding-block-start:max(1.1rem,env(safe-area-inset-top));background:white;border-block-end:1px solid #d5e1e7}
+.pm-about{margin:.25rem 0 0;max-width:46rem;color:#26506b;font:500 .92rem/1.5 system-ui}
+.pm .pm-close{flex:none;width:44px;height:44px;padding:0;border-radius:999px;border-color:#c9d9e3}
 .pm-titles{flex:1 1 14rem;min-width:0}
 .pm-titles h2{margin:0;font:700 1.3rem/1.25 system-ui;color:#0c5283}
 .pm-summary{margin:.15rem 0 0;color:#4a6274;font:500 .88rem/1.4 system-ui}
-.pm-actions{display:flex;gap:.5rem;flex:none}
-.pm-status{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .8rem;padding:.55rem 1.4rem;background:#e9f5fb;color:#0c5283;font:600 .92rem/1.4 system-ui}
+.pm-foot{display:flex;flex-direction:column;gap:.5rem;padding:.75rem 1.4rem;padding-block-end:max(.75rem,env(safe-area-inset-bottom));background:white;border-block-start:1px solid #d5e1e7}
+.pm-actions{display:flex;justify-content:flex-end;gap:.6rem}
+.pm-actions button{min-width:8rem}
+.pm-status{display:flex;flex-wrap:wrap;align-items:center;gap:.4rem .8rem;padding:.55rem .9rem;border-radius:10px;background:#e9f5fb;color:#0c5283;font:600 .92rem/1.4 system-ui}
 .pm-status[hidden]{display:none}
 .pm-status[data-state=working] span::before{content:"";display:inline-block;inline-size:14px;block-size:14px;margin-inline-end:.5rem;vertical-align:-2px;border-radius:50%;border:2px solid #c9dbe6;border-block-start-color:#0c5283;animation:visual-spin .8s linear infinite}
 .pm-status[data-state=published]{background:#e2f3ea;color:#0f6e3d}
 .pm-status[data-state=failed]{background:#fbeaea;color:#9c2a2a}
 .pm-status button{min-height:36px;padding:.2rem .8rem}
-.pm-issues{padding:.5rem 1.4rem;background:#fbeaea;color:#9c2a2a;font:500 .9rem/1.45 system-ui}
+.pm-issues{padding:.5rem .9rem;border-radius:10px;background:#fbeaea;color:#9c2a2a;font:500 .9rem/1.45 system-ui}
 .pm-issues[hidden]{display:none}
 .pm-issues ul{margin:0;padding-inline-start:1.2rem;max-height:8rem;overflow-y:auto}
 .pm-body{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:1rem 1.4rem 1.6rem}
 .pm-hint{margin:0 0 .8rem;color:#4a6274;font:500 .88rem/1.45 system-ui}
-.pm-grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem}
-.pm-tile{position:relative;border-radius:14px;background:white;border:1px solid #d5e1e7;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:grab}
+.pm-grid{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:1rem}
+.pm-tile{position:relative;display:flex;flex-direction:column;border-radius:14px;background:white;border:1px solid #d5e1e7;touch-action:pan-y;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;cursor:grab}
 .pm-tile:hover{border-color:#7fb3cf}
 .pm-frame{position:relative;aspect-ratio:4/3;overflow:hidden;border-radius:13px;background:#eef4f8}
 .pm-frame img{display:block;width:100%;height:100%;object-fit:cover;pointer-events:none;-webkit-user-drag:none}
+/* The doctor's work is shown whole: a taller frame, never cropped. */
+.pm-frame-whole{aspect-ratio:4/5;background:#e8eff4}
+.pm-frame-whole img{object-fit:contain}
+.pm-text{margin:0;padding:.55rem .75rem 0;color:#183448;font:600 .88rem/1.35 system-ui;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pm-text-missing{color:#7a5200;font-weight:500;font-style:italic}
+.pm-toolbar{display:flex;align-items:center;gap:.2rem;margin-block-start:auto;padding:.35rem .4rem .45rem}
+.pm .pm-tool{width:44px;height:44px;min-height:44px;padding:0;border:0;border-radius:10px;background:transparent;color:#26506b}
+.pm .pm-tool:hover{background:#e9f5fb}
+.pm .pm-grip{margin-inline-end:auto;cursor:grab;touch-action:none;color:#7891a0}
+.pm .pm-eye[aria-pressed=false]{color:#9c2a2a}
 .pm-noimg{display:grid;place-items:center;height:100%;color:#4a6274;font:500 .85rem system-ui}
 .pm .pm-corner{position:absolute;z-index:2;inset-block-start:.45rem;width:44px;height:44px;min-height:44px;padding:0;border-radius:999px;border-color:#c9d9e3;background:#ffffffeb}
 .pm .pm-edit{inset-inline-start:.45rem}
@@ -179,8 +199,11 @@ html[data-visual-preview] .visual-work-note,html[data-visual-preview] .visual-ga
 .pm .pm-add-button{flex-direction:column;width:100%;height:100%;aspect-ratio:4/3;border:0;border-radius:12px;background:transparent;text-align:center}
 .pm-add-label{font:700 1rem system-ui}
 .pm-add-hint{color:#4a6274;font:500 .8rem/1.4 system-ui}
-.pm-empty{grid-column:1/-1;color:#4a6274}
-.pm-confirm{display:flex;align-items:flex-start;gap:.6rem;margin:0;padding:.75rem 1.4rem;padding-block-end:max(.75rem,env(safe-area-inset-bottom));background:#fff4d9;font:600 .9rem/1.45 system-ui}
+.pm-empty{grid-column:1/-1;display:flex;flex-direction:column;align-items:center;gap:.4rem;padding:2rem 1rem;border-radius:14px;background:white;border:1px solid #d5e1e7;color:#4a6274;text-align:center}
+.pm-empty svg{width:40px;height:40px;color:#7fb3cf}
+.pm-empty h3{margin:.2rem 0 0;color:#0c5283;font:700 1.1rem system-ui}
+.pm-empty p{margin:0;max-width:34rem;font:500 .92rem/1.5 system-ui}
+.pm-confirm{display:flex;align-items:flex-start;gap:.6rem;margin:0;padding:.65rem .9rem;border-radius:10px;background:#fff4d9;font:600 .9rem/1.45 system-ui}
 .pm-confirm[hidden]{display:none}
 .pm-confirm input{flex:none;inline-size:22px;block-size:22px;margin-block-start:.1rem}
 /* The photo being carried, and the gap it will drop into. */
@@ -205,6 +228,9 @@ html[data-visual-preview] .visual-work-note,html[data-visual-preview] .visual-ga
 .pe-small{display:flex;align-items:center;gap:.8rem;margin-block-start:1rem;color:#4a6274;font:600 .85rem system-ui}
 .pe-small-frame{inline-size:150px;aspect-ratio:4/3;overflow:hidden;border-radius:10px;background:#eef4f8;outline:1px solid #c9d9e3}
 .pe-small-frame img{display:block;width:100%;height:100%;object-fit:cover}
+.pe-whole{display:grid;place-items:center;max-height:60dvh;aspect-ratio:4/5;border-radius:14px;background:#e8eff4;overflow:hidden;outline:1px solid #c9d9e3}
+.pe-whole img{display:block;width:100%;height:100%;object-fit:contain}
+.pe-form input[type=text]{display:block;width:100%;min-height:44px;margin-block-start:.3rem;padding:.5rem;border:1px solid #7891a0;border-radius:8px;background:white;color:#183448;font:400 1rem system-ui}
 .pe-form{display:flex;flex-direction:column;align-items:stretch;gap:.6rem}
 .pe-form label{display:block;font:600 .9rem system-ui}
 .pe-form fieldset{margin:0;padding:.8rem 1rem;border:1px solid #d5e1e7;border-radius:12px;background:white}
@@ -220,9 +246,9 @@ html[data-visual-preview] .visual-work-note,html[data-visual-preview] .visual-ga
   .pm{width:100vw;height:100dvh;border:0;border-radius:0}
   .pm-head{padding-inline:1rem;gap:.5rem}
   .pm-titles h2{font-size:1.15rem}
-  .pm-actions{flex:1 1 100%}
-  .pm-actions button{flex:1}
-  .pm-status,.pm-issues,.pm-confirm{padding-inline:1rem}
+  .pm-about{font-size:.85rem}
+  .pm-foot{padding-inline:1rem}
+  .pm-actions button{flex:1;min-width:0}
   .pm-body{padding:.8rem 1rem calc(1.2rem + env(safe-area-inset-bottom))}
   .pm-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem}
   .pm-badge{font-size:.7rem}

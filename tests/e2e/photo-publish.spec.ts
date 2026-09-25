@@ -19,7 +19,7 @@ test('a saved photo change is "Live" only once the official site serves that com
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/he/about/');
   await expect(page.locator('.visual-bar-status')).not.toContainText('מצב בדיקה');
-  await page.locator('.gallery-title-row .visual-edit-control').click();
+  await page.locator('section[data-gallery-kind="clinic"] .visual-gallery-edit .visual-edit-control').click();
   const pm = page.locator('dialog.pm');
   const tiles = pm.locator('.pm-grid > .pm-tile:not(.pm-add)');
   await expect(tiles.first()).toBeVisible();

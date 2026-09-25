@@ -173,11 +173,25 @@ const tilesOf = (page: Page) => managerOf(page).locator('.pm-grid > .pm-tile:not
 const filesOf = (page: Page) => tilesOf(page).evaluateAll((els) => els.map((e) => e.getAttribute('data-file')));
 const pmStatus = (page: Page) => managerOf(page).locator('.pm-status');
 
+const CLINIC_EDIT = 'section[data-gallery-kind="clinic"] .visual-gallery-edit .visual-edit-control';
+const WORK_SECTION = 'section[data-gallery-kind="work"]';
+const WORK_EDIT = `${WORK_SECTION} .visual-gallery-edit .visual-edit-control`;
 async function openManager(page: Page, locale = 'he') {
   await page.goto(`/${locale}/about/`);
-  await page.locator('.gallery-title-row .visual-edit-control').click();
+  await page.locator(CLINIC_EDIT).click();
   await expect(tilesOf(page).first()).toBeVisible();
 }
+async function openWork(page: Page, locale = 'he') {
+  await page.goto(`/${locale}/`);
+  const tile = page.locator(WORK_EDIT);
+  await tile.scrollIntoViewIfNeeded();
+  await tile.click();
+  await expect(tilesOf(page).first()).toBeVisible();
+}
+/** The doctor's-work files the PAGE shows, in order (from the optimised image URLs). */
+const pageWorkFiles = (page: Page) => page.locator(`${WORK_SECTION} ul > li:not(.visual-gallery-edit) img`)
+  .evaluateAll((imgs) => imgs.map((i) => /(work-[a-z]+-\d{2})/.exec(i.getAttribute('src') ?? '')?.[1] ?? null));
+const stem = (files: Array<string | null>) => files.map((f) => (f ?? '').replace(/\.[a-z]+$/, ''));
 /** Save, and let the fixture's rebuild land; the manager must say so truthfully. */
 async function saveAndUpdate(page: Page, request: import('@playwright/test').APIRequestContext) {
   await managerOf(page).locator('.pm-save').click();
@@ -197,23 +211,18 @@ async function holdAndDrag(page: Page, from: Locator, to: Locator) {
   await page.mouse.up();
 }
 
-for (const [locale, side] of [['he', 'left'], ['ar', 'left'], ['en', 'right']] as const) {
-  test(`${locale}: the gallery Edit control ends the title row (${side}), and there is no end tile`, async ({ page }) => {
+for (const locale of ['he', 'ar', 'en'] as const) {
+  test(`${locale}: each managed gallery ENDS with its own Edit tile`, async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto(`/${locale}/about/`);
-    const row = page.locator('section[data-gallery-kind="clinic"] .gallery-title-row');
-    const edit = (await row.locator('> .visual-edit-control').boundingBox())!;
-    const heading = (await row.locator('h2').boundingBox())!;
-    const box = (await row.boundingBox())!;
-    if (side === 'left') {
-      expect(edit.x + edit.width).toBeLessThan(heading.x);
-      expect(edit.x - box.x).toBeLessThan(2);
-    } else {
-      expect(edit.x).toBeGreaterThan(heading.x);
-      expect(box.x + box.width - (edit.x + edit.width)).toBeLessThan(2);
-    }
-    expect(Math.abs(edit.y - heading.y)).toBeLessThan(80);
-    await expect(page.locator('.visual-gallery-edit')).toHaveCount(0);
+    const clinicLast = page.locator('section[data-gallery-kind="clinic"] ul > li').last();
+    await expect(clinicLast).toHaveClass(/visual-gallery-edit/);
+    await expect(clinicLast).toHaveAttribute('data-visual-only', '');
+    await page.goto(`/${locale}/`);
+    const workLast = page.locator(`${WORK_SECTION} ul > li`).last();
+    await expect(workLast).toHaveClass(/visual-gallery-edit/);
+    await expect(workLast).toHaveAttribute('data-visual-only', '');
+    await expect(page.locator('.gallery-title-row')).toHaveCount(0);
   });
 }
 
@@ -222,7 +231,7 @@ test('the manager is photo-first: real thumbnails, and delete / edit on every ph
   await openManager(page);
   const pm = managerOf(page);
   await expect(pm).toHaveAttribute('dir', 'rtl');
-  await expect(pm.getByRole('heading', { name: 'תמונות המרפאה' })).toBeVisible();
+  await expect(pm.getByRole('heading', { name: 'ניהול תמונות המרפאה' })).toBeVisible();
   const first = tilesOf(page).first();
   await expect.poll(() => first.locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0);
   for (const control of [first.locator('.pm-edit'), first.locator('.pm-delete')]) {
@@ -310,7 +319,7 @@ test('photos: add several, see what is missing, describe and frame them, publish
   expect(stored.find((r) => r.alt.en === 'Reception desk')!.status).toBe('unpublished');
 
   await page.reload();
-  await page.locator('.gallery-title-row .visual-edit-control').click();
+  await page.locator(CLINIC_EDIT).click();
   await expect(tiles).toHaveCount(before + 2);
   await expect(tiles.nth(before)).not.toContainText('חדשה');
   // The saved framing is what the tile shows.
@@ -372,7 +381,7 @@ test('photos: replace one, reorder by click-and-hold, and keyboard Move — pers
   expect(await replaced.locator('img').getAttribute('src')).not.toBe(srcBefore);
 
   await page.reload();
-  await page.locator('.gallery-title-row .visual-edit-control').click();
+  await page.locator(CLINIC_EDIT).click();
   await expect(tiles.first()).toBeVisible();
   expect(await filesOf(page)).toEqual(keyed);
 });
@@ -402,7 +411,7 @@ test('photos: a published photo is hidden first, never deleted in one step; then
   await expect(tiles).toHaveCount(count - 1);
   await saveAndUpdate(page, request);
   await page.reload();
-  await page.locator('.gallery-title-row .visual-edit-control').click();
+  await page.locator(CLINIC_EDIT).click();
   await expect(tiles).toHaveCount(count - 1);
   await expect(pm.locator(`.pm-tile[data-file="${file}"]`)).toHaveCount(0);
 });
@@ -438,6 +447,146 @@ test('an image that is too small is refused on its tile, with the reason', async
   await pm.locator('#pm-add-input').setInputFiles({ name: 'tiny.png', mimeType: 'image/png', buffer: noisePng(400, 300) });
   await expect(tilesOf(page).last()).toContainText('קטנה מדי');
   await expect(pm.locator('.pm-save')).toBeDisabled();
+});
+
+/* ── The doctor's work (ADR 0010): its own gallery, the same manager ────── */
+
+type WorkApi = { data: { records: Array<{ file: string; status: string; caption?: Record<string, string>; alt: Record<string, string> }> } };
+const storedWork = async (request: import('@playwright/test').APIRequestContext) =>
+  ((await (await request.get('/api/photos?gallery=work')).json()) as WorkApi).data.records;
+
+test('doctor\'s work: the strip ends with its own Edit tile, and it opens THAT gallery — same images, same order', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto('/he/');
+  const onPage = await pageWorkFiles(page);
+  expect(onPage.length).toBe(12);
+  expect(onPage.every(Boolean)).toBe(true);
+  await expect(page.locator(`${WORK_SECTION} ul > li`).last()).toContainText('עריכת עבודות הרופא');
+
+  await openWork(page);
+  const pm = managerOf(page);
+  await expect(pm.getByRole('heading', { name: 'ניהול עבודות הרופא' })).toBeVisible();
+  await expect(pm.locator('.pm-about')).toContainText('עבודות הרופא');
+  await expect(pm).toHaveAttribute('data-gallery', 'work');
+  expect(stem(await filesOf(page))).toEqual(onPage);
+  // Existing titles are shown; a missing one is flagged, never invented.
+  await expect(tilesOf(page).nth(0).locator('.pm-text')).toHaveText('ציפויי שיניים');
+  await expect(tilesOf(page).nth(3).locator('.pm-text')).toHaveText('ללא כותרת');
+  // The whole artwork, no framing controls.
+  await tilesOf(page).nth(0).locator('.pm-edit').click();
+  await expect(pm.locator('.pe-whole img')).toBeVisible();
+  await expect(pm.locator('.pe-crop')).toHaveCount(0);
+  await pm.locator('.pe').getByRole('button', { name: 'ביטול' }).click();
+
+  // And the clinic manager never shows the doctor's work (nor the reverse).
+  await pm.locator('.pm-cancel').click();
+  await openManager(page);
+  await expect(pm.getByRole('heading', { name: 'ניהול תמונות המרפאה' })).toBeVisible();
+  expect((await filesOf(page)).some((f) => f?.startsWith('work-'))).toBe(false);
+});
+
+test('doctor\'s work: drag #7 to #1 by its handle, save, and the order persists', async ({ page, request }) => {
+  test.setTimeout(90_000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openWork(page);
+  const tiles = tilesOf(page);
+  const before = await filesOf(page);
+  await tiles.nth(6).locator('.pm-grip').scrollIntoViewIfNeeded();
+  const grip = (await tiles.nth(6).locator('.pm-grip').boundingBox())!;
+  const target = (await tiles.nth(0).boundingBox())!;
+  await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+  await page.mouse.down();
+  await expect(managerOf(page).locator('.pm-ghost')).toHaveCount(1); // lifted at once by the handle
+  await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 16 });
+  await page.mouse.up();
+  const after = await filesOf(page);
+  expect(after).toEqual([before[6], ...before.slice(0, 6), ...before.slice(7)]);
+  // Nothing new was uploaded, so no approval is asked for.
+  await expect(managerOf(page).locator('.pm-confirm')).toBeHidden();
+  await saveAndUpdate(page, request);
+  expect((await storedWork(request)).map((r) => r.file)).toEqual(after);
+  await page.reload();
+  await page.locator(WORK_EDIT).scrollIntoViewIfNeeded();
+  await page.locator(WORK_EDIT).click();
+  await expect(tiles.first()).toBeVisible();
+  expect(await filesOf(page)).toEqual(after);
+});
+
+test('doctor\'s work: a partial title is refused in words; a full one saves', async ({ page, request }) => {
+  test.setTimeout(90_000);
+  await openWork(page);
+  const pm = managerOf(page);
+  const untitled = tilesOf(page).filter({ hasText: 'ללא כותרת' }).first();
+  const file = (await untitled.getAttribute('data-file'))!;
+  await untitled.locator('.pm-edit').click();
+  await pm.locator('input[data-caption="he"]').fill('שיקום שיניים');
+  await pm.locator('.pe-done').click();
+  await pm.locator('.pm-save').click();
+  await expect(pm.locator('.pm-issues')).toContainText('חסרה כותרת בערבית');
+  const tile = pm.locator(`.pm-tile[data-file="${file}"]`);
+  await tile.locator('.pm-edit').click();
+  await pm.locator('input[data-caption="ar"]').fill('ترميم الأسنان');
+  await pm.locator('input[data-caption="en"]').fill('Dental restoration');
+  await pm.locator('.pe-done').click();
+  await saveAndUpdate(page, request);
+  const record = (await storedWork(request)).find((r) => r.file === file)!;
+  expect(record.caption).toEqual({ he: 'שיקום שיניים', ar: 'ترميم الأسنان', en: 'Dental restoration' });
+  await expect(pm.locator(`.pm-tile[data-file="${file}"] .pm-text`)).toHaveText('שיקום שיניים');
+});
+
+test('doctor\'s work: add with the owner\'s approval, show, hide, replace and delete — each persisted', async ({ page, request }) => {
+  test.setTimeout(150_000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openWork(page);
+  const pm = managerOf(page);
+  const tiles = tilesOf(page);
+  const count = await tiles.count();
+  await pm.locator('#pm-add-input').setInputFiles({ name: 'case.png', mimeType: 'image/png', buffer: noisePng(1600, 1200, 31) });
+  await expect(tiles).toHaveCount(count + 1);
+  const added = tiles.last();
+  await expect(added).toContainText('חדשה');
+  await added.locator('.pm-edit').click();
+  for (const [lang, text] of [['he', 'פרסום של המרפאה, מסומן לפני ואחרי'], ['ar', 'منشور للعيادة موسوم بقبل وبعد'], ['en', 'Clinic post labelled before and after']] as const) {
+    await pm.locator(`textarea[data-alt="${lang}"]`).fill(text);
+  }
+  await pm.locator('.pe-done').click();
+  // The approval asked for here is the owner's, worded for this gallery.
+  await expect(pm.locator('.pm-confirm')).toContainText('מאשר/ת לפרסם את התמונות החדשות או המוחלפות כעבודות הרופא');
+  await pm.locator('#pm-confirm').check();
+  await saveAndUpdate(page, request);
+  let stored = await storedWork(request);
+  const newFile = stored.at(-1)!.file;
+  expect(newFile).toMatch(/^work-\d{2}\.png$/);
+  expect(stored.at(-1)!.status).toBe('unpublished');
+
+  // Show it from the card, then hide it again.
+  const card = pm.locator(`.pm-tile[data-file="${newFile}"]`);
+  await card.locator('.pm-eye').click();
+  await expect(card).not.toContainText('מוסתרת');
+  await saveAndUpdate(page, request);
+  expect((await storedWork(request)).at(-1)!.status).toBe('published');
+  await card.locator('.pm-eye').click();
+  await expect(card).toContainText('מוסתרת');
+  await saveAndUpdate(page, request);
+  expect((await storedWork(request)).at(-1)!.status).toBe('unpublished');
+
+  // Replace from the card: words kept, new pixels.
+  const chooser = page.waitForEvent('filechooser');
+  await card.locator('.pm-swap').click();
+  await (await chooser).setFiles({ name: 'case-2.png', mimeType: 'image/png', buffer: noisePng(1500, 1300, 33) });
+  await expect(card).toContainText('הוחלפה');
+  await pm.locator('#pm-confirm').check();
+  await saveAndUpdate(page, request);
+  stored = await storedWork(request);
+  expect(stored.at(-1)!.alt.en).toBe('Clinic post labelled before and after');
+  await expect.poll(() => card.locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBe(1500);
+
+  // Delete: it is hidden, so it may go — with its file.
+  await card.locator('.pm-delete').click();
+  await expect(tiles).toHaveCount(count);
+  await saveAndUpdate(page, request);
+  expect((await storedWork(request)).some((r) => r.file === newFile)).toBe(false);
+  expect((await request.get(`/api/photo?file=${newFile}`)).ok()).toBe(false);
 });
 
 /* ── The photo manager on a phone: long-press, drag, and scrolling ─────── */
@@ -502,6 +651,25 @@ test.describe('on a 390px touch phone', () => {
     await expect(managerOf(page).locator('.pm-summary')).toContainText('1 שינויים שלא נשמרו');
   });
 
+  test('the doctor\'s-work Edit tile is reached by scrolling the strip; the page never scrolls sideways', async ({ page }) => {
+    await page.goto('/he/');
+    const strip = page.locator(`${WORK_SECTION} .work-strip`);
+    await strip.scrollIntoViewIfNeeded();
+    await strip.evaluate((el) => { el.scrollLeft = -el.scrollWidth; el.scrollLeft = el.scrollLeft < 0 ? el.scrollLeft : el.scrollWidth; });
+    const tile = page.locator(WORK_EDIT);
+    const box = (await tile.boundingBox())!;
+    expect(box.x).toBeGreaterThanOrEqual(0);
+    expect(box.x + box.width).toBeLessThanOrEqual(390);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1)).toBe(true);
+    await tile.click();
+    const pm = managerOf(page);
+    await expect(pm.getByRole('heading', { name: 'ניהול עבודות הרופא' })).toBeVisible();
+    expect((await pm.boundingBox())!.width).toBe(390);
+    const tool = (await tilesOf(page).first().locator('.pm-eye').boundingBox())!;
+    expect(tool.width).toBeGreaterThanOrEqual(44);
+    expect(await pm.locator('.pm-body').evaluate((b) => b.scrollWidth <= b.clientWidth + 1)).toBe(true);
+  });
+
   test('the photo editor fills the phone and frames by touch', async ({ page }) => {
     await openManager(page);
     await tilesOf(page).first().locator('.pm-edit').click();
@@ -518,8 +686,8 @@ test.describe('on a 390px touch phone', () => {
 });
 
 for (const [locale, dir, words] of [
-  ['ar', 'rtl', { title: 'صور العيادة', save: 'حفظ', add: 'إضافة صورة', edit: 'تعديل الصورة' }],
-  ['en', 'ltr', { title: 'Clinic photos', save: 'Save', add: 'Add photo', edit: 'Edit photo' }],
+  ['ar', 'rtl', { title: 'إدارة صور العيادة', save: 'حفظ', add: 'إضافة صورة', edit: 'تعديل الصورة' }],
+  ['en', 'ltr', { title: 'Manage clinic photos', save: 'Save', add: 'Add photo', edit: 'Edit photo' }],
 ] as const) {
   test(`the photo manager is in ${locale}, ${dir}`, async ({ page }) => {
     await openManager(page, locale);
@@ -586,7 +754,7 @@ test('contact: a factual change needs the confirmation, and says so', async ({ p
 
 test('preview hides the gallery Edit control and card pencils, and brings them back', async ({ page }) => {
   await page.goto('/he/about/');
-  const tile = page.locator('.gallery-title-row .visual-edit-control');
+  const tile = page.locator(CLINIC_EDIT);
   await expect(tile).toBeVisible();
   await page.locator('.visual-editor-bar').getByRole('button', { name: 'תצוגת מטופל' }).click();
   await expect(tile).toBeHidden();

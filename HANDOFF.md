@@ -226,6 +226,21 @@ only when `https://www.drkhalilkanani.com/build.txt` is that commit or a
 descendant. The old per-action photo endpoints remain but the editor no
 longer uses them.
 
+**Doctor's work in the CMS (2026-09-25, ADR 0010).** At the owner's
+direction the doctor's work ("עבודות הרופא") is now managed in Edit Mode as its
+own gallery, separate from clinic photography. The twelve records moved
+losslessly to `src/data/treatment-work.json` (public build byte-identical
+before and after). Each gallery ends with its own Edit tile — the work strip
+opens "Manage the doctor's work", the clinic grid opens "Manage clinic photos"
+— and both use one manager: per-card show/hide, replace and a drag handle,
+corner edit and delete, long-press or handle drag, keyboard Move buttons,
+Cancel/Save in a footer. The Worker maps the two names to their fixed files;
+the browser never sends a path. Doctor's-work uploads need the owner's
+approval (recorded in the commit); the plain before/after descriptor is
+allowed in that file's text and every other claims rule still applies. Tests
+no longer borrow a patient image or pin today's content. Legal review of
+publishing such images remains open (ADR 0009/0010).
+
 **Still open:** release to `main` awaits owner approval. At release, the
 Workers Builds trigger's branch and the Worker's `CONTENT_BRANCH` move to
 `main` together, and the integration branch is retired. `deploy.yml` now

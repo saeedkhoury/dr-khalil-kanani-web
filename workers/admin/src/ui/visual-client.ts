@@ -130,6 +130,7 @@ const SOURCE = String.raw`
     let m=/^row_(\d)_(.*)$/.exec(issue);
     if (m) { const day=t('dayLabel',{day:DAYS[Number(m[1])]}); if(m[2]==='times_required') return t('timesRequired',{day}); if(m[2]==='opens_after_closes') return t('opensAfterCloses',{day}); if(/^time/.test(m[2])) return t('badTime',{day}); return t('badDay',{day}); }
     m=/^alt_(he|ar|en)_claim_/.exec(issue); if(m) return t('altClaim',{lang:names[m[1]]});
+    m=/^caption_(he|ar|en)_claim_/.exec(issue); if(m) return t('captionClaim',{lang:names[m[1]]});
     const at=issue.lastIndexOf(':'); if(at<0) return t('invalidValue');
     const path=issue.slice(0,at).split('.'), reason=reasonOf(issue.slice(at+1));
     if (kind==='services'||kind==='faq') {
@@ -240,8 +241,9 @@ const SOURCE = String.raw`
   /* ── Opening, loading, saving ───────────────────────────────────────── */
   function loading(on){message.classList.toggle('visual-loading',on);if(on){message.textContent=t('loading');message.setAttribute('data-state','working');const sk=document.createElement('div');sk.className='visual-skeleton';sk.setAttribute('aria-hidden','true');for(let i=0;i<6;i++)sk.append(document.createElement('span'));body.replaceChildren(sk);body.setAttribute('aria-busy','true');}else{body.replaceChildren();body.removeAttribute('aria-busy');}}
   async function open(next,which='',reload=false){
-    // The gallery has its own photo-first manager.
-    if(next==='photos'){ if(dialog.open && dirty && !confirm(t('unsavedSwitch'))) return; dirty=false; if(dialog.open) dialog.close(); return openPhotoManager(); }
+    // Each managed gallery opens the shared manager, named for THAT gallery:
+    // 'photos' is clinic photography, 'work' is the doctor's work.
+    if(next==='photos'||next==='work'){ if(dialog.open && dirty && !confirm(t('unsavedSwitch'))) return; dirty=false; if(dialog.open) dialog.close(); return openPhotoManager(next==='work'?'work':'clinic'); }
     if(dialog.open && dirty && !reload && !confirm(t('unsavedSwitch'))) return;
     kind=next;focus=which;sha='';draft=null;original=null;dirty=false;expanded=new Set();sent=null;
     view={mode:'list',id:'',lang:locale};
@@ -539,7 +541,7 @@ __PHOTOS__
     if(state) barStatus.setAttribute('data-state',state); else barStatus.removeAttribute('data-state');
   }
 
-  for(const [key,label] of [['copy',t('barTexts')],['services',t('barTreatments')],['photos',t('barPhotos')]]){barActions.append(button(label,()=>void open(key)));}
+  for(const [key,label] of [['copy',t('barTexts')],['services',t('barTreatments')],['photos',t('barPhotos')],['work',t('barWork')]]){barActions.append(button(label,()=>void open(key)));}
 
   /* Preview hides every control without reloading, so the doctor can check a
      change the way a patient will see it and come straight back. */

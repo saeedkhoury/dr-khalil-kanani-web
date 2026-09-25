@@ -31,6 +31,9 @@ import faqData from '../src/data/general-faq.json' with { type: 'json' };
 import doctorData from '../src/data/doctor-profile.json' with { type: 'json' };
 import copyData from '../src/data/managed-copy.json' with { type: 'json' };
 import contactData from '../src/data/contact-facts.json' with { type: 'json' };
+// The doctor's work: the REAL records' text and order, so the manager can be
+// compared with the page — but every image byte is generated (see below).
+import workData from '../src/data/treatment-work.json' with { type: 'json' };
 import type { Env } from '../workers/admin/src/http.ts';
 import {
   AUDIENCE, DOCTOR, TEAM_DOMAIN, jwksDocument, makeToken,
@@ -110,6 +113,7 @@ const store = {
       status: 'unpublished', alt: { he: 'חזית המרפאה', ar: 'واجهة العيادة', en: 'Clinic exterior' },
     },
   ],
+  work: workData as Array<Record<string, unknown> & { file: string; width: number; height: number }>,
   services: servicesData,
   faq: faqData,
   doctor: doctorData,
@@ -118,13 +122,13 @@ const store = {
 };
 
 const fileKinds: Record<string, keyof typeof store> = {
-  'hours.json': 'hours', 'clinic-photography.json': 'photos',
+  'hours.json': 'hours', 'clinic-photography.json': 'photos', 'treatment-work.json': 'work',
   'services.json': 'services', 'general-faq.json': 'faq',
   'doctor-profile.json': 'doctor', 'managed-copy.json': 'copy',
   'contact-facts.json': 'contact',
 };
 const blobShas: Record<keyof typeof store, string> = {
-  hours: '1'.repeat(40), photos: '2'.repeat(40), services: '3'.repeat(40),
+  hours: '1'.repeat(40), photos: '2'.repeat(40), work: '8'.repeat(40), services: '3'.repeat(40),
   faq: '4'.repeat(40), doctor: '5'.repeat(40), copy: '6'.repeat(40), contact: '7'.repeat(40),
 };
 
@@ -140,9 +144,10 @@ let commits = 0;
 // A generated JPEG — never a site image, so the fixture holds no patient
 // material and does not depend on content the doctor may delete.
 const REAL_JPEG = solidJpeg(1600, 1200);
-const images = new Map<string, { bytes: Uint8Array; sha: string }>(
-  store.photos.map((record, i) => [record.file, { bytes: new Uint8Array(REAL_JPEG), sha: String(i + 1).padStart(40, 'e') }]),
-);
+const images = new Map<string, { bytes: Uint8Array; sha: string }>([
+  ...store.photos.map((record, i) => [record.file, { bytes: new Uint8Array(REAL_JPEG), sha: String(i + 1).padStart(40, 'e') }] as const),
+  ...store.work.map((record, i) => [record.file, { bytes: new Uint8Array(solidJpeg(record.width, record.height)), sha: String(i + 1).padStart(40, 'a') }] as const),
+]);
 const INLINE_LIMIT = 1024 * 1024;
 
 /*
@@ -191,6 +196,9 @@ function mockGitData(url: string, method: string, init: RequestInit | undefined,
       if (entry.path === 'src/data/clinic-photography.json') {
         store.photos = JSON.parse(String(entry.content));
         blobShas.photos = String(commits).padStart(40, 'd');
+      } else if (entry.path === 'src/data/treatment-work.json') {
+        store.work = JSON.parse(String(entry.content));
+        blobShas.work = String(commits).padStart(40, 'b');
       } else if (entry.path.startsWith('src/assets/images/')) {
         const name = entry.path.slice('src/assets/images/'.length);
         if (entry.sha === null) images.delete(name);

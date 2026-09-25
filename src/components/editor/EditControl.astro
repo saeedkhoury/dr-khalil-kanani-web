@@ -5,7 +5,7 @@
  * and what the doctor reads can never drift apart (WCAG 2.5.3 Label in Name).
  * Six identical "Edit" buttons on one page told neither of them anything.
  */
-type Kind = 'copy' | 'services' | 'doctor' | 'faq' | 'photos' | 'hours' | 'contact';
+type Kind = 'copy' | 'services' | 'doctor' | 'faq' | 'photos' | 'work' | 'hours' | 'contact';
 type Locale = 'he' | 'ar' | 'en';
 
 interface Props {
@@ -24,7 +24,9 @@ const LABELS: Record<string, Record<Locale, string>> = {
   'services:item': { he: 'עריכת הטיפול הזה', ar: 'تعديل هذا العلاج', en: 'Edit this treatment' },
   'services:new': { he: 'הוספת טיפול', ar: 'إضافة علاج', en: 'Add treatment' },
   'services:card': { he: 'עריכה: {name}', ar: 'تعديل: {name}', en: 'Edit: {name}' },
-  'photos:gallery': { he: 'עריכת הגלריה', ar: 'تعديل المعرض', en: 'Edit gallery' },
+  // Two managed galleries, so each control names its own.
+  'photos:gallery': { he: 'עריכת תמונות המרפאה', ar: 'تعديل صور العيادة', en: 'Edit clinic photos' },
+  work: { he: 'עריכת עבודות הרופא', ar: 'تعديل أعمال الطبيب', en: 'Edit the doctor’s work' },
   doctor: { he: 'עריכת אזור הרופא', ar: 'تعديل قسم الطبيب', en: 'Edit doctor section' },
   faq: { he: 'עריכת שאלות נפוצות', ar: 'تعديل الأسئلة الشائعة', en: 'Edit FAQ' },
   photos: { he: 'עריכת תמונות המרפאה', ar: 'تعديل صور العيادة', en: 'Edit clinic photos' },
