@@ -19,6 +19,7 @@
  * innerHTML, anywhere — a test enforces it.
  */
 import { EDITOR_STRINGS } from './visual-strings.ts';
+import { PHOTOS_SOURCE } from './visual-photos.ts';
 
 // The dictionary is inlined as a JSON literal; '<' is escaped so no string can
 // close the script element it is served in.
@@ -94,7 +95,7 @@ const SOURCE = String.raw`
   dialog.addEventListener('cancel',(event)=>{ if (dirty && !confirm(t('unsavedClose'))) event.preventDefault(); else dirty=false; });
 
   let kind='', sha='', draft=null, original=null, focus='', busy=false, dirty=false, publishing='test';
-  let view={mode:'list',id:'',lang:locale}, expanded=new Set(), versions={}, edits={}, orderDirty=false, pending=[], sent=null, altOpenSet=new Set();
+  let view={mode:'list',id:'',lang:locale}, expanded=new Set(), sent=null;
   /** Marked on every field change, cleared on save. Guards the close. */
   function touch(){ dirty=true; }
 
@@ -224,7 +225,7 @@ const SOURCE = String.raw`
   }
   /** The page now contains the change: reload into it, unless that would lose work. */
   function reloadWhenSafe(commit){
-    if(!dirty && !pending.length && !busy){
+    if(!dirty && !busy && !(pm.el&&pm.el.open&&pmDirty())){
       pubTell(t('updated'),'published');
       try{ sessionStorage.setItem('visual-updated',commit); }catch{}
       setTimeout(()=>location.reload(),1200);
@@ -239,16 +240,17 @@ const SOURCE = String.raw`
   /* ── Opening, loading, saving ───────────────────────────────────────── */
   function loading(on){message.classList.toggle('visual-loading',on);if(on){message.textContent=t('loading');message.setAttribute('data-state','working');const sk=document.createElement('div');sk.className='visual-skeleton';sk.setAttribute('aria-hidden','true');for(let i=0;i<6;i++)sk.append(document.createElement('span'));body.replaceChildren(sk);body.setAttribute('aria-busy','true');}else{body.replaceChildren();body.removeAttribute('aria-busy');}}
   async function open(next,which='',reload=false){
+    // The gallery has its own photo-first manager.
+    if(next==='photos'){ if(dialog.open && dirty && !confirm(t('unsavedSwitch'))) return; dirty=false; if(dialog.open) dialog.close(); return openPhotoManager(); }
     if(dialog.open && dirty && !reload && !confirm(t('unsavedSwitch'))) return;
-    kind=next;focus=which;sha='';draft=null;original=null;dirty=false;orderDirty=false;edits={};pending=[];expanded=new Set();sent=null;altOpenSet=new Set();
+    kind=next;focus=which;sha='';draft=null;original=null;dirty=false;expanded=new Set();sent=null;
     view={mode:'list',id:'',lang:locale};
     title.textContent=S.titles[kind]||kind; clearErrors(); pubLine.hidden=true;
-    saveButton.hidden = kind==='photos';
     loading(true); if(!dialog.open) dialog.showModal();
     try {
       const data=await api(urls[kind],'GET');
-      sha=data.sha; versions=data.versions||{};
-      draft=structuredClone(kind==='hours'?data.rows:kind==='photos'?data.records:data.value);
+      sha=data.sha;
+      draft=structuredClone(kind==='hours'?data.rows:data.value);
       original=structuredClone(draft);
       if (kind==='services' && focus==='new') { const created=newService(); draft.push(created); dirty=true; view={mode:'item',id:created.id,lang:locale}; focus=''; }
       else if (kind==='services' && focus) { const item=draft.find(x=>x.slug===focus); if(item) view={mode:'item',id:item.id,lang:locale}; }
@@ -261,7 +263,7 @@ const SOURCE = String.raw`
     return {value:draft,sha,confirmed:document.querySelector('#visual-owner-confirm')?.checked===true,sameLocation:document.querySelector('#visual-same-location')?.checked===true};
   }
   async function save(){
-    if(busy||kind==='photos') return;
+    if(busy) return;
     clearErrors(); sent=structuredClone(draft);
     setBusy(true); tell(t('saving'),'working');
     try {
@@ -275,7 +277,7 @@ const SOURCE = String.raw`
   }
   function render(){
     body.replaceChildren();
-    if(kind==='copy')copyForm();else if(kind==='doctor')doctorForm();else if(kind==='contact')contactForm();else if(kind==='hours')hoursForm();else if(kind==='faq')faqForm();else if(kind==='services')servicesForm();else if(kind==='photos')photosForm();
+    if(kind==='copy')copyForm();else if(kind==='doctor')doctorForm();else if(kind==='contact')contactForm();else if(kind==='hours')hoursForm();else if(kind==='faq')faqForm();else if(kind==='services')servicesForm();
   }
   function focusTop(){ main.scrollTop=0; const start=body.querySelector('[data-start]'); if(start) start.focus(); }
 
@@ -488,23 +490,7 @@ const SOURCE = String.raw`
     sortable(list,ordered,()=>{renumber(ordered);touch();render();});
   }
 
-  /* ── The gallery manager ────────────────────────────────────────────── */
-  async function reloadPhotos(){const data=await api('/api/photos','GET');sha=data.sha;versions=data.versions||{};draft=structuredClone(data.records);original=structuredClone(draft);orderDirty=false;render();}
-  async function photoRequest(url,payload,working,done){
-    if(busy) return;
-    // Every other action reloads the gallery, which would drop an unsaved
-    // reorder without a word. Ask first.
-    if(orderDirty && url!=='/api/photos/order' && !confirm(t('unsavedOrder'))) return null;
-    clearErrors(); setBusy(true); tell(working,'working');
-    try {
-      const result=await api(url,'POST',payload);
-      await reloadPhotos();
-      if(result.unchanged){tell(t('noChange'),'info');return result;}
-      tell(t(publishing==='test'?'doneTest':'doneProd',{what:done,sha:short(result.sha)}),'ok');
-      void track(result.sha); return result;
-    } catch(error){ fail(error); try{ await reloadPhotos(); }catch{} return null; }
-    finally { setBusy(false); }
-  }
+  /* ── Photographs: read, shrink if needed, encode ───────────────────── */
   async function encode(blob){const bytes=new Uint8Array(await blob.arrayBuffer());let binary='';for(let i=0;i<bytes.length;i+=32768)binary+=String.fromCharCode(...bytes.subarray(i,i+32768));return btoa(binary);}
   /**
    * Check a picked image the way the server will, before sending it, and
@@ -529,128 +515,7 @@ const SOURCE = String.raw`
     }
     bitmap.close(); throw new Error(t('tooLargeAfter',{name:file.name}));
   }
-  function photoName(item){return (CATEGORY_LABELS[item.category]||item.category)+' · '+(localTitle(item.alt)||item.file);}
-  function photosForm(){
-    uploader();
-    const heading=add(body,'h3',t('galleryCount',{n:draft.length})); heading.className='visual-editor-heading';
-    if(!draft.length){ add(body,'p',t('galleryEmpty')).className='visual-hint'; return; }
-    add(body,'p',t('galleryHint')).className='visual-order-hint';
-    if(orderDirty){ const bar_=add(body,'div'); bar_.className='visual-order-bar'; add(bar_,'span',t('orderChanged')); bar_.append(button(t('saveOrder'),()=>void savePhotoOrder(),'primary'),button(t('cancel'),()=>{draft=structuredClone(original);orderDirty=false;render();})); }
-    const list=add(body,'div'); list.className='visual-photo-grid';
-    draft.forEach((item,index)=>{
-      const card=add(list,'div'); card.className='visual-item visual-photo-card'; card.setAttribute('data-file',item.file);
-      const top=add(card,'div'); top.className='visual-photo-top'; top.append(grip()); badge(top,item.status==='published');
-      if(item.needsEnglishReview) add(top,'span',t('needsEnglish')).className='visual-badge';
-      const figure=add(card,'div'); figure.className='visual-photo-frame';
-      const thumb=add(figure,'img'); thumb.alt=localTitle(item.alt)||item.file; thumb.loading='lazy'; thumb.decoding='async';
-      thumb.src='/api/photo?file='+encodeURIComponent(item.file)+'&v='+encodeURIComponent(versions[item.file]||'');
-      thumb.addEventListener('error',()=>{thumb.remove();add(figure,'span',t('noPreview')).className='visual-hint';});
-      add(card,'p',CATEGORY_LABELS[item.category]||item.category).className='visual-hint';
-      const edit=edits[item.file]||(edits[item.file]={he:item.alt.he,ar:item.alt.ar,en:item.alt.en});
-      const changed=()=>edit.he!==item.alt.he||edit.ar!==item.alt.ar||edit.en!==item.alt.en;
-      // Collapsed by default so the manager shows photographs, not a wall of
-      // text boxes; open when there is something to finish.
-      const altOpen=altOpenSet.has(item.file)||changed()||item.needsEnglishReview===true;
-      add(card,'p',localTitle(item.alt)).className='visual-photo-alt';
-      const toggle=button(altOpen?t('closeDescription'):t('editDescription'),()=>{if(altOpen)altOpenSet.delete(item.file);else altOpenSet.add(item.file);render();});
-      toggle.setAttribute('aria-expanded',String(altOpen)); toggle.setAttribute('aria-label',t('named',{action:toggle.textContent,name:photoName(item)})); card.append(toggle);
-      if(altOpen){
-        const fs=group(card,t('descriptionGroup'));
-        const saveAlt=button(t('saveDescription'),async()=>{const r=await photoRequest('/api/photos/describe',{file:item.file,altHe:edit.he,altAr:edit.ar,altEn:edit.en},t('savingDescription'),t('descriptionSaved'));if(r){delete edits[item.file];altOpenSet.delete(item.file);render();}},'primary');
-        for(const lang of LANGS) field(fs,names[lang],edit[lang],v=>{edit[lang]=v;saveAlt.disabled=!changed()&&!item.needsEnglishReview;},{textarea:true,lang,path:'alt.'+item.file+'.'+lang});
-        saveAlt.disabled=!changed()&&!item.needsEnglishReview; fs.append(saveAlt);
-      }
-      const r=row(card);
-      const up=button(t('up'),()=>{if(index>0){[draft[index-1],draft[index]]=[draft[index],draft[index-1]];orderDirty=true;render();}}); up.setAttribute('aria-label',t('upNamed',{name:photoName(item)})); up.disabled=index===0;
-      const down=button(t('down'),()=>{if(index<draft.length-1){[draft[index+1],draft[index]]=[draft[index],draft[index+1]];orderDirty=true;render();}}); down.setAttribute('aria-label',t('downNamed',{name:photoName(item)})); down.disabled=index===draft.length-1;
-      r.append(up,down);
-      const vis=button(item.status==='published'?t('unpublish'):t('publish'),()=>void photoRequest('/api/photos/'+(item.status==='published'?'unpublish':'publish'),{file:item.file},t('saving'),item.status==='published'?t('photoHidden'):t('photoShown')));
-      if(item.needsEnglishReview&&item.status!=='published'){vis.disabled=true;vis.title=t('needEnglishFirst');}
-      vis.setAttribute('aria-label',t('named',{action:vis.textContent,name:photoName(item)})); r.append(vis);
-      const picker=document.createElement('input'); picker.type='file'; picker.accept='image/jpeg,image/png'; picker.hidden=true; card.append(picker);
-      picker.addEventListener('change',()=>void replacePhoto(item,picker));
-      const rep=button(t('replace'),()=>picker.click()); rep.setAttribute('aria-label',t('named',{action:t('replace'),name:photoName(item)})); r.append(rep);
-      if(item.status==='unpublished'){const del=button(t('delete'),()=>{if(confirm(t('deletePhotoConfirm',{name:photoName(item)})))void photoRequest('/api/photos/delete',{file:item.file},t('deleting'),t('photoDeleted'));},'danger');del.setAttribute('aria-label',t('named',{action:t('delete'),name:photoName(item)}));r.append(del);}
-      else add(r,'span',t('hideFirst')).className='visual-hint';
-    });
-    sortable(list,draft,()=>{orderDirty=true;render();});
-  }
-  async function savePhotoOrder(){const r=await photoRequest('/api/photos/order',{files:draft.map(x=>x.file)},t('savingOrder'),t('orderSaved'));if(r)orderDirty=false;}
-  async function replacePhoto(item,picker){
-    const picked=picker.files&&picker.files[0]; picker.value=''; if(!picked) return;
-    if(!confirm(t('replaceConfirm'))) return;
-    clearErrors(); tell(t('checkingImage'),'working');
-    let ready; try{ ready=await prepare(picked,item.file.toLowerCase().endsWith('.png')?'image/png':'image/jpeg'); }catch(error){ tell(error.message,'error'); return; }
-    await photoRequest('/api/photos/replace',{file:item.file,contentBase64:await encode(ready.blob),confirmed:true},t('uploadingReplacement'),t('replaced'));
-  }
-
-  /* Multi-upload: every file gets its own preview, category and descriptions. */
-  function uploader(){
-    const fs=group(body,t('uploadGroup')); fs.className='visual-uploader';
-    const zone=add(fs,'div'); zone.className='visual-dropzone';
-    add(zone,'p',t('dropHere'));
-    const input=document.createElement('input'); input.type='file'; input.accept='image/jpeg,image/png'; input.multiple=true; input.hidden=true; input.id='visual-upload-input';
-    const pick=button(t('choosePhotos'),()=>input.click(),'primary'); pick.setAttribute('data-start','');
-    zone.append(pick,input); add(zone,'p',t('uploadHint')).className='visual-hint';
-    input.addEventListener('change',()=>{void addFiles([...(input.files||[])]);input.value='';});
-    // File drop (from the desktop) — a different thing from reordering, which
-    // is pointer events only.
-    zone.addEventListener('dragenter',(e)=>{e.preventDefault();zone.classList.add('is-over');});
-    zone.addEventListener('dragover',(e)=>{e.preventDefault();});
-    zone.addEventListener('dragleave',()=>zone.classList.remove('is-over'));
-    zone.addEventListener('drop',(e)=>{e.preventDefault();zone.classList.remove('is-over');void addFiles([...(e.dataTransfer&&e.dataTransfer.files||[])]);});
-    if(!pending.length) return;
-    const list=add(fs,'div'); list.className='visual-photo-grid';
-    pending.forEach((p)=>{
-      const card=add(list,'div'); card.className='visual-photo-card'; card.setAttribute('data-pending',p.id);
-      const frame=add(card,'div'); frame.className='visual-photo-frame'; const img=add(frame,'img'); img.src=p.url; img.alt=t('previewOf',{name:p.file.name});
-      add(card,'p',p.file.name+(p.ready?' · '+p.ready.width+'×'+p.ready.height:'')).className='visual-hint';
-      if(p.error){ const e=add(card,'p',p.error); e.className='visual-inline-error'; }
-      if(p.state==='uploading') add(card,'p',t('uploading')).className='visual-hint';
-      if(p.ready && p.state!=='uploading'){
-        select(card,t('photoCategory'),p.category,Object.keys(CATEGORY_LABELS).map(x=>[x,CATEGORY_LABELS[x]]),v=>{p.category=v;});
-        const d=group(card,t('descriptionAll'));
-        for(const lang of LANGS) field(d,names[lang],p.alt[lang],v=>{p.alt[lang]=v;},{textarea:true,lang,path:'pending.'+p.id+'.'+lang});
-      }
-      card.append(button(t('removeFromList'),()=>{URL.revokeObjectURL(p.url);pending=pending.filter(x=>x!==p);render();},'danger'));
-    });
-    const confirmWrap=add(fs,'label'); confirmWrap.className='visual-check';
-    const confirmBox=document.createElement('input'); confirmBox.type='checkbox'; confirmBox.id='visual-upload-confirm';
-    confirmWrap.append(confirmBox,document.createTextNode(t('uploadConfirm')));
-    const readyCount=pending.filter(p=>p.ready).length;
-    const go=button(readyCount===1?t('uploadOne'):t('uploadMany',{n:readyCount}),()=>void uploadPending(confirmBox.checked),'primary'); go.disabled=readyCount===0; fs.append(go);
-  }
-  async function addFiles(files){
-    for(const file of files){
-      const p={id:Math.random().toString(36).slice(2),file,url:URL.createObjectURL(file),category:'reception',alt:{he:'',ar:'',en:''},ready:null,error:'',state:'new'};
-      pending.push(p);
-      try{ p.ready=await prepare(file); }catch(error){ p.error=error.message; }
-    }
-    render();
-    const box=body.querySelector('.visual-uploader'); if(box) box.scrollIntoView({block:'start'});
-  }
-  async function uploadPending(confirmed){
-    if(busy) return; clearErrors();
-    if(!confirmed){ tell(ISSUES.confirmation_required,'error'); const c=dialog.querySelector('#visual-upload-confirm'); if(c){c.setAttribute('aria-invalid','true');c.focus();} return; }
-    const queue=pending.filter(p=>p.ready); let done=0, last='';
-    setBusy(true);
-    for(const [n,p] of queue.entries()){
-      p.state='uploading'; p.error=''; tell(t('uploadingNofM',{n:n+1,m:queue.length}),'working');
-      try{
-        const result=await api('/api/photos','POST',{category:p.category,contentBase64:await encode(p.ready.blob),altHe:p.alt.he,altAr:p.alt.ar,altEn:p.alt.en,confirmed:true});
-        last=result.sha; done++; URL.revokeObjectURL(p.url); pending=pending.filter(x=>x!==p);
-      }catch(error){
-        p.state='error';
-        p.error=error instanceof ApiError?(error.issues.length?error.issues.map(describeIssue).join(' '):(ERRORS[error.code]||ERRORS.SERVER_ERROR)):t('uploadFailed');
-      }
-    }
-    setBusy(false);
-    try{ await reloadPhotos(); }catch(error){ fail(error); return; }
-    const failed=queue.length-done;
-    if(failed===0) tell(done===1?t('uploadedOne',{sha:short(last)}):t('uploadedMany',{n:done,sha:short(last)}),'ok');
-    else tell(t('uploadedPartial',{n:done,m:queue.length,f:failed}),'error');
-    if(last) void track(last);
-  }
+__PHOTOS__
 
   document.addEventListener('click',event=>{const trigger=event.target.closest('[data-edit-kind]');if(trigger){event.preventDefault();void open(trigger.dataset.editKind,trigger.dataset.editFocus||'');}});
 
@@ -704,8 +569,10 @@ const SOURCE = String.raw`
 
   /* Nothing is committed until Save, so an accidental reload is the one way
      to lose work that the dialog guard cannot catch. */
-  window.addEventListener('beforeunload',(event)=>{ if(dirty||pending.length){event.preventDefault();event.returnValue='';} });
+  window.addEventListener('beforeunload',(event)=>{ if(dirty||(pm.el&&pmDirty())){event.preventDefault();event.returnValue='';} });
 })();
 `;
 
-export const VISUAL_CLIENT = SOURCE.replace('__STRINGS__', () => STRINGS_JSON);
+export const VISUAL_CLIENT = SOURCE
+  .replace('__PHOTOS__', () => PHOTOS_SOURCE)
+  .replace('__STRINGS__', () => STRINGS_JSON);

@@ -42,6 +42,10 @@ const t = useTranslations(locale);
 // Drop entries whose file is missing rather than rendering a broken image.
 const assets = galleryFor(kind);
 const workGallery = kind === 'work';
+const clinicGallery = kind === 'clinic';
+// Only the clinic gallery's title row carries a control; the other galleries
+// keep their markup exactly as before.
+const TitleRow = clinicGallery ? 'div' : Fragment;
 const illustrative = kind === 'illustrations';
 const resolvedItems = assets
   .map((asset) => ({ asset, resolved: resolveImage(asset.file) }))
@@ -66,6 +70,18 @@ const WORK_NOTE = {
   ar: 'صور العلاجات يديرها المطوّر ولا يمكن تعديلها هنا.',
   en: 'Treatment photos are managed by the developer and cannot be edited here.',
 }[locale];
+/**
+ * The doctor's framing as inline style: object-position puts the focal point
+ * at the same relative spot in the frame as in the photo, and scaling around
+ * that same point zooms without ever uncovering the frame. The values were
+ * validated as bare numbers in range (data-schema.ts), so nothing else can
+ * reach this attribute.
+ */
+const frameStyle = (frame?: { x: number; y: number; zoom: number }) => {
+  if (!frame) return undefined;
+  const r = (n: number) => Math.round(n * 100) / 100;
+  return `object-position:${r(frame.x)}% ${r(frame.y)}%;transform:scale(${r(frame.zoom)});transform-origin:${r(frame.x)}% ${r(frame.y)}%`;
+};
 const EMPTY_NOTE = {
   he: 'עדיין אין תמונות מרפאה מוצגות באתר. הגלריה תופיע למטופלים כשתוצג בה תמונה ראשונה.',
   ar: 'لا توجد بعد صور معروضة للعيادة. سيظهر المعرض للزوار عند عرض أول صورة.',
@@ -77,6 +93,9 @@ const EMPTY_NOTE = {
   (items.length > 0 || editableClinic) && (
     <section class="section-lg bg-[var(--color-mist)]" aria-labelledby="gallery-heading" data-gallery-kind={workGallery ? 'work' : illustrative ? 'illustrations' : 'clinic'} data-visual-only={items.length === 0 ? '' : undefined}>
       <div class="shell">
+        {/* Clinic photography: the title row carries Edit Mode's control at its
+            end — the far left in Hebrew and Arabic, the right in English. */}
+        <TitleRow {...(clinicGallery ? { class: 'gallery-title-row flex items-start justify-between gap-4' } : {})}>
         <div class="max-w-2xl">
           <p class="eyebrow">{t(workGallery ? 'gallery.workEyebrow' : illustrative ? 'gallery.artEyebrow' : 'gallery.eyebrow')}</p>
           <h2 id="gallery-heading" class="mt-2">{t(workGallery ? 'gallery.workTitle' : illustrative ? 'gallery.artTitle' : 'gallery.title')}</h2>
@@ -86,6 +105,8 @@ const EMPTY_NOTE = {
             {clinic.social.facebook && <Button href={clinic.social.facebook} variant="outline" icon="facebook" target="_blank" rel="noopener noreferrer"><span class="u-ltr">Facebook</span></Button>}
           </div>}
         </div>
+        {editableClinic && <EditControl kind="photos" focus="gallery" locale={locale} />}
+        </TitleRow>
 
         {/* ── WHY A HORIZONTAL SCROLLER FOR TREATMENT WORK ────────────────
             These images are a mix of square (1254x1254) and tall 9:16 posts,
@@ -150,7 +171,11 @@ const EMPTY_NOTE = {
           class:list={[
             workGallery
               ? 'flex gap-4'
-              : 'mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:auto-rows-[15rem]',
+              : clinicGallery
+                // Every clinic photo sits in the same 4:3 frame, so the framing
+                // the doctor chose looks the same on a phone and a desktop.
+                ? 'mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3'
+                : 'mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:auto-rows-[15rem]',
           ]}
           style="list-style:none;padding-inline-start:0;margin-block-end:0"
         >
@@ -159,13 +184,13 @@ const EMPTY_NOTE = {
               class:list={[
                 'reveal',
                 workGallery ? 'shrink-0 snap-start' : '',
-                !workGallery && asset.feature ? 'sm:col-span-2 lg:row-span-2' : '',
+                !workGallery && !clinicGallery && asset.feature ? 'sm:col-span-2 lg:row-span-2' : '',
               ]}
               style={`--i:${i % 3}`}
             >
               <button
                 type="button"
-                class:list={['group relative block w-full cursor-pointer overflow-hidden rounded-[var(--radius-media)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-0', !workGallery && 'h-full']}
+                class:list={['group relative block w-full cursor-pointer overflow-hidden rounded-[var(--radius-media)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-0', clinicGallery ? 'aspect-[4/3]' : !workGallery && 'h-full']}
                 data-gallery-open={i}
                 aria-label={asset.alt[locale]}
               >
@@ -176,7 +201,7 @@ const EMPTY_NOTE = {
                   sizes={asset.feature ? '(min-width: 1024px) 66vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'}
                   loading={i < 3 ? 'eager' : 'lazy'}
                   decoding={i < 3 ? 'sync' : 'async'}
-                  style={workGallery ? `aspect-ratio:${asset.width} / ${asset.height}` : undefined}
+                  style={workGallery ? `aspect-ratio:${asset.width} / ${asset.height}` : clinicGallery ? frameStyle(asset.frame) : undefined}
                   class:list={[
                     'transition-opacity duration-[var(--dur-base)] group-hover:opacity-90',
                     /* Fixed height, width follows the aspect ratio. `contain`
@@ -196,11 +221,6 @@ const EMPTY_NOTE = {
               </button>
             </li>
           ))}
-          {editableClinic && (
-            <li class="visual-gallery-edit" data-visual-only>
-              <EditControl kind="photos" focus="gallery" locale={locale} />
-            </li>
-          )}
           {editing && workGallery && (
             <li class="visual-work-note shrink-0" data-visual-only>{WORK_NOTE}</li>
           )}

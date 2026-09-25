@@ -145,6 +145,7 @@ export type CommitVerb =
   | 'reorder clinic photos'
   | 'replace clinic photo'
   | 'describe clinic photo'
+  | 'update clinic photos'
   | 'update visual content';
 
 const SCOPE: Record<CommitVerb, 'hours' | 'media' | 'content'> = {
@@ -156,6 +157,7 @@ const SCOPE: Record<CommitVerb, 'hours' | 'media' | 'content'> = {
   'reorder clinic photos': 'media',
   'replace clinic photo': 'media',
   'describe clinic photo': 'media',
+  'update clinic photos': 'media',
   'update visual content': 'content',
 };
 
@@ -563,5 +565,135 @@ export async function deleteFile(env: Env, request: DeleteRequest): Promise<Resu
   const body = (await response.json()) as { commit?: { sha?: string } };
   const commit = body.commit?.sha;
   if (typeof commit !== 'string') return refuse('unavailable');
+  return { ok: true, data: { commit } };
+}
+
+
+/* -------------------------------------------------------------------------- */
+/*  One atomic commit for a gallery save (Git Data API)                        */
+/* -------------------------------------------------------------------------- */
+
+/*
+ * The photo manager saves many changes at once — order, framing, words,
+ * visibility, new photographs, replacements, deletions. Through the Contents
+ * API that is one commit per file, one build per commit, and a gallery that is
+ * half-updated whenever something fails in the middle. Here it is ONE commit:
+ * one build, one deployment, all or nothing, and one revert to undo.
+ *
+ * Every path is produced by pathFor() — the manifest and bare image filenames
+ * in the image directory, nothing else. Every SHA is checked to be a git object
+ * name before it reaches a URL. The branch update is not forced, so if anyone
+ * else committed meanwhile the save is refused as a conflict, never merged
+ * over their change.
+ */
+
+const OBJECT = /^[0-9a-f]{40}$/;
+
+async function git(
+  config: Config,
+  method: 'GET' | 'POST' | 'PATCH',
+  suffix: string,
+  body?: unknown,
+): Promise<Response> {
+  return fetch(`${API}/repos/${OWNER}/${REPO}/git/${suffix}`, {
+    method,
+    headers: {
+      Authorization: `Bearer ${config.token}`,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28',
+      'User-Agent': USER_AGENT,
+      ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+}
+
+const refPath = (branch: string) => `refs/heads/${branch.split('/').map(encodeURIComponent).join('/')}`;
+
+/** Store image bytes as a blob. No commit, nothing on any branch. */
+export async function createImageBlob(env: Env, bytes: Uint8Array): Promise<Result<string>> {
+  const config = configure(env);
+  if (config === null) return refuse('not_configured');
+  const response = await git(config, 'POST', 'blobs', { content: toBase64(bytes), encoding: 'base64' });
+  if (!response.ok) return refuse(classify(response.status));
+  const body = (await response.json()) as { sha?: unknown };
+  return typeof body.sha === 'string' && OBJECT.test(body.sha) ? { ok: true, data: body.sha } : refuse('unavailable');
+}
+
+/** Read a blob's exact bytes, to validate what a save is about to reference. */
+export async function readBlobBytes(env: Env, sha: string, limit: number): Promise<Result<Uint8Array>> {
+  if (!OBJECT.test(sha)) return refuse('refused');
+  const config = configure(env);
+  if (config === null) return refuse('not_configured');
+  const response = await git(config, 'GET', `blobs/${sha}`);
+  if (!response.ok) return refuse(classify(response.status));
+  const body = (await response.json()) as { content?: unknown; encoding?: unknown; size?: unknown };
+  if (body.encoding !== 'base64' || typeof body.content !== 'string') return refuse('unavailable');
+  if (typeof body.size === 'number' && body.size > limit) return refuse('unavailable');
+  const binary = atob(body.content.replace(/\n/g, ''));
+  if (binary.length > limit) return refuse('unavailable');
+  return { ok: true, data: Uint8Array.from(binary, (c) => c.charCodeAt(0)) };
+}
+
+export interface PhotoCommit {
+  /** Manifest blob SHA the editor loaded; anything else is a conflict. */
+  expectedManifestSha: string;
+  manifest: string;
+  /** Image files to create or overwrite, each a blob already validated. */
+  puts: ReadonlyArray<{ file: string; blob: string }>;
+  deletes: readonly string[];
+  patientContentConfirmed: boolean;
+}
+
+export async function commitPhotoChanges(env: Env, change: PhotoCommit): Promise<Result<{ commit: string }>> {
+  const config = configure(env);
+  if (config === null) return refuse('not_configured');
+  const message = commitMessage('update clinic photos', undefined, change.patientContentConfirmed);
+  const manifestPath = pathFor({ kind: 'photography' });
+  if (message === null || manifestPath === null) return refuse('refused');
+
+  const entries: Array<Record<string, unknown>> = [{ path: manifestPath, mode: '100644', type: 'blob', content: change.manifest }];
+  for (const put of change.puts) {
+    const path = pathFor({ kind: 'image', file: put.file });
+    if (path === null || !OBJECT.test(put.blob)) return refuse('refused');
+    entries.push({ path, mode: '100644', type: 'blob', sha: put.blob });
+  }
+  for (const file of change.deletes) {
+    const path = pathFor({ kind: 'image', file });
+    if (path === null) return refuse('refused');
+    entries.push({ path, mode: '100644', type: 'blob', sha: null });
+  }
+
+  // 1. Where the branch is now.
+  const ref = await git(config, 'GET', `ref/heads/${config.branch.split('/').map(encodeURIComponent).join('/')}`);
+  if (!ref.ok) return refuse(classify(ref.status));
+  const head = ((await ref.json()) as { object?: { sha?: unknown } }).object?.sha;
+  if (typeof head !== 'string' || !OBJECT.test(head)) return refuse('unavailable');
+
+  // 2. The manifest AT THAT COMMIT must be the one the editor loaded.
+  const at = await fetch(`${API}/repos/${OWNER}/${REPO}/contents/${manifestPath.split('/').map(encodeURIComponent).join('/')}?ref=${head}`, {
+    headers: { Authorization: `Bearer ${config.token}`, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': USER_AGENT },
+  });
+  if (!at.ok) return refuse(classify(at.status));
+  const current = ((await at.json()) as { sha?: unknown }).sha;
+  if (current !== change.expectedManifestSha) return refuse('conflict');
+
+  // 3. Its tree, and a new tree on top of it.
+  const commitRes = await git(config, 'GET', `commits/${head}`);
+  if (!commitRes.ok) return refuse(classify(commitRes.status));
+  const baseTree = ((await commitRes.json()) as { tree?: { sha?: unknown } }).tree?.sha;
+  if (typeof baseTree !== 'string' || !OBJECT.test(baseTree)) return refuse('unavailable');
+  const treeRes = await git(config, 'POST', 'trees', { base_tree: baseTree, tree: entries });
+  if (!treeRes.ok) return refuse(classify(treeRes.status));
+  const tree = ((await treeRes.json()) as { sha?: unknown }).sha;
+  if (typeof tree !== 'string' || !OBJECT.test(tree)) return refuse('unavailable');
+
+  // 4. The commit, then move the branch to it — fast-forward only.
+  const created = await git(config, 'POST', 'commits', { message, tree, parents: [head] });
+  if (!created.ok) return refuse(classify(created.status));
+  const commit = ((await created.json()) as { sha?: unknown }).sha;
+  if (typeof commit !== 'string' || !OBJECT.test(commit)) return refuse('unavailable');
+  const moved = await git(config, 'PATCH', refPath(config.branch), { sha: commit, force: false });
+  if (!moved.ok) return refuse(moved.status === 422 ? 'conflict' : classify(moved.status));
   return { ok: true, data: { commit } };
 }

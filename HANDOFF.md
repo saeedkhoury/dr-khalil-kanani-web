@@ -204,9 +204,33 @@ no Cloudflare credential exists in GitHub. The editor interface is localised
 (HE/AR RTL, EN LTR). `.github/workflows/admin-preview.yml` is an unused
 alternative, off unless `ADMIN_PREVIEW=on`.
 
+**Photo manager (2026-09-25).** The clinic gallery's Edit control now ends
+the section's title row (far left in HE/AR, right in EN); the end-of-gallery
+tile is gone. It opens a photo-first manager (full screen on a phone, a large
+sheet on a desktop): every photo has a delete ✕ and an edit ✎ in its corners;
+long-press (touch) or click-and-hold (mouse) and drag reorders, a quick swipe
+still scrolls, Escape cancels, and Move earlier/later buttons appear on
+keyboard focus. The ✎ editor frames the photo (drag to position, zoom 1–3,
+phone-size preview), replaces it, edits HE/AR/EN descriptions and shows or
+hides it. Framing is stored as `frame {x, y, zoom}` — three numbers validated
+by the schema, never CSS — and the public clinic gallery renders every photo
+in one 4:3 frame with `object-fit: cover`, so desktop and phone match.
+A published photo is never deleted in one step: ✕ offers to hide it first.
+New and replacement photos stay in the browser until Save; only then, with the
+no-patient confirmation ticked, are they uploaded (`/api/photos/stage` refuses
+without it) and the whole gallery is written as ONE commit through the Git
+Data API, fast-forward only (a concurrent change is a conflict, never
+overwritten). Status is truthful: test mode says "Updated in the test view"
+only when the served admin build contains the commit; production says "Live"
+only when `https://www.drkhalilkanani.com/build.txt` is that commit or a
+descendant. The old per-action photo endpoints remain but the editor no
+longer uses them.
+
 **Still open:** release to `main` awaits owner approval. At release, the
 Workers Builds trigger's branch and the Worker's `CONTENT_BRANCH` move to
-`main` together, and the integration branch is retired.
+`main` together, and the integration branch is retired. `deploy.yml` now
+writes `build.txt` (needed for the "Live" claim); it runs only on `main`, so
+it too takes effect only at release.
 
 ## What exists
 

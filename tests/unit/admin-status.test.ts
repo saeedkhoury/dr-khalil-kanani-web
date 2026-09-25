@@ -122,7 +122,7 @@ describe('GET /api/status', () => {
       ok: true,
       // `preview` is Edit Mode's own rebuild, reported separately from the
       // public deployment so neither is ever mistaken for the other.
-      data: { state: 'published', completedAt: '2026-09-23T10:00:00Z', reason: null, preview: 'none' },
+      data: { state: 'published', completedAt: '2026-09-23T10:00:00Z', reason: null, preview: 'none', live: false },
     });
     assert.equal(calls[0].url, `${RUNS}?head_sha=${SHA}&branch=cms-test-branch&per_page=100`);
     assert.equal(calls[0].method, 'GET');

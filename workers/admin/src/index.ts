@@ -14,12 +14,13 @@ import { authenticate, type AccessIdentity } from './auth.ts';
 import { fail, ok, readJson, sameOrigin, type Env } from './http.ts';
 import { parseHours, serialiseHours, validateHoursPayload } from './hours.ts';
 import {
-  addRecord, describeRecord, parseRecords, removeRecord, reorderRecords, serialiseRecords, setStatus,
-  validateReplacement, validateUpload, MAX_IMAGE_BYTES, nextFilename,
+  addRecord, describeRecord, parseRecords, planPhotoSave, type CheckedImage, type DesiredPhoto, removeRecord, reorderRecords, serialiseRecords, setStatus,
+  validateReplacement, validateUpload, MAX_IMAGE_BYTES, MIN_LONG_EDGE, nextFilename,
 } from './media.ts';
 import { inspectImage } from './image.ts';
+import { commitPhotoChanges, createImageBlob, readBlobBytes } from './github.ts';
 import { deleteFile, listImageFiles, listImageVersions, pathFor, readBlobSha, readBytes, readFile, writeFile, type CommitVerb } from './github.ts';
-import { latestStatus, previewForSha, statusForSha } from './status.ts';
+import { latestStatus, liveOnPublicSite, previewForSha, statusForSha } from './status.ts';
 import { renderPanel } from './ui/page.ts';
 import { CLIENT } from './ui/client.ts';
 import { PANEL_CSP, SECURITY_HEADERS } from './http.ts';
@@ -355,6 +356,103 @@ async function reorderPhotos({ request, env }: Context): Promise<Response> {
   return ok({ sha: manifest.data.commit });
 }
 
+/* -------------------------------------------------------------------------- */
+/*  The photo manager: stage images, then save the whole gallery at once       */
+/* -------------------------------------------------------------------------- */
+
+/** Most photographs one save may add or replace; bounds the work per request. */
+const MAX_IMAGES_PER_SAVE = 20;
+
+/**
+ * Check an image and store it as a git blob — no commit, nothing on any
+ * branch. The editor calls this only while saving, with the no-patient
+ * confirmation ticked; the photo becomes part of the site only if the save
+ * that follows references it, and that save checks the bytes again.
+ */
+async function stagePhoto({ request, env }: Context): Promise<Response> {
+  if (!sameOrigin(request, env)) return fail('FORBIDDEN');
+  const body = await readJson<{ contentBase64?: unknown; confirmed?: unknown }>(request, MAX_PHOTO_BODY);
+  if (!body.ok) return fail(body.code);
+  // Nothing reaches the repository's object store without the no-patient
+  // confirmation — not even an unreferenced blob.
+  if (body.body?.confirmed !== true) return fail('INVALID', ['confirmation_required']);
+  const bytes = decodeBase64(body.body?.contentBase64);
+  if (bytes === null) return fail('INVALID', ['file_required']);
+  if (bytes.length > MAX_IMAGE_BYTES) return fail('INVALID', ['file_too_large']);
+  const image = inspectImage(bytes);
+  if (image === null) return fail('INVALID', ['unsupported_format']);
+  if (Math.max(image.width, image.height) < MIN_LONG_EDGE) return fail('INVALID', ['image_too_small']);
+  const blob = await createImageBlob(env, bytes);
+  if (!blob.ok) return upstream(blob.reason);
+  return ok({ blob: blob.data, width: image.width, height: image.height, extension: image.extension });
+}
+
+/**
+ * Save the gallery the doctor arranged — order, framing, descriptions,
+ * visibility, new photographs, replacements, deletions — as ONE commit.
+ *
+ * The browser names images by blob SHA only. Each one is fetched back from
+ * GitHub and inspected again here: a SHA from the browser is a claim, and the
+ * bytes behind it are the control, exactly as for an upload.
+ */
+async function savePhotos({ request, env }: Context): Promise<Response> {
+  if (!sameOrigin(request, env)) return fail('FORBIDDEN');
+  const body = await readJson<{ sha?: unknown; photos?: unknown; confirmed?: unknown }>(request, 256 * 1024);
+  if (!body.ok) return fail(body.code);
+  const photos = body.body?.photos;
+  if (!Array.isArray(photos) || photos.length > 200) return fail('INVALID', ['photos_invalid']);
+
+  const loaded = await loadRecords(env);
+  if (!loaded.ok) return loaded.response;
+  // The editor worked from this manifest; if it changed since, nothing is
+  // merged over someone else's change.
+  if (body.body?.sha !== loaded.sha) return fail('CONFLICT');
+
+  const withImages = photos.filter((p) => p && typeof p === 'object' && (p as { image?: unknown }).image !== undefined);
+  if (withImages.length > MAX_IMAGES_PER_SAVE) return fail('INVALID', ['too_many_images']);
+
+  const desired: DesiredPhoto[] = [];
+  for (const [i, raw] of photos.entries()) {
+    if (raw === null || typeof raw !== 'object') return fail('INVALID', [`photo_${i}:invalid`]);
+    const p = raw as { file?: unknown; category?: unknown; image?: { blob?: unknown }; status?: unknown; alt?: unknown; frame?: unknown };
+    let image: CheckedImage | undefined;
+    if (p.image !== undefined) {
+      const blob = p.image?.blob;
+      if (typeof blob !== 'string' || !/^[0-9a-f]{40}$/.test(blob)) return fail('INVALID', [`photo_${i}:file_required`]);
+      const bytes = await readBlobBytes(env, blob, MAX_IMAGE_BYTES);
+      if (!bytes.ok) return bytes.reason === 'not_found' ? fail('INVALID', [`photo_${i}:file_required`]) : upstream(bytes.reason);
+      const info = inspectImage(bytes.data);
+      if (info === null) return fail('INVALID', [`photo_${i}:unsupported_format`]);
+      if (Math.max(info.width, info.height) < MIN_LONG_EDGE) return fail('INVALID', [`photo_${i}:image_too_small`]);
+      image = { blob, width: info.width, height: info.height, extension: info.extension };
+    }
+    desired.push({
+      file: typeof p.file === 'string' ? p.file : undefined,
+      category: p.category,
+      image,
+      status: p.status,
+      alt: (p.alt && typeof p.alt === 'object' ? p.alt : {}) as DesiredPhoto['alt'],
+      frame: p.frame,
+    });
+  }
+
+  const inventory = await listImageFiles(env);
+  if (!inventory.ok) return upstream(inventory.reason);
+  const plan = planPhotoSave(loaded.records, desired, inventory.data, body.body?.confirmed);
+  if (!plan.ok) return fail('INVALID', plan.issues);
+  if (plan.unchanged) return ok({ sha: null, unchanged: true });
+
+  const committed = await commitPhotoChanges(env, {
+    expectedManifestSha: loaded.sha,
+    manifest: serialiseRecords(plan.records),
+    puts: plan.puts,
+    deletes: plan.deletes,
+    patientContentConfirmed: plan.addsImages,
+  });
+  if (!committed.ok) return upstream(committed.reason);
+  return ok({ sha: committed.data.commit });
+}
+
 /**
  * Rewrite the Hebrew, Arabic and English description of one photograph.
  *
@@ -495,7 +593,13 @@ async function getStatus({ request, env }: Context): Promise<Response> {
 
   const result = await statusForSha(env, sha);
   if (!result.ok) return upstream(result.reason);
-  return ok({ ...result.data, preview: await previewForSha(env, sha, await deployedBuild(env), env.ADMIN_REBUILD?.trim() === 'on') });
+  const preview = await previewForSha(env, sha, await deployedBuild(env), env.ADMIN_REBUILD?.trim() === 'on');
+  // Only a production content branch can be live on the official site; a
+  // test branch never is, and is never asked.
+  const live = env.CONTENT_BRANCH?.trim() === 'main' && result.data.state === 'published'
+    ? await liveOnPublicSite(env, sha)
+    : false;
+  return ok({ ...result.data, preview, live });
 }
 
 /**
@@ -621,6 +725,14 @@ const ROUTES: Readonly<Record<string, Route>> = Object.freeze({
   '/api/photos/describe': {
     methods: ['POST'],
     handle: describePhoto,
+  },
+  '/api/photos/stage': {
+    methods: ['POST'],
+    handle: stagePhoto,
+  },
+  '/api/photos/save': {
+    methods: ['POST'],
+    handle: savePhotos,
   },
   '/api/photos/delete': {
     methods: ['POST'],

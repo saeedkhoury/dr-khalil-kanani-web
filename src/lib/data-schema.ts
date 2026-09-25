@@ -173,8 +173,31 @@ const PHOTO_EXT = ['.jpg', '.jpeg', '.png'] as const;
 
 const RECORD_KEYS = new Set([
   'file', 'category', 'alt', 'caption', 'width', 'height',
-  'feature', 'status', 'needsEnglishReview',
+  'feature', 'status', 'needsEnglishReview', 'frame',
 ]);
+
+/** Limits of the stored framing; the editor and the Worker use the same ones. */
+export const FRAME_LIMITS = { min: 0, max: 100, minZoom: 1, maxZoom: 3 } as const;
+
+/**
+ * Problems with a photo's framing, or none. Exactly three finite numbers in
+ * range — no CSS, no units, nothing else — because these become inline style
+ * on the public page.
+ */
+export function frameProblems(frame: unknown): string[] {
+  if (frame === undefined) return [];
+  if (frame === null || typeof frame !== 'object' || Array.isArray(frame)) return ['"frame" must be an object'];
+  const f = frame as Record<string, unknown>;
+  const problems: string[] = [];
+  for (const key of Object.keys(f)) if (!['x', 'y', 'zoom'].includes(key)) problems.push(`"frame" has unknown field "${key}"`);
+  for (const key of ['x', 'y'] as const) {
+    const n = f[key];
+    if (typeof n !== 'number' || !Number.isFinite(n) || n < FRAME_LIMITS.min || n > FRAME_LIMITS.max) problems.push(`"frame.${key}" must be a number from 0 to 100`);
+  }
+  const z = f.zoom;
+  if (typeof z !== 'number' || !Number.isFinite(z) || z < FRAME_LIMITS.minZoom || z > FRAME_LIMITS.maxZoom) problems.push('"frame.zoom" must be a number from 1 to 3');
+  return problems;
+}
 
 /** Validate the CMS photography manifest and return it typed. */
 export function assertClinicPhotographyShape(
@@ -248,6 +271,8 @@ export function assertClinicPhotographyShape(
         }
       }
     }
+
+    for (const problem of frameProblems(r.frame)) problems.push(`${at}: ${problem}`);
 
     if (needsEnglishReview !== undefined && typeof needsEnglishReview !== 'boolean') {
       problems.push(`${at}: "needsEnglishReview" must be true or false when present`);

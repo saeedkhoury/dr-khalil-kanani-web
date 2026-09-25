@@ -27,5 +27,13 @@ export default defineConfig({
     url: 'http://127.0.0.1:4332/panel.css',
     reuseExistingServer: false,
     timeout: 60_000,
+  }, {
+    // The same Worker configured as production (content branch 'main'), with
+    // the official site's build.txt mocked: proves "Live" is claimed only
+    // when the public site serves the saved commit. Serves the build above.
+    command: 'node --experimental-strip-types scripts/serve-admin-fixture.ts --production',
+    url: 'http://127.0.0.1:4333/panel.css',
+    reuseExistingServer: false,
+    timeout: 60_000,
   }],
 });

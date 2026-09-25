@@ -40,7 +40,14 @@ if (process.env.NODE_ENV === 'production') {
   throw new Error('[admin fixture] refusing to run in production');
 }
 
-const PORT = 4332;
+/*
+ * --production runs a second instance whose content branch is 'main', so the
+ * editor's production wording and its "Live" claim can be tested. "Live"
+ * depends on the OFFICIAL site's build.txt, which is mocked here too and
+ * changes only when a test POSTs /__fixture/publish — the public deploy.
+ */
+const PRODUCTION = process.argv.includes('--production');
+const PORT = PRODUCTION ? 4333 : 4332;
 const ASSET_ROOT = resolve(fileURLToPath(new URL('../workers/admin/dist/', import.meta.url)));
 
 /*
@@ -51,6 +58,7 @@ const ASSET_ROOT = resolve(fileURLToPath(new URL('../workers/admin/dist/', impor
  */
 let lastCommit = '';
 let deployedCommit: string | null = null;
+let publicCommit: string | null = null;
 
 function asset(request: Request): Response {
   const pathname = new URL(request.url).pathname;
@@ -73,7 +81,7 @@ const env: Env = {
   ADMIN_ORIGIN: `http://127.0.0.1:${PORT}`,
   ALLOWED_EMAILS: DOCTOR,
   GITHUB_TOKEN: 'fixture-token-not-a-credential',
-  CONTENT_BRANCH: 'fixture-branch',
+  CONTENT_BRANCH: PRODUCTION ? 'main' : 'fixture-branch',
   ASSETS: { fetch: async (request) => asset(request) },
 };
 
@@ -134,12 +142,73 @@ const images = new Map<string, { bytes: Uint8Array; sha: string }>(
 );
 const INLINE_LIMIT = 1024 * 1024;
 
+/*
+ * The Git Data API, as the photo manager uses it: blobs staged without a
+ * commit, then one tree + commit + fast-forward ref update. A tree is applied
+ * to the store only when the ref moves, and only if its parent is the head —
+ * so a stale save is refused exactly as GitHub refuses a non-fast-forward.
+ */
+const blobs = new Map<string, Uint8Array>();
+const trees = new Map<string, Array<{ path: string; sha?: string | null; content?: string }>>();
+const pendingCommits = new Map<string, { tree: string; parent: string }>();
+let headSha = '0'.repeat(40);
+let objects = 0;
+const objectName = (prefix: string) => `${prefix}${String((objects += 1)).padStart(40 - prefix.length, '0')}`;
+
+function mockGitData(url: string, method: string, init: RequestInit | undefined, json: (body: unknown, status?: number) => Response): Response | null {
+  const path = new URL(url).pathname.split('/git/')[1];
+  if (path === undefined) return null;
+  const body = init?.body ? JSON.parse(String(init.body)) as Record<string, unknown> : {};
+  if (path === 'blobs' && method === 'POST') {
+    const sha = objectName('b');
+    blobs.set(sha, new Uint8Array(Buffer.from(String(body.content ?? ''), 'base64')));
+    return json({ sha }, 201);
+  }
+  if (path.startsWith('blobs/') && method === 'GET') {
+    const bytes = blobs.get(path.slice(6));
+    return bytes ? json({ sha: path.slice(6), size: bytes.length, encoding: 'base64', content: Buffer.from(bytes).toString('base64') }) : json({ message: 'Not Found' }, 404);
+  }
+  if (path.startsWith('ref/heads/') && method === 'GET') return json({ object: { sha: headSha } });
+  if (path.startsWith('commits/') && method === 'GET') return json({ sha: path.slice(8), tree: { sha: '9'.repeat(40) } });
+  if (path === 'trees' && method === 'POST') {
+    const sha = objectName('a');
+    trees.set(sha, body.tree as Array<{ path: string; sha?: string | null; content?: string }>);
+    return json({ sha }, 201);
+  }
+  if (path === 'commits' && method === 'POST') {
+    commits += 1;
+    const sha = String(commits).padStart(40, 'f');
+    pendingCommits.set(sha, { tree: String(body.tree), parent: String((body.parents as string[])[0]) });
+    return json({ sha }, 201);
+  }
+  if (path.startsWith('refs/heads/') && method === 'PATCH') {
+    const commit = pendingCommits.get(String(body.sha));
+    if (!commit || commit.parent !== headSha || body.force !== false) return json({ message: 'Update is not a fast forward' }, 422);
+    for (const entry of trees.get(commit.tree) ?? []) {
+      if (entry.path === 'src/data/clinic-photography.json') {
+        store.photos = JSON.parse(String(entry.content));
+        blobShas.photos = String(commits).padStart(40, 'd');
+      } else if (entry.path.startsWith('src/assets/images/')) {
+        const name = entry.path.slice('src/assets/images/'.length);
+        if (entry.sha === null) images.delete(name);
+        else images.set(name, { bytes: blobs.get(String(entry.sha)) ?? new Uint8Array(), sha: String(entry.sha) });
+      }
+    }
+    headSha = String(body.sha);
+    lastCommit = headSha;
+    return json({ object: { sha: headSha } });
+  }
+  return json({ message: 'not found' }, 404);
+}
+
 /** Answer the GitHub Contents and Actions APIs from the store above. */
 function mockGitHub(url: string, init?: RequestInit): Response {
   const method = init?.method ?? 'GET';
   const accept = new Headers(init?.headers).get('Accept') ?? '';
   const json = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+  const gitData = mockGitData(url, method, init, json);
+  if (gitData) return gitData;
   const kind = Object.entries(fileKinds).find(([file]) => url.includes(`/contents/src/data/${file}`))?.[1];
   const imageName = url.includes('/contents/src/assets/images/')
     ? decodeURIComponent(new URL(url).pathname.split('/').pop() ?? '')
@@ -164,6 +233,7 @@ function mockGitHub(url: string, init?: RequestInit): Response {
     commits += 1;
     const commit = String(commits).padStart(40, 'f');
     lastCommit = commit;
+    headSha = commit;
     if (imageName) {
       const existing = images.get(imageName);
       if (existing && body.sha !== existing.sha) return json({ message: 'Conflict' }, 409);
@@ -208,6 +278,9 @@ globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
     return new Response(JSON.stringify(jwksDocument), { status: 200 });
   }
   if (url.startsWith('https://api.github.com/')) return mockGitHub(url, init);
+  if (url === 'https://www.drkhalilkanani.com/build.txt') {
+    return publicCommit === null ? new Response('Not found', { status: 404 }) : new Response(`${publicCommit}\n`);
+  }
   throw new Error(`[admin fixture] blocked network access to ${url}`);
 }) as typeof fetch;
 void realFetch;
@@ -221,6 +294,12 @@ const server = createServer((incoming, outgoing) => {
     void (async () => {
       if (incoming.url === '/__fixture/deploy' && incoming.method === 'POST') {
         deployedCommit = lastCommit || null;
+        outgoing.statusCode = 204;
+        outgoing.end();
+        return;
+      }
+      if (incoming.url === '/__fixture/publish' && incoming.method === 'POST') {
+        publicCommit = lastCommit || null;
         outgoing.statusCode = 204;
         outgoing.end();
         return;

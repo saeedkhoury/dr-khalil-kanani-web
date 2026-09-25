@@ -166,118 +166,379 @@ test('FAQ: add, edit, save, reopen, delete', async ({ page }) => {
   await expect(dialog.getByText('שאלת בדיקה?')).toHaveCount(0);
 });
 
-/* ── Gallery ────────────────────────────────────────────────────────────── */
+/* ── Clinic photos: the photo manager ───────────────────────────────────── */
 
-test('the clinic gallery ends with an Edit tile that manages THAT gallery', async ({ page }) => {
-  await page.goto('/he/about/');
-  const lastTile = page.locator('section[data-gallery-kind="clinic"] ul > li').last();
-  await expect(lastTile).toHaveClass(/visual-gallery-edit/);
-  await lastTile.getByRole('button', { name: 'עריכת הגלריה' }).click();
-  const dialog = dialogOf(page);
-  await expect(dialog.getByRole('heading', { name: 'גלריית תמונות המרפאה' })).toBeVisible();
-  // Existing photographs show real thumbnails.
-  const thumb = dialog.locator('.visual-photo-card img').first();
-  await expect(thumb).toBeVisible();
-  await expect.poll(() => thumb.evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0);
+const managerOf = (page: Page) => page.locator('dialog.pm');
+const tilesOf = (page: Page) => managerOf(page).locator('.pm-grid > .pm-tile:not(.pm-add)');
+const filesOf = (page: Page) => tilesOf(page).evaluateAll((els) => els.map((e) => e.getAttribute('data-file')));
+const pmStatus = (page: Page) => managerOf(page).locator('.pm-status');
+
+async function openManager(page: Page, locale = 'he') {
+  await page.goto(`/${locale}/about/`);
+  await page.locator('.gallery-title-row .visual-edit-control').click();
+  await expect(tilesOf(page).first()).toBeVisible();
+}
+/** Save, and let the fixture's rebuild land; the manager must say so truthfully. */
+async function saveAndUpdate(page: Page, request: import('@playwright/test').APIRequestContext) {
+  await managerOf(page).locator('.pm-save').click();
+  await expect(pmStatus(page)).toContainText('מעדכן את האתר…', { timeout: 30_000 });
+  await expect(pmStatus(page)).not.toContainText('✓');
+  await request.post('/__fixture/deploy');
+  await expect(pmStatus(page)).toContainText('עודכן בתצוגת הבדיקה ✓', { timeout: 30_000 });
+}
+/** Click and hold with the mouse, then carry the photo. */
+async function holdAndDrag(page: Page, from: Locator, to: Locator) {
+  const a = (await from.boundingBox())!;
+  const b = (await to.boundingBox())!;
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height * 0.6);
+  await page.mouse.down();
+  await page.waitForTimeout(250);
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height * 0.6, { steps: 12 });
+  await page.mouse.up();
+}
+
+for (const [locale, side] of [['he', 'left'], ['ar', 'left'], ['en', 'right']] as const) {
+  test(`${locale}: the gallery Edit control ends the title row (${side}), and there is no end tile`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto(`/${locale}/about/`);
+    const row = page.locator('section[data-gallery-kind="clinic"] .gallery-title-row');
+    const edit = (await row.locator('> .visual-edit-control').boundingBox())!;
+    const heading = (await row.locator('h2').boundingBox())!;
+    const box = (await row.boundingBox())!;
+    if (side === 'left') {
+      expect(edit.x + edit.width).toBeLessThan(heading.x);
+      expect(edit.x - box.x).toBeLessThan(2);
+    } else {
+      expect(edit.x).toBeGreaterThan(heading.x);
+      expect(box.x + box.width - (edit.x + edit.width)).toBeLessThan(2);
+    }
+    expect(Math.abs(edit.y - heading.y)).toBeLessThan(80);
+    await expect(page.locator('.visual-gallery-edit')).toHaveCount(0);
+  });
+}
+
+test('the manager is photo-first: real thumbnails, and delete / edit on every photo as full touch targets', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openManager(page);
+  const pm = managerOf(page);
+  await expect(pm).toHaveAttribute('dir', 'rtl');
+  await expect(pm.getByRole('heading', { name: 'תמונות המרפאה' })).toBeVisible();
+  const first = tilesOf(page).first();
+  await expect.poll(() => first.locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBeGreaterThan(0);
+  for (const control of [first.locator('.pm-edit'), first.locator('.pm-delete')]) {
+    const b = (await control.boundingBox())!;
+    expect(b.width).toBeGreaterThanOrEqual(44);
+    expect(b.height).toBeGreaterThanOrEqual(44);
+  }
+  await expect(first.getByRole('button', { name: /^עריכת תמונה: / })).toBeVisible();
+  await expect(first.getByRole('button', { name: /^מחיקת תמונה: / })).toBeVisible();
+  // Desktop: a large sheet, not the whole screen; several photos per row.
+  const sheet = (await pm.boundingBox())!;
+  expect(sheet.width).toBeGreaterThan(1000);
+  expect(sheet.width).toBeLessThan(1440);
+  await expect(pm.locator('.pm-add')).toBeVisible();
 });
 
-test('gallery: multi-upload, describe, publish, replace, unpublish, delete, reorder — and it persists', async ({ page }) => {
-  test.setTimeout(120_000);
-  await page.goto('/he/about/');
-  await page.getByRole('button', { name: 'עריכת הגלריה' }).click();
-  const dialog = dialogOf(page);
-  const cards = dialog.locator('.visual-photo-grid > .visual-item');
-  await expect(cards.first()).toBeVisible();
-  const before = await cards.count();
+test('photos: add several, see what is missing, describe and frame them, publish, save — and it persists', async ({ page, request }) => {
+  test.setTimeout(150_000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openManager(page);
+  const pm = managerOf(page);
+  const tiles = tilesOf(page);
+  const before = await tiles.count();
+  const staged: string[] = [];
+  page.on('request', (r) => { if (r.url().endsWith('/api/photos/stage')) staged.push(r.url()); });
 
-  // Multi-upload two phone-sized photographs, each with its own descriptions.
-  await dialog.locator('#visual-upload-input').setInputFiles([
+  await pm.locator('#pm-add-input').setInputFiles([
     { name: 'room.png', mimeType: 'image/png', buffer: noisePng(1600, 1200, 7) },
     { name: 'desk.png', mimeType: 'image/png', buffer: noisePng(1600, 1200, 9) },
   ]);
-  const pendingCards = dialog.locator('[data-pending]');
-  await expect(pendingCards).toHaveCount(2);
-  for (const [i, words] of [['חדר', 'غرفة', 'Room'], ['דלפק', 'مكتب', 'Desk']].entries()) {
-    const card = pendingCards.nth(i);
-    await card.locator('select').selectOption('treatment-room');
-    for (const [j, lang] of ['he', 'ar', 'en'].entries()) await card.locator(`[data-path$=".${lang}"]`).fill(words[j]);
+  // Shown at once, as local previews.
+  await expect(tiles).toHaveCount(before + 2);
+  await expect(tiles.nth(before)).toContainText('חדשה');
+  await expect(tiles.nth(before + 1).locator('img')).toHaveAttribute('src', /^blob:/);
+  await expect(tiles.nth(before)).toContainText('חסר תיאור');
+
+  // Without descriptions and the confirmation: refused, in words, nothing lost
+  // — and nothing has left the browser.
+  await pm.locator('.pm-save').click();
+  await expect(pmStatus(page)).toContainText('יש לאשר');
+  await page.waitForTimeout(300);
+  expect(staged).toEqual([]);
+  await pm.locator('#pm-confirm').check();
+  await pm.locator('.pm-save').click();
+  await expect(pm.locator('.pm-issues')).toContainText(`תמונה ${before + 1}: חסר תיאור בעברית.`);
+  await expect(tiles).toHaveCount(before + 2);
+
+  // Describe both; publish and frame the first.
+  for (const [k, words] of [['חדר טיפולים', 'غرفة العلاج', 'Treatment room'], ['דלפק הקבלה', 'مكتب الاستقبال', 'Reception desk']].entries()) {
+    await tiles.nth(before + k).locator('.pm-edit').click();
+    const sheet = pm.locator('.pe');
+    await expect(sheet.getByRole('heading', { name: 'עריכת תמונה' })).toBeVisible();
+    for (const [j, lang] of (['he', 'ar', 'en'] as const).entries()) await sheet.locator(`textarea[data-alt="${lang}"]`).fill(words[j]);
+    if (k === 0) {
+      await sheet.getByLabel('מוצגת באתר').check();
+      const crop = sheet.locator('.pe-crop');
+      await crop.focus();
+      for (let i = 0; i < 5; i += 1) await page.keyboard.press('+');
+      await expect(sheet.getByRole('slider', { name: 'רמת הגדלה' })).toHaveValue('1.5');
+      const c = (await crop.boundingBox())!;
+      await page.mouse.move(c.x + c.width / 2, c.y + c.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(c.x + c.width / 2 + 60, c.y + c.height / 2 + 30, { steps: 6 });
+      await page.mouse.up();
+      await expect(sheet.locator('.pe-pos')).not.toContainText('50% · 50%');
+      // The phone-size preview shows the same framing.
+      const [big, small] = await Promise.all([crop.locator('img'), sheet.locator('.pe-small-frame img')].map((l) => l.evaluate((i) => i.getAttribute('style'))));
+      expect(small).toBe(big);
+    }
+    await sheet.getByRole('button', { name: 'סיום' }).click();
+    await expect(sheet).toHaveCount(0);
   }
-  await dialog.locator('#visual-upload-confirm').check();
-  await dialog.getByRole('button', { name: 'העלאת 2 תמונות' }).click();
-  await expect(statusOf(page)).toContainText('2 תמונות הועלו', { timeout: 60_000 });
-  await expect(cards).toHaveCount(before + 2);
-  const addedFile = await cards.filter({ hasText: 'חדר טיפולים' }).first().getAttribute('data-file');
-  const added = dialog.locator(`.visual-photo-card[data-file="${addedFile}"]`);
-  await expect.poll(() => added.locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBe(1600);
+  await expect(tiles.nth(before)).not.toContainText('חסר תיאור');
+  await expect(tiles.nth(before)).not.toContainText('מוסתרת');
+  await expect(tiles.nth(before + 1)).toContainText('מוסתרת');
+  await expect(pm.locator('.pm-confirm')).toBeVisible();
+  await pm.locator('#pm-confirm').check();
+  await saveAndUpdate(page, request);
 
-  // Edit its English description.
-  await added.getByRole('button', { name: /^עריכת התיאור/ }).click();
-  await added.locator('[data-path$=".en"]').fill('Treatment room');
-  await added.getByRole('button', { name: 'שמירת התיאור' }).click();
-  await expect(statusOf(page)).toContainText('התיאור נשמר');
-
-  // Publish, then replace the (over-1-MB) photograph — the flow that failed.
-  const room = added;
-  await room.getByRole('button', { name: /^עריכת התיאור/ }).click();
-  await expect(room.locator('[data-path$=".en"]')).toHaveValue('Treatment room');
-  await room.getByRole('button', { name: /^סגירת עריכת התיאור/ }).click();
-  await room.getByRole('button', { name: /^הצגה באתר/ }).click();
-  await expect(statusOf(page)).toContainText('התמונה סומנה להצגה באתר');
-  await expect(room).toContainText('מוצג באתר');
-  const srcBefore = await room.locator('img').getAttribute('src');
-  const chooser = page.waitForEvent('filechooser');
-  await room.getByRole('button', { name: /^החלפת תמונה/ }).click();
-  // Under the 6 MB send limit, so it goes as-is (a larger one is resized).
-  await (await chooser).setFiles({ name: 'room-2.png', mimeType: 'image/png', buffer: noisePng(1500, 1300, 11) });
-  await expect(statusOf(page)).toContainText('התמונה הוחלפה', { timeout: 60_000 });
-  await expect(room.locator('img')).not.toHaveAttribute('src', srcBefore!);
-  await expect.poll(() => room.locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBe(1500);
-
-  // Unpublish and delete it.
-  await room.getByRole('button', { name: /^הסתרה מהאתר/ }).click();
-  await expect(statusOf(page)).toContainText('התמונה הוסתרה מהאתר');
-  await room.getByRole('button', { name: /^מחיקה/ }).click();
-  await expect(statusOf(page)).toContainText('התמונה נמחקה');
-  await expect(cards).toHaveCount(before + 1);
-
-  // Reorder by dragging, save, and check it after a full reload.
-  const names = async () => cards.evaluateAll((els) => els.map((e) => e.getAttribute('data-file')));
-  const order = await names();
-  const count = await cards.count();
-  await cards.last().scrollIntoViewIfNeeded();
-  await dragOnto(page, cards.last().locator('.visual-grip'), cards.nth(count - 2));
-  await expect(dialog.getByRole('button', { name: 'שמירת הסדר' })).toBeVisible();
-  await dialog.getByRole('button', { name: 'שמירת הסדר' }).click();
-  await expect(statusOf(page)).toContainText('הסדר נשמר');
-  const reordered = await names();
-  expect(reordered).not.toEqual(order);
-  expect([...reordered].sort()).toEqual([...order].sort());
+  const stored = ((await (await request.get('/api/photos')).json()) as { data: { records: Array<{ file: string; status: string; frame?: { x: number; y: number; zoom: number }; alt: { en: string } }> } }).data.records;
+  const room = stored.find((r) => r.alt.en === 'Treatment room')!;
+  expect(room.status).toBe('published');
+  expect(room.frame?.zoom).toBe(1.5);
+  expect(room.frame?.x).not.toBe(50);
+  expect(stored.find((r) => r.alt.en === 'Reception desk')!.status).toBe('unpublished');
 
   await page.reload();
-  await page.getByRole('button', { name: 'עריכת הגלריה' }).click();
-  await expect(cards).toHaveCount(before + 1);
-  expect(await names()).toEqual(reordered);
+  await page.locator('.gallery-title-row .visual-edit-control').click();
+  await expect(tiles).toHaveCount(before + 2);
+  await expect(tiles.nth(before)).not.toContainText('חדשה');
+  // The saved framing is what the tile shows.
+  await expect(tiles.nth(before).locator('img')).toHaveAttribute('style', /scale\(1\.5\)/);
 });
 
-test('a photo over the send limit is resized, never enlarged, and still uploads', async ({ page }) => {
-  await page.goto('/he/about/');
-  await page.getByRole('button', { name: 'עריכת הגלריה' }).click();
-  const dialog = dialogOf(page);
+test('photos: replace one, reorder by click-and-hold, and keyboard Move — persisted after a reload', async ({ page, request }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openManager(page);
+  const pm = managerOf(page);
+  const tiles = tilesOf(page);
+
+  // Replace the last photograph through its pen.
+  const last = tiles.last();
+  const srcBefore = await last.locator('img').getAttribute('src');
+  await last.locator('.pm-edit').click();
+  const sheet = pm.locator('.pe');
+  const chooser = page.waitForEvent('filechooser');
+  await sheet.getByRole('button', { name: 'החלפת התמונה' }).click();
+  await (await chooser).setFiles({ name: 'room-2.png', mimeType: 'image/png', buffer: noisePng(1500, 1300, 11) });
+  await expect(sheet.locator('.pe-crop img')).toHaveAttribute('src', /^blob:/, { timeout: 30_000 });
+  await sheet.getByRole('button', { name: 'סיום' }).click();
+  await expect(last).toContainText('הוחלפה');
+
+  // Reorder with the mouse: click, hold, carry.
+  const order = await filesOf(page);
+  await holdAndDrag(page, tiles.nth(0), tiles.nth(1));
+  const dragged = await filesOf(page);
+  expect(dragged).toEqual([order[1], order[0], ...order.slice(2)]);
+  await expect(pm.locator('.pm-ghost')).toHaveCount(0);
+
+  // Escape while carrying puts it back.
+  const a = (await tiles.nth(0).boundingBox())!;
+  await page.mouse.move(a.x + a.width / 2, a.y + a.height * 0.6);
+  await page.mouse.down();
+  await page.mouse.move(a.x + a.width * 1.6, a.y + a.height * 0.6, { steps: 8 });
+  await expect(pm.locator('.pm-ghost')).toHaveCount(1);
+  await page.keyboard.press('Escape');
+  await page.mouse.up();
+  await expect(pm.locator('.pm-ghost')).toHaveCount(0);
+  expect(await filesOf(page)).toEqual(dragged);
+  await expect(pm).toBeVisible();
+
+  // Keyboard: Move later appears on focus and keeps focus on the moved photo.
+  const moveLater = tiles.nth(0).locator('.pm-keyboard button').last();
+  await moveLater.focus();
+  await expect(moveLater).toBeVisible();
+  await page.keyboard.press('Enter');
+  const keyed = await filesOf(page);
+  expect(keyed).toEqual([dragged[1], dragged[0], ...dragged.slice(2)]);
+  await expect(tiles.nth(1).locator('.pm-keyboard button').last()).toBeFocused();
+
+  await pm.locator('#pm-confirm').check();
+  await saveAndUpdate(page, request);
+  const replaced = tiles.last();
+  await expect(replaced).not.toContainText('הוחלפה');
+  await expect.poll(() => replaced.locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBe(1500);
+  expect(await replaced.locator('img').getAttribute('src')).not.toBe(srcBefore);
+
+  await page.reload();
+  await page.locator('.gallery-title-row .visual-edit-control').click();
+  await expect(tiles.first()).toBeVisible();
+  expect(await filesOf(page)).toEqual(keyed);
+});
+
+test('photos: a published photo is hidden first, never deleted in one step; then deleted', async ({ page, request }) => {
+  test.setTimeout(120_000);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await openManager(page);
+  const pm = managerOf(page);
+  const tiles = tilesOf(page);
+  const count = await tiles.count();
+  const published = tiles.filter({ hasNotText: 'מוסתרת' }).first();
+  const file = (await published.getAttribute('data-file'))!;
+
+  const asked: string[] = [];
+  page.removeAllListeners('dialog');
+  page.on('dialog', (d) => { asked.push(d.message()); void d.accept(); });
+  await published.locator('.pm-delete').click();
+  expect(asked.at(-1)).toContain('מוצגת כרגע באתר');
+  const target = pm.locator(`.pm-tile[data-file="${file}"]`);
+  await expect(target).toContainText('מוסתרת');
+  await expect(tiles).toHaveCount(count);
+  await saveAndUpdate(page, request);
+
+  await target.locator('.pm-delete').click();
+  expect(asked.at(-1)).toContain('למחוק את התמונה?');
+  await expect(tiles).toHaveCount(count - 1);
+  await saveAndUpdate(page, request);
+  await page.reload();
+  await page.locator('.gallery-title-row .visual-edit-control').click();
+  await expect(tiles).toHaveCount(count - 1);
+  await expect(pm.locator(`.pm-tile[data-file="${file}"]`)).toHaveCount(0);
+});
+
+test('a phone photo over the send limit is resized before upload, never enlarged', async ({ page, request }) => {
+  test.setTimeout(90_000);
+  await openManager(page);
+  const pm = managerOf(page);
   // ~6.5 MB of incompressible pixels at 1800px: over the limit, under 2048.
-  await dialog.locator('#visual-upload-input').setInputFiles({ name: 'big.png', mimeType: 'image/png', buffer: noisePng(1800, 1200, 21) });
-  await expect(dialog.locator('[data-pending] .visual-hint').first()).toContainText('1600×1067');
-  await dialog.getByRole('button', { name: 'הסרה מהרשימה' }).click();
-  await expect(dialog.locator('[data-pending]')).toHaveCount(0);
+  await pm.locator('#pm-add-input').setInputFiles({ name: 'big.png', mimeType: 'image/png', buffer: noisePng(1800, 1200, 21) });
+  const added = tilesOf(page).last();
+  await expect(added).toContainText('חדשה');
+  await added.locator('.pm-edit').click();
+  const sheet = pm.locator('.pe');
+  for (const [lang, text] of [['he', 'מסדרון'], ['ar', 'ممر'], ['en', 'Hallway']] as const) await sheet.locator(`textarea[data-alt="${lang}"]`).fill(text);
+  await sheet.getByRole('button', { name: 'סיום' }).click();
+  await pm.locator('#pm-confirm').check();
+  const staged = page.waitForRequest((r) => r.url().endsWith('/api/photos/stage'));
+  await pm.locator('.pm-save').click();
+  const body = JSON.parse((await staged).postData() ?? '{}') as { contentBase64: string; confirmed: boolean };
+  expect(body.confirmed).toBe(true);
+  expect(Buffer.from(body.contentBase64, 'base64').length).toBeLessThanOrEqual(6 * 1024 * 1024);
+  await expect(pmStatus(page)).toContainText('מעדכן את האתר…', { timeout: 30_000 });
+  await request.post('/__fixture/deploy');
+  await expect(pmStatus(page)).toContainText('עודכן בתצוגת הבדיקה ✓', { timeout: 30_000 });
+  // Resized to 1600px on the long side — smaller, never enlarged.
+  await expect.poll(() => tilesOf(page).last().locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBe(1600);
 });
 
-test('an image that is too small is refused before upload, with the reason', async ({ page }) => {
-  await page.goto('/he/about/');
-  await page.getByRole('button', { name: 'עריכת הגלריה' }).click();
-  const dialog = dialogOf(page);
-  await dialog.locator('#visual-upload-input').setInputFiles({ name: 'tiny.png', mimeType: 'image/png', buffer: noisePng(400, 300) });
-  await expect(dialog.locator('[data-pending] .visual-inline-error')).toContainText('קטנה מדי');
-  await expect(dialog.getByRole('button', { name: 'העלאת 0 תמונות' })).toBeDisabled();
+test('an image that is too small is refused on its tile, with the reason', async ({ page }) => {
+  await openManager(page);
+  const pm = managerOf(page);
+  await pm.locator('#pm-add-input').setInputFiles({ name: 'tiny.png', mimeType: 'image/png', buffer: noisePng(400, 300) });
+  await expect(tilesOf(page).last()).toContainText('קטנה מדי');
+  await expect(pm.locator('.pm-save')).toBeDisabled();
 });
+
+/* ── The photo manager on a phone: long-press, drag, and scrolling ─────── */
+
+test.describe('on a 390px touch phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+  test('full screen, reachable Save, RTL, no sideways scrolling', async ({ page }) => {
+    await openManager(page);
+    const pm = managerOf(page);
+    const box = (await pm.boundingBox())!;
+    expect(box.x).toBe(0);
+    expect(box.width).toBe(390);
+    expect(box.height).toBe(844);
+    const save = (await pm.locator('.pm-save').boundingBox())!;
+    expect(save.y + save.height).toBeLessThanOrEqual(844);
+    expect(save.height).toBeGreaterThanOrEqual(44);
+    expect(await pm.evaluate((d) => d.scrollWidth <= d.clientWidth + 1)).toBe(true);
+    expect(await pm.locator('.pm-body').evaluate((b) => b.scrollWidth <= b.clientWidth + 1)).toBe(true);
+    const corner = (await tilesOf(page).first().locator('.pm-delete').boundingBox())!;
+    expect(corner.width).toBeGreaterThanOrEqual(44);
+    // Two photos per row, and the delete X sits on its own photo.
+    const t0 = (await tilesOf(page).nth(0).boundingBox())!;
+    const t1 = (await tilesOf(page).nth(1).boundingBox())!;
+    expect(Math.abs(t0.y - t1.y)).toBeLessThan(2);
+    expect(t1.x).toBeLessThan(t0.x); // RTL: the second photo is to the left
+    expect(corner.x).toBeGreaterThanOrEqual(t0.x);
+    expect(corner.x + corner.width).toBeLessThanOrEqual(t0.x + t0.width);
+  });
+
+  test('long-press lifts a photo and dragging rearranges; a quick swipe only scrolls', async ({ page }) => {
+    await openManager(page);
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', x = 0, y = 0) =>
+      cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
+    const tiles = tilesOf(page);
+    const order = await filesOf(page);
+    const scrollBefore = await page.evaluate(() => window.scrollY);
+
+    // A quick swipe: no long press, so no drag.
+    const a = (await tiles.nth(0).boundingBox())!;
+    await touch('touchStart', a.x + a.width / 2, a.y + a.height * 0.6);
+    for (let i = 1; i <= 6; i += 1) await touch('touchMove', a.x + a.width / 2, a.y + a.height * 0.6 - i * 12);
+    await touch('touchEnd');
+    await expect(managerOf(page).locator('.pm-ghost')).toHaveCount(0);
+    expect(await filesOf(page)).toEqual(order);
+
+    // Long-press, then carry it onto its neighbour.
+    const from = (await tiles.nth(0).boundingBox())!;
+    const to = (await tiles.nth(1).boundingBox())!;
+    const [x0, y0] = [from.x + from.width / 2, from.y + from.height * 0.6];
+    await touch('touchStart', x0, y0);
+    await page.waitForTimeout(650);
+    await expect(managerOf(page).locator('.pm-ghost')).toHaveCount(1);
+    const [x1, y1] = [to.x + to.width / 2, to.y + to.height * 0.6];
+    for (let i = 1; i <= 10; i += 1) await touch('touchMove', x0 + ((x1 - x0) * i) / 10, y0 + ((y1 - y0) * i) / 10);
+    await touch('touchEnd');
+    await expect(managerOf(page).locator('.pm-ghost')).toHaveCount(0);
+    expect(await filesOf(page)).toEqual([order[1], order[0], ...order.slice(2)]);
+    // The page underneath never moved.
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
+    await expect(managerOf(page).locator('.pm-summary')).toContainText('1 שינויים שלא נשמרו');
+  });
+
+  test('the photo editor fills the phone and frames by touch', async ({ page }) => {
+    await openManager(page);
+    await tilesOf(page).first().locator('.pm-edit').click();
+    const sheet = managerOf(page).locator('.pe');
+    const box = (await sheet.boundingBox())!;
+    expect(box.width).toBe(390);
+    const done = (await sheet.getByRole('button', { name: 'סיום' }).boundingBox())!;
+    expect(done.y).toBeGreaterThanOrEqual(0);
+    expect(done.height).toBeGreaterThanOrEqual(44);
+    expect(await sheet.locator('.pe-body').evaluate((b) => b.scrollWidth <= b.clientWidth + 1)).toBe(true);
+    await sheet.getByRole('button', { name: 'ביטול' }).click();
+    await expect(sheet).toHaveCount(0);
+  });
+});
+
+for (const [locale, dir, words] of [
+  ['ar', 'rtl', { title: 'صور العيادة', save: 'حفظ', add: 'إضافة صورة', edit: 'تعديل الصورة' }],
+  ['en', 'ltr', { title: 'Clinic photos', save: 'Save', add: 'Add photo', edit: 'Edit photo' }],
+] as const) {
+  test(`the photo manager is in ${locale}, ${dir}`, async ({ page }) => {
+    await openManager(page, locale);
+    const pm = managerOf(page);
+    await expect(pm).toHaveAttribute('dir', dir);
+    await expect(pm).toHaveAttribute('lang', locale);
+    await expect(pm.getByRole('heading', { name: words.title })).toBeVisible();
+    await expect(pm.locator('.pm-save')).toHaveText(words.save);
+    await expect(pm.locator('.pm-add')).toContainText(words.add);
+    await tilesOf(page).first().locator('.pm-edit').click();
+    await expect(pm.locator('.pe').getByRole('heading', { name: words.edit })).toBeVisible();
+    const text = await pm.evaluate((d) => {
+      const copy = d.cloneNode(true) as HTMLElement;
+      copy.querySelectorAll('textarea, input, .pe-form fieldset label').forEach((n) => n.remove());
+      return copy.textContent ?? '';
+    });
+    expect(text).not.toMatch(/[֐-׿]{2,}/);
+  });
+}
 
 /* ── Hours, contact, text ───────────────────────────────────────────────── */
 
@@ -323,9 +584,9 @@ test('contact: a factual change needs the confirmation, and says so', async ({ p
 
 /* ── Preview and phone ──────────────────────────────────────────────────── */
 
-test('preview hides the gallery tile and card pencils, and brings them back', async ({ page }) => {
+test('preview hides the gallery Edit control and card pencils, and brings them back', async ({ page }) => {
   await page.goto('/he/about/');
-  const tile = page.locator('.visual-gallery-edit');
+  const tile = page.locator('.gallery-title-row .visual-edit-control');
   await expect(tile).toBeVisible();
   await page.locator('.visual-editor-bar').getByRole('button', { name: 'תצוגת מטופל' }).click();
   await expect(tile).toBeHidden();

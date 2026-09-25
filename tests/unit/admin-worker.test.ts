@@ -328,7 +328,7 @@ describe('/api/session contract', () => {
       '/api/session', '/api/hours',
       '/api/content/services', '/api/content/faq', '/api/content/doctor', '/api/content/copy', '/api/content/contact',
       '/api/photos',
-      '/api/photos/publish', '/api/photos/unpublish', '/api/photo', '/api/photos/order', '/api/photos/replace', '/api/photos/describe', '/api/photos/delete',
+      '/api/photos/publish', '/api/photos/unpublish', '/api/photo', '/api/photos/order', '/api/photos/replace', '/api/photos/describe', '/api/photos/stage', '/api/photos/save', '/api/photos/delete',
       '/api/status', '/api/status/latest',
     ]);
   });

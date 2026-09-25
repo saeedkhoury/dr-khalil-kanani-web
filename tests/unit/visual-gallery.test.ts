@@ -286,18 +286,36 @@ describe('the drag affordance', () => {
   test('every sortable list keeps its keyboard alternative', () => {
     // Dragging is unavailable to anyone on a keyboard or a screen reader, so
     // the buttons are the same feature offered a second way — not a fallback.
-    const ups = VISUAL_CLIENT.match(/button\(t\('up'\)/g) ?? [];
-    const downs = VISUAL_CLIENT.match(/button\(t\('down'\)/g) ?? [];
-    assert.ok(ups.length >= 2, `expected Up on several lists, found ${ups.length}`);
+    const ups = VISUAL_CLIENT.match(/button\(t\('(up|pmMoveEarlier)'\)/g) ?? [];
+    const downs = VISUAL_CLIENT.match(/button\(t\('(down|pmMoveLater)'\)/g) ?? [];
+    assert.ok(ups.length >= 3, `expected Up on several lists, found ${ups.length}`);
     assert.equal(ups.length, downs.length, 'every Up needs a Down');
     // The grip itself is hidden from assistive tech; the buttons carry the names.
     assert.match(VISUAL_CLIENT, /handle\.setAttribute\('aria-hidden','true'\)/);
   });
 
-  test('the three orderable collections are all wired to it', () => {
+  test('the orderable collections are all wired to a pointer drag', () => {
     const wired = VISUAL_CLIENT.match(/sortable\(/g) ?? [];
-    // definition + faq + services + photos
-    assert.ok(wired.length >= 4, `sortable used ${wired.length} times`);
+    // definition + faq + services; the photo manager drags the photo itself.
+    assert.ok(wired.length >= 3, `sortable used ${wired.length} times`);
+    assert.match(VISUAL_CLIENT, /attachDrag\(el,p\)/);
+  });
+
+  test('photos are reordered by holding the photo itself, and a swipe still scrolls', () => {
+    const code = VISUAL_CLIENT.slice(VISUAL_CLIENT.indexOf('/* ── Long-press'), VISUAL_CLIENT.indexOf('/* ── The single-photo editor'));
+    assert.ok(code.length > 1000, 'photo drag code not found');
+    // Touch waits for a long press; moving first cancels it (that was a scroll).
+    assert.match(code, /LONG_PRESS_MS/);
+    assert.match(code, /drag\.touch&&dist>MOVE_CANCEL_PX\)\{ endDrag\(\); return; \}/);
+    // Followed on the window: the tile moves in the DOM and loses capture.
+    assert.match(code, /window\.addEventListener\('pointerup',onDragEnd,true\)/);
+    // The page is held still only while a photo is actually being carried.
+    assert.match(code, /addEventListener\('touchmove',\(e\)=>\{ if\(drag&&drag\.active\) e\.preventDefault\(\); \},\{passive:false\}\)/);
+    // Escape and a cancelled pointer put everything back.
+    assert.match(code, /finishDrag\(true\)/);
+    assert.match(code, /pointercancel/);
+    assert.doesNotMatch(code, /\bdragstart\b|\bdragover\b/);
+    assert.match(VISUAL_STYLES, /\.pm-tile\{[^}]*touch-action:pan-y/);
   });
 
   test('touch scrolling is not hijacked outside the grip', () => {

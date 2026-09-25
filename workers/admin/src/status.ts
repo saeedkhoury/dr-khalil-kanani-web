@@ -201,3 +201,29 @@ export async function previewForSha(
   if (runs.some((run) => run.conclusion === 'success' || run.conclusion === 'cancelled')) return 'building';
   return 'failed';
 }
+
+/** The official site's own record of the commit it is serving. Fixed URL. */
+const PUBLIC_BUILD = 'https://www.drkhalilkanani.com/build.txt';
+
+/**
+ * Is the OFFICIAL website serving a build that contains this commit?
+ *
+ * The public deploy writes the commit it deployed into build.txt. "Live" is
+ * claimed only when that commit is this one or a later one on the branch
+ * (which contains it) — what visitors actually receive, not a workflow result.
+ */
+export async function liveOnPublicSite(env: Parameters<typeof query>[0], sha: string): Promise<boolean | null> {
+  let served: string;
+  try {
+    const response = await fetch(PUBLIC_BUILD, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
+    if (!response.ok) return null;
+    served = (await response.text()).trim();
+  } catch {
+    return null;
+  }
+  if (!/^[0-9a-f]{40}$/.test(served) || !/^[0-9a-f]{40}$/.test(sha)) return null;
+  if (served === sha) return true;
+  const compared = await query<{ status?: string }>(env, { kind: 'compare', base: sha, head: served });
+  if (!compared.ok) return null;
+  return compared.data?.status === 'ahead' || compared.data?.status === 'identical';
+}

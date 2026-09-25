@@ -72,6 +72,14 @@ export interface MediaAsset<C extends MediaCategory = MediaCategory> {
   height: number;
   /** Given more weight in the editorial grid. Aim for one or two. */
   feature?: boolean;
+  /**
+   * How the photograph sits inside its gallery frame, chosen by the doctor in
+   * Edit Mode. The file itself is never cropped: x and y are the focal point in
+   * percent of the image (0–100), zoom is a scale around that point (1–3). The
+   * renderer turns these into object-position and a transform, so the frame
+   * shows the same composition at every screen width, and nothing is stretched.
+   */
+  frame?: PhotoFrame;
   /** Original clinic post, visually matched before publication. */
   sourcePostUrl?: string;
   /**
@@ -80,6 +88,12 @@ export interface MediaAsset<C extends MediaCategory = MediaCategory> {
    * post, an owner-supplied file cannot. Neither establishes patient consent.
    */
   provenance?: 'instagram-post' | 'owner-supplied';
+}
+
+export interface PhotoFrame {
+  x: number;
+  y: number;
+  zoom: number;
 }
 
 export type ClinicPhotograph = MediaAsset<ClinicPhotographyCategory>;
