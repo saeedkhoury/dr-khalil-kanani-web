@@ -192,12 +192,21 @@ overwritten within seconds by a status poller. All fixed and retested live —
 see `tests/e2e/cms-journeys.spec.ts`, whose fixture GitHub behaves like the
 real one. CMS commits say `Changed by: CMS admin`, never an address.
 
-**Still open:** (1) Edit Mode pages are a static build, so a save shows in the
-editor at once but on the page only after the admin is rebuilt.
-`.github/workflows/admin-preview.yml` does that, but needs the
-`CLOUDFLARE_API_TOKEN` secret and the `ADMIN_DEPLOY_BRANCH` /
-`CLOUDFLARE_ACCOUNT_ID` repository variables — an owner action. (2) Release to
-`main` and pointing `CONTENT_BRANCH` at it await owner approval.
+**Automatic refresh (2026-09-25).** Cloudflare Workers Builds rebuilds the
+admin Worker on every push to `codex/visual-cms-integration` (one trigger, that
+branch only, preview builds off): `npm run build:admin:ci` runs the data and
+claims gates, builds, and writes the commit into `build.txt`; the Worker
+reports `preview: ready` only when the SERVED build contains the saved commit,
+and the editor then reloads itself. The build token was created by Cloudflare's
+own connect flow and narrowed to Workers Scripts (edit), Workers Routes (edit,
+drkhalilkanani.com only), Account Settings, Memberships and User Details (read);
+no Cloudflare credential exists in GitHub. The editor interface is localised
+(HE/AR RTL, EN LTR). `.github/workflows/admin-preview.yml` is an unused
+alternative, off unless `ADMIN_PREVIEW=on`.
+
+**Still open:** release to `main` awaits owner approval. At release, the
+Workers Builds trigger's branch and the Worker's `CONTENT_BRANCH` move to
+`main` together, and the integration branch is retired.
 
 ## What exists
 
