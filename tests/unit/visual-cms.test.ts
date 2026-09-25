@@ -24,11 +24,14 @@ test('migration has 8 stable service URLs and three complete locales', async () 
   assert.equal(parseManaged(contactFactsSchema, contact, 'contact').landline, '04-884-8891');
 });
 
-test('Worker write targets are fixed and cannot address source, treatment work or workflows', () => {
+test('Worker write targets are fixed and cannot address source, the developer manifest or workflows', () => {
   assert.equal(pathFor({ kind: 'services' }), 'src/data/services.json');
   assert.equal(pathFor({ kind: 'contactFacts' }), 'src/data/contact-facts.json');
   assert.equal(pathFor({ kind: 'image', file: '../.github/workflows/deploy.yml' }), null);
-  assert.equal(pathFor({ kind: 'treatmentWork' } as never), null);
+  // The doctor's work is one FIXED file (ADR 0010); media.ts stays unaddressable.
+  assert.equal(pathFor({ kind: 'treatmentWork' }), 'src/data/treatment-work.json');
+  assert.equal(pathFor({ kind: 'media' } as never), null);
+  assert.equal(pathFor({ kind: 'image', file: 'media.ts' }), null);
 });
 
 test('visual editor never evaluates or injects owner text as HTML', () => {

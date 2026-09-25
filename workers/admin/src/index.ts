@@ -14,11 +14,14 @@ import { authenticate, type AccessIdentity } from './auth.ts';
 import { fail, ok, readJson, sameOrigin, type Env } from './http.ts';
 import { parseHours, serialiseHours, validateHoursPayload } from './hours.ts';
 import {
-  addRecord, describeRecord, parseRecords, planPhotoSave, type CheckedImage, type DesiredPhoto, removeRecord, reorderRecords, serialiseRecords, setStatus,
+  addRecord, describeRecord, parseRecords, type CheckedImage, type DesiredPhoto, removeRecord, reorderRecords, serialiseRecords, setStatus,
   validateReplacement, validateUpload, MAX_IMAGE_BYTES, MIN_LONG_EDGE, nextFilename,
 } from './media.ts';
 import { inspectImage } from './image.ts';
 import { commitPhotoChanges, createImageBlob, readBlobBytes } from './github.ts';
+import { GALLERY_RULES, parseGallery, planGallerySave, type GalleryId } from './galleries.ts';
+import { assertTreatmentWorkShape } from '../../../src/lib/data-schema.ts';
+import type { ClinicPhotographRecord, TreatmentWorkRecord } from '../../../src/data/media-types.ts';
 import { deleteFile, listImageFiles, listImageVersions, pathFor, readBlobSha, readBytes, readFile, writeFile, type CommitVerb } from './github.ts';
 import { latestStatus, liveOnPublicSite, previewForSha, statusForSha } from './status.ts';
 import { renderPanel } from './ui/page.ts';
@@ -138,8 +141,35 @@ async function loadRecords(env: Env) {
   return { ok: true as const, records, sha: file.data.sha };
 }
 
-async function getPhotos({ env }: Context): Promise<Response> {
-  const loaded = await loadRecords(env);
+/** Each gallery's fixed manifest, and how to read it. Never a path from the browser. */
+const GALLERY_FILES = {
+  clinic: { kind: 'photography', parse: parseRecords },
+  work: {
+    kind: 'treatmentWork',
+    parse: (text: string): TreatmentWorkRecord[] | null => {
+      try { return assertTreatmentWorkShape(JSON.parse(text), 'repository treatment-work.json'); } catch { return null; }
+    },
+  },
+} as const;
+
+async function loadGallery(env: Env, gallery: GalleryId) {
+  const target = GALLERY_FILES[gallery];
+  const file = await readFile(env, { kind: target.kind });
+  if (!file.ok) return { ok: false as const, response: upstream(file.reason) };
+  const records = target.parse(file.data.text);
+  if (records === null) return { ok: false as const, response: fail('UPSTREAM_UNAVAILABLE') };
+  return { ok: true as const, records: records as Array<ClinicPhotographRecord | TreatmentWorkRecord>, sha: file.data.sha };
+}
+
+/** `?gallery=` / `gallery`: absent means clinic (the original API); anything else must be exact. */
+function galleryOf(value: unknown): GalleryId | null {
+  return value === undefined || value === null ? 'clinic' : parseGallery(value);
+}
+
+async function getPhotos({ request, env }: Context): Promise<Response> {
+  const gallery = galleryOf(new URL(request.url).searchParams.get('gallery'));
+  if (gallery === null) return fail('BAD_REQUEST');
+  const loaded = await loadGallery(env, gallery);
   if (!loaded.ok) return loaded.response;
   // Versions are a convenience for thumbnails; a failed listing must not
   // stop the doctor managing his photographs.
@@ -397,12 +427,14 @@ async function stagePhoto({ request, env }: Context): Promise<Response> {
  */
 async function savePhotos({ request, env }: Context): Promise<Response> {
   if (!sameOrigin(request, env)) return fail('FORBIDDEN');
-  const body = await readJson<{ sha?: unknown; photos?: unknown; confirmed?: unknown }>(request, 256 * 1024);
+  const body = await readJson<{ gallery?: unknown; sha?: unknown; photos?: unknown; confirmed?: unknown }>(request, 256 * 1024);
   if (!body.ok) return fail(body.code);
+  const gallery = galleryOf(body.body?.gallery);
+  if (gallery === null) return fail('INVALID', ['gallery_invalid']);
   const photos = body.body?.photos;
   if (!Array.isArray(photos) || photos.length > 200) return fail('INVALID', ['photos_invalid']);
 
-  const loaded = await loadRecords(env);
+  const loaded = await loadGallery(env, gallery);
   if (!loaded.ok) return loaded.response;
   // The editor worked from this manifest; if it changed since, nothing is
   // merged over someone else's change.
@@ -414,7 +446,7 @@ async function savePhotos({ request, env }: Context): Promise<Response> {
   const desired: DesiredPhoto[] = [];
   for (const [i, raw] of photos.entries()) {
     if (raw === null || typeof raw !== 'object') return fail('INVALID', [`photo_${i}:invalid`]);
-    const p = raw as { file?: unknown; category?: unknown; image?: { blob?: unknown }; status?: unknown; alt?: unknown; frame?: unknown };
+    const p = raw as { file?: unknown; category?: unknown; image?: { blob?: unknown }; status?: unknown; alt?: unknown; caption?: unknown; frame?: unknown };
     let image: CheckedImage | undefined;
     if (p.image !== undefined) {
       const blob = p.image?.blob;
@@ -432,19 +464,27 @@ async function savePhotos({ request, env }: Context): Promise<Response> {
       image,
       status: p.status,
       alt: (p.alt && typeof p.alt === 'object' ? p.alt : {}) as DesiredPhoto['alt'],
-      frame: p.frame,
+      ...(p.caption === undefined ? {} : { caption: p.caption as DesiredPhoto['caption'] }),
+      ...(p.frame === undefined ? {} : { frame: p.frame }),
     });
   }
 
   const inventory = await listImageFiles(env);
   if (!inventory.ok) return upstream(inventory.reason);
-  const plan = planPhotoSave(loaded.records, desired, inventory.data, body.body?.confirmed);
+  // Files the OTHER gallery uses are never deleted from this one.
+  const other = await loadGallery(env, gallery === 'clinic' ? 'work' : 'clinic');
+  if (!other.ok) return other.response;
+  const protectedFiles = new Set(other.records.map((r) => r.file));
+  const plan = gallery === 'clinic'
+    ? planGallerySave(GALLERY_RULES.clinic, loaded.records as ClinicPhotographRecord[], desired, inventory.data, body.body?.confirmed, protectedFiles)
+    : planGallerySave(GALLERY_RULES.work, loaded.records as TreatmentWorkRecord[], desired, inventory.data, body.body?.confirmed, protectedFiles);
   if (!plan.ok) return fail('INVALID', plan.issues);
   if (plan.unchanged) return ok({ sha: null, unchanged: true });
 
   const committed = await commitPhotoChanges(env, {
+    manifestKind: GALLERY_FILES[gallery].kind,
     expectedManifestSha: loaded.sha,
-    manifest: serialiseRecords(plan.records),
+    manifest: `${JSON.stringify(plan.records, null, 2)}\n`,
     puts: plan.puts,
     deletes: plan.deletes,
     patientContentConfirmed: plan.addsImages,

@@ -13,6 +13,7 @@ import { readFileSync } from 'node:fs';
 
 import { frameProblems, assertClinicPhotographyShape } from '../../src/lib/data-schema.ts';
 import { planPhotoSave, type DesiredPhoto } from '../../workers/admin/src/media.ts';
+import { GALLERY_RULES, planGallerySave } from '../../workers/admin/src/galleries.ts';
 import { inspectImage } from '../../workers/admin/src/image.ts';
 import type { ClinicPhotographRecord } from '../../src/data/media-types.ts';
 import { adminEnv, adminRequest, asContents, callAdmin, CONTENT_BRANCH, type Reply } from '../helpers/admin-api.ts';
@@ -129,6 +130,8 @@ describe('planning a gallery save', () => {
 const manifest = (records: unknown[]) => asContents(`${JSON.stringify(records, null, 2)}\n`, 'manifest-sha');
 const blobReply = (bytes: Uint8Array): Reply => ({ status: 200, body: { content: Buffer.from(bytes).toString('base64'), encoding: 'base64', size: bytes.length } });
 const directory = (names: string[]): Reply => ({ status: 200, body: names.map((name) => ({ name, sha: 'f'.repeat(40), type: 'file' })) });
+/** The OTHER gallery's manifest, read so its files are never deleted. */
+const otherGallery = (records: unknown[] = []): Reply => asContents(`${JSON.stringify(records, null, 2)}\n`, 'other-sha');
 const commitChain: Reply[] = [
   { status: 200, body: { object: { sha: HEAD } } },
   { status: 200, body: { sha: 'manifest-sha' } },
@@ -193,7 +196,7 @@ describe('POST /api/photos/save', () => {
       { category: 'reception', image: { blob: BLOB_A }, status: 'unpublished', alt: ALT },
     ];
     const { response, calls } = await save({ sha: 'manifest-sha', photos, confirmed: true }, [
-      manifest(CURRENT), blobReply(JPEG), directory(['reception-01.jpg', 'reception-02.jpg', 'exterior-01.jpg']), ...commitChain,
+      manifest(CURRENT), blobReply(JPEG), directory(['reception-01.jpg', 'reception-02.jpg', 'exterior-01.jpg']), otherGallery(), ...commitChain,
     ]);
     assert.equal(response.status, 200, await response.clone().text());
     assert.deepEqual(((await response.json()) as { data: unknown }).data, { sha: NEW_COMMIT });
@@ -230,7 +233,7 @@ describe('POST /api/photos/save', () => {
     const photos = CURRENT.map((r) => ({ file: r.file, status: r.status, alt: r.alt })).reverse();
     photos[0].status = 'published';
     const { response, calls } = await save({ sha: 'manifest-sha', photos }, [
-      manifest(CURRENT), directory([]), ...commitChain.slice(0, 5), { status: 422, body: { message: 'Update is not a fast forward' } },
+      manifest(CURRENT), directory([]), otherGallery(), ...commitChain.slice(0, 5), { status: 422, body: { message: 'Update is not a fast forward' } },
     ]);
     assert.equal(response.status, 409);
     assert.equal(calls.at(-1)?.method, 'PATCH');
@@ -239,7 +242,7 @@ describe('POST /api/photos/save', () => {
   test('the manifest changed at the head commit: conflict before any tree is built', async () => {
     const photos = CURRENT.map((r) => ({ file: r.file, status: r.status, alt: r.alt })).reverse();
     const { response, calls } = await save({ sha: 'manifest-sha', photos }, [
-      manifest(CURRENT), directory([]), commitChain[0], { status: 200, body: { sha: 'someone-elses' } },
+      manifest(CURRENT), directory([]), otherGallery(), commitChain[0], { status: 200, body: { sha: 'someone-elses' } },
     ]);
     assert.equal(response.status, 409);
     assert.ok(calls.every((c) => c.method === 'GET'));
@@ -264,7 +267,7 @@ describe('POST /api/photos/save', () => {
 
   test('deleting a published photograph is refused, with the reason', async () => {
     const photos = CURRENT.slice(1).map((r) => ({ file: r.file, status: r.status, alt: r.alt }));
-    const { response, calls } = await save({ sha: 'manifest-sha', photos }, [manifest(CURRENT), directory([])]);
+    const { response, calls } = await save({ sha: 'manifest-sha', photos }, [manifest(CURRENT), directory([]), otherGallery()]);
     assert.equal(response.status, 422);
     assert.deepEqual(((await response.json()) as { error: { issues: string[] } }).error.issues, ['delete:reception-01.jpg:published_photo_delete']);
     assert.ok(calls.every((c) => c.method === 'GET'));
@@ -272,7 +275,7 @@ describe('POST /api/photos/save', () => {
 
   test('deleting a hidden photograph removes its file in the same commit', async () => {
     const photos = CURRENT.slice(0, 2).map((r) => ({ file: r.file, status: r.status, alt: r.alt }));
-    const { response, calls } = await save({ sha: 'manifest-sha', photos }, [manifest(CURRENT), directory([]), ...commitChain]);
+    const { response, calls } = await save({ sha: 'manifest-sha', photos }, [manifest(CURRENT), directory([]), otherGallery(), ...commitChain]);
     assert.equal(response.status, 200);
     const entries = calls.find((c) => c.url === `${GIT}/trees`)!.body?.tree as Array<Record<string, unknown>>;
     assert.deepEqual(entries[1], { path: 'src/assets/images/exterior-01.jpg', mode: '100644', type: 'blob', sha: null });
@@ -280,7 +283,7 @@ describe('POST /api/photos/save', () => {
 
   test('an unchanged gallery commits nothing', async () => {
     const photos = CURRENT.map((r) => ({ file: r.file, status: r.status, alt: r.alt }));
-    const { response, calls } = await save({ sha: 'manifest-sha', photos }, [manifest(CURRENT), directory([])]);
+    const { response, calls } = await save({ sha: 'manifest-sha', photos }, [manifest(CURRENT), directory([]), otherGallery()]);
     assert.deepEqual(((await response.json()) as { data: unknown }).data, { sha: null, unchanged: true });
     assert.ok(calls.every((c) => c.method === 'GET'));
   });
@@ -299,5 +302,116 @@ describe('POST /api/photos/save', () => {
     );
     assert.equal(response.status, 403);
     assert.deepEqual(calls, []);
+  });
+});
+
+/* ── The doctor's work: the same save, its own fixed file and rules ─────── */
+
+describe("the doctor's work gallery (ADR 0010)", () => {
+  const WALT = { he: 'פרסום של המרפאה, מסומן לפני ואחרי', ar: 'منشور للعيادة موسوم بقبل وبعد', en: 'Clinic post labelled before and after' };
+  const workRecord = (n: number, status: 'published' | 'unpublished' = 'published') => ({
+    id: `work-case-0${n}`, file: `work-case-0${n}.jpg`, category: 'treatment-work', width: 1254, height: 1254,
+    status, provenance: 'owner-supplied', alt: { ...WALT },
+  });
+  const WORK = [workRecord(1), workRecord(2), workRecord(3, 'unpublished')];
+  const keepWork = (r: ReturnType<typeof workRecord>, extra: Record<string, unknown> = {}) => ({ file: r.file, status: r.status, alt: r.alt, ...extra });
+  const workManifest = (records: unknown[]) => asContents(`${JSON.stringify(records, null, 2)}\n`, 'work-sha');
+  // The commit chain, with the manifest at the head commit being the WORK file.
+  const workChain: Reply[] = [commitChain[0], { status: 200, body: { sha: 'work-sha' } }, ...commitChain.slice(2)];
+  const saveWork = async (body: Record<string, unknown>, replies: Reply[]) =>
+    callAdmin(await adminRequest('/api/photos/save', { method: 'POST', body: { gallery: 'work', sha: 'work-sha', ...body } }), replies);
+
+  test('GET ?gallery=work reads exactly the doctor\'s-work file', async () => {
+    const { response, calls } = await callAdmin(await adminRequest('/api/photos?gallery=work'), [workManifest(WORK), directory([])]);
+    assert.equal(response.status, 200);
+    assert.match(calls[0].url, /\/contents\/src\/data\/treatment-work\.json\?ref=/);
+    const data = ((await response.json()) as { data: { records: Array<{ file: string }> } }).data;
+    assert.deepEqual(data.records.map((r) => r.file), WORK.map((r) => r.file));
+  });
+
+  test('any other gallery name — or a path — is refused before GitHub', async () => {
+    for (const gallery of ['media', 'src/data/media.ts', 'Work', '../clinic']) {
+      const got = await callAdmin(await adminRequest(`/api/photos?gallery=${encodeURIComponent(gallery)}`), []);
+      assert.equal(got.response.status, 400, gallery);
+      assert.deepEqual(got.calls, []);
+      const saved = await saveWork({ gallery, photos: [] }, []);
+      assert.equal(saved.response.status, 422, gallery);
+      assert.deepEqual(saved.calls, []);
+    }
+  });
+
+  test('a reorder, a title and a new image are ONE commit to the work file, with the owner approval line', async () => {
+    const photos = [
+      keepWork(WORK[1], { caption: { he: 'ציפויים', ar: 'قشور', en: 'Veneers' } }),
+      keepWork(WORK[0]),
+      keepWork(WORK[2]),
+      { image: { blob: BLOB_A }, status: 'unpublished', alt: WALT },
+    ];
+    const { response, calls } = await saveWork({ photos, confirmed: true }, [
+      workManifest(WORK), blobReply(JPEG), directory(WORK.map((r) => r.file)), otherGallery(), ...workChain,
+    ]);
+    assert.equal(response.status, 200, await response.clone().text());
+    const entries = calls.find((c) => c.url === `${GIT}/trees`)!.body?.tree as Array<Record<string, unknown>>;
+    assert.deepEqual(entries.map((e) => e.path), ['src/data/treatment-work.json', 'src/assets/images/work-01.jpg']);
+    const written = JSON.parse(String(entries[0].content)) as Array<Record<string, unknown>>;
+    assert.deepEqual(written.map((r) => r.file), ['work-case-02.jpg', 'work-case-01.jpg', 'work-case-03.jpg', 'work-01.jpg']);
+    assert.deepEqual(written[0].caption, { he: 'ציפויים', ar: 'قشور', en: 'Veneers' });
+    assert.deepEqual(written[3], {
+      id: 'work-01', file: 'work-01.jpg', category: 'treatment-work', width: 890, height: 1600,
+      status: 'unpublished', provenance: 'owner-supplied', alt: WALT,
+    });
+    const commit = calls.find((c) => c.url === `${GIT}/commits` && c.method === 'POST')!;
+    assert.equal(commit.body?.message, 'cms(media): update doctor work\n\nChanged by: CMS admin\nOwner approved publication: yes\n');
+    // The manifest compared at the head commit is the work file, not the clinic one.
+    assert.ok(calls.some((c) => /\/contents\/src\/data\/treatment-work\.json\?ref=1{40}$/.test(c.url)));
+  });
+
+  test('without the owner\'s approval a new image is refused', async () => {
+    const photos = [...WORK.map((r) => keepWork(r)), { image: { blob: BLOB_A }, status: 'unpublished', alt: WALT }];
+    const { response } = await saveWork({ photos }, [workManifest(WORK), blobReply(JPEG), directory([]), otherGallery()]);
+    assert.equal(response.status, 422);
+    assert.ok(((await response.json()) as { error: { issues: string[] } }).error.issues.includes('confirmation_required'));
+  });
+
+  test('"before and after" describes; every other claim, framing and a partial title are refused', async () => {
+    const photos = [
+      keepWork(WORK[0], { alt: { ...WALT, en: 'Before and after — guaranteed results' } }),
+      keepWork(WORK[1], { frame: { x: 50, y: 50, zoom: 1 } }),
+      keepWork(WORK[2], { caption: { he: 'ציפויים', ar: '', en: '' } }),
+    ];
+    const { response, calls } = await saveWork({ photos }, [workManifest(WORK), directory([]), otherGallery()]);
+    assert.equal(response.status, 422);
+    const issues = ((await response.json()) as { error: { issues: string[] } }).error.issues;
+    assert.deepEqual(issues, ['photo_0:alt_en_claim_guarantee', 'photo_1:frame_not_allowed', 'photo_2:caption_ar_required', 'photo_2:caption_en_required']);
+    assert.ok(calls.every((c) => c.method === 'GET'));
+  });
+
+  test('a hidden image is deleted with its file; a shown one must be hidden first', async () => {
+    const hiddenGone = await saveWork({ photos: WORK.slice(0, 2).map((r) => keepWork(r)) }, [workManifest(WORK), directory([]), otherGallery(), ...workChain]);
+    assert.equal(hiddenGone.response.status, 200);
+    const entries = hiddenGone.calls.find((c) => c.url === `${GIT}/trees`)!.body?.tree as Array<Record<string, unknown>>;
+    assert.deepEqual(entries[1], { path: 'src/assets/images/work-case-03.jpg', mode: '100644', type: 'blob', sha: null });
+
+    const shownGone = await saveWork({ photos: WORK.slice(1).map((r) => keepWork(r)) }, [workManifest(WORK), directory([]), otherGallery()]);
+    assert.equal(shownGone.response.status, 422);
+    assert.deepEqual(((await shownGone.response.json()) as { error: { issues: string[] } }).error.issues, ['delete:work-case-01.jpg:published_photo_delete']);
+  });
+
+  test('a file the other gallery uses is never deleted, even if its record is removed here', () => {
+    const plan = planGallerySave(GALLERY_RULES.work, WORK as never, WORK.slice(0, 2).map((r) => keepWork(r)) as never, [], undefined, new Set(['work-case-03.jpg']));
+    assert.ok(plan.ok);
+    assert.deepEqual(plan.deletes, []);
+    assert.deepEqual(plan.records.map((r) => r.file), ['work-case-01.jpg', 'work-case-02.jpg']);
+  });
+
+  test('a clinic save never touches the doctor\'s-work file', async () => {
+    const photos = CURRENT.map((r) => ({ file: r.file, status: r.status, alt: r.alt })).reverse();
+    photos[0].status = 'published';
+    const { calls } = await callAdmin(
+      await adminRequest('/api/photos/save', { method: 'POST', body: { gallery: 'clinic', sha: 'manifest-sha', photos } }),
+      [manifest(CURRENT), directory([]), otherGallery(WORK), ...commitChain],
+    );
+    const entries = calls.find((c) => c.url === `${GIT}/trees`)!.body?.tree as Array<Record<string, unknown>>;
+    assert.deepEqual(entries.map((e) => e.path), ['src/data/clinic-photography.json']);
   });
 });

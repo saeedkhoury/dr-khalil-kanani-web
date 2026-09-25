@@ -181,15 +181,15 @@ describe('upload validation', () => {
   });
 });
 
-describe('the CMS can never create treatment-work — enforced three ways', () => {
-  test('1. structurally: the Worker cannot address media.ts at all', () => {
-    // treatmentWork lives inline in src/data/media.ts, which is not a target
-    // the path allow-list can express.
-    for (const kind of ['media', 'treatmentWork', 'treatment-work']) {
+describe('clinic photography can never hold treatment-work — enforced three ways', () => {
+  test('1. structurally: the Worker addresses fixed files only — never media.ts', () => {
+    // The developer manifest is not a target the path allow-list can express.
+    for (const kind of ['media', 'treatment-work', 'devManifest']) {
       assert.equal(pathFor({ kind } as never), null);
     }
-    // And the only writable manifest is the clinic one.
+    // Two gallery manifests, each a fixed file (ADR 0010).
     assert.equal(pathFor({ kind: 'photography' }), 'src/data/clinic-photography.json');
+    assert.equal(pathFor({ kind: 'treatmentWork' }), 'src/data/treatment-work.json');
   });
 
   test('2. by validation: the category is refused before any record is built', () => {

@@ -2,11 +2,10 @@
  * CLINIC PHOTOGRAPHY — validation, filename generation and record mutation.
  *
  * ── WHAT THE CMS MAY NEVER DO ─────────────────────────────────────────────
- * Create anything outside ClinicPhotographyCategory. treatment-work is not a
- * category this module can produce, and that is enforced three ways: the
- * allow-list below, the shared build schema, and — structurally — the fact
- * that treatmentWork lives inline in media.ts, which is not on the Worker's
- * path allow-list. The Worker cannot write that file at all.
+ * Put a treatment-result image into clinic photography. treatment-work is not
+ * a category this module can produce for the clinic gallery, enforced by the
+ * allow-list below and the shared build schema. The doctor's work is its own
+ * collection with its own fixed target and rules (galleries.ts, ADR 0010).
  *
  * ── FILENAMES ARE GENERATED HERE ──────────────────────────────────────────
  * The client never sends, sees, or influences a repository path. It sends a
@@ -14,7 +13,7 @@
  * real format from the image's own header rather than the uploader's claim.
  */
 
-import { CMS_CATEGORIES, assertClinicPhotographyShape, frameProblems } from '../../../src/lib/data-schema.ts';
+import { CMS_CATEGORIES, assertClinicPhotographyShape } from '../../../src/lib/data-schema.ts';
 import { blockingClaims } from '../../../src/lib/claims.ts';
 import type { ClinicPhotographRecord } from '../../../src/data/media-types.ts';
 import { inspectImage, type ImageInfo } from './image.ts';
@@ -78,7 +77,13 @@ export function nextFilename(
  * The description rules, shared by upload and by editing a description later
  * so the two can never disagree about what is acceptable.
  */
-export function altIssues(altHe: unknown, altAr: unknown, altEn: unknown): MediaIssue[] {
+export function altIssues(
+  altHe: unknown,
+  altAr: unknown,
+  altEn: unknown,
+  /** What the claims rules read. Identity except for the doctor's work (ADR 0010). */
+  claimsText: (text: string) => string = (text) => text,
+): MediaIssue[] {
   const issues: MediaIssue[] = [];
   if (!isFilledString(altHe)) issues.push('alt_he_required');
   if (!isFilledString(altAr)) issues.push('alt_ar_required');
@@ -98,7 +103,7 @@ export function altIssues(altHe: unknown, altAr: unknown, altEn: unknown): Media
   // something else.
   for (const [locale, text] of [['he', altHe], ['ar', altAr], ['en', altEn]] as const) {
     if (!isFilledString(text)) continue;
-    for (const finding of blockingClaims(text)) {
+    for (const finding of blockingClaims(claimsText(text))) {
       issues.push(`alt_${locale}_claim_${finding.rule.replace(/-/g, '_')}`);
     }
   }
@@ -330,126 +335,5 @@ export function validateReplacement(
   };
 }
 
-/* -------------------------------------------------------------------------- */
-/*  A whole-gallery save from the photo manager                                */
-/* -------------------------------------------------------------------------- */
-
-/** An image the Worker has already fetched back from GitHub and inspected. */
-export interface CheckedImage {
-  blob: string;
-  width: number;
-  height: number;
-  extension: 'jpg' | 'png';
-}
-
-export interface DesiredPhoto {
-  /** An existing photograph, by its file name. Absent for a new one. */
-  file?: string;
-  /** A new photograph: its category (the file name is allocated here). */
-  category?: unknown;
-  /** New bytes: for a new photograph, or replacing an existing one. */
-  image?: CheckedImage;
-  status: unknown;
-  alt: { he?: unknown; ar?: unknown; en?: unknown };
-  frame?: unknown;
-}
-
-export type SavePlan =
-  | { ok: true; records: ClinicPhotographRecord[]; puts: Array<{ file: string; blob: string }>; deletes: string[]; addsImages: boolean; unchanged: boolean }
-  | { ok: false; issues: MediaIssue[] };
-
-/**
- * Turn the gallery the doctor arranged into the manifest to commit, the image
- * files to write and the files to remove — or say precisely what is wrong,
- * photo by photo (`photo_2:alt_en_required`).
- *
- * The rules are the per-action rules, applied to the whole set at once:
- * existing photos are named by file and keep their category; a published
- * photo cannot be deleted in the same step (hide it first); descriptions pass
- * the same checks and claims rules as an upload; a replacement keeps its
- * format; anything new or replaced needs the patient-content confirmation;
- * the result must satisfy the build's own schema.
- */
-export function planPhotoSave(
-  current: readonly ClinicPhotographRecord[],
-  desired: readonly DesiredPhoto[],
-  taken: readonly string[],
-  confirmed: unknown,
-): SavePlan {
-  const issues: MediaIssue[] = [];
-  if (!Array.isArray(desired) || desired.length > 200) return { ok: false, issues: ['photos_invalid'] };
-  const byFile = new Map(current.map((r) => [r.file, r]));
-  const listed = new Set<string>();
-  const used = new Set([...current.map((r) => r.file), ...taken]);
-  const records: ClinicPhotographRecord[] = [];
-  const puts: Array<{ file: string; blob: string }> = [];
-  let addsImages = false;
-
-  desired.forEach((photo, i) => {
-    const at = (issue: string) => issues.push(`photo_${i}:${issue}`);
-    if (photo === null || typeof photo !== 'object') { at('invalid'); return; }
-    if (photo.status !== 'published' && photo.status !== 'unpublished') at('status_invalid');
-    const altProblems = altIssues(photo.alt?.he, photo.alt?.ar, photo.alt?.en);
-    altProblems.forEach(at);
-    const frameIssues = frameProblems(photo.frame);
-    if (frameIssues.length) at('frame_invalid');
-
-    let record: ClinicPhotographRecord | null = null;
-    if (typeof photo.file === 'string') {
-      const existing = byFile.get(photo.file);
-      if (!existing || listed.has(photo.file)) { at('photo_not_actionable'); return; }
-      listed.add(photo.file);
-      record = { ...existing };
-      if (photo.image) {
-        if (!photo.file.toLowerCase().endsWith(`.${photo.image.extension}`)) at('format_must_match');
-        record.width = photo.image.width;
-        record.height = photo.image.height;
-        puts.push({ file: photo.file, blob: photo.image.blob });
-        addsImages = true;
-      }
-    } else {
-      if (!photo.image) { at('file_required'); return; }
-      if (typeof photo.category !== 'string' || !(CMS_CATEGORIES as readonly string[]).includes(photo.category)) { at('category_not_allowed'); return; }
-      const file = nextFilename(photo.category, [...used], photo.image.extension);
-      if (file === null) { at('category_full'); return; }
-      used.add(file);
-      record = {
-        file,
-        category: photo.category as ClinicPhotographRecord['category'],
-        width: photo.image.width,
-        height: photo.image.height,
-        status: 'unpublished',
-        alt: { he: '', ar: '', en: '' },
-      };
-      puts.push({ file, blob: photo.image.blob });
-      addsImages = true;
-    }
-    if (altProblems.length === 0) {
-      record.alt = { he: String(photo.alt.he).trim(), ar: String(photo.alt.ar).trim(), en: String(photo.alt.en).trim() };
-      // Written (or confirmed) English here is the review the flag asks for.
-      delete (record as { needsEnglishReview?: boolean }).needsEnglishReview;
-    }
-    if (photo.status === 'published' || photo.status === 'unpublished') record.status = photo.status;
-    if (photo.frame === undefined) delete (record as { frame?: unknown }).frame;
-    else if (!frameIssues.length) {
-      const f = photo.frame as { x: number; y: number; zoom: number };
-      const r = (n: number) => Math.round(n * 100) / 100;
-      record.frame = { x: r(f.x), y: r(f.y), zoom: r(f.zoom) };
-    }
-    records.push(record);
-  });
-
-  const deletes = current.filter((r) => !listed.has(r.file)).map((r) => r.file);
-  for (const file of deletes) {
-    if (byFile.get(file)?.status === 'published') issues.push(`delete:${file}:published_photo_delete`);
-  }
-  if (addsImages && confirmed !== true) issues.push('confirmation_required');
-  if (issues.length > 0) return { ok: false, issues };
-  try {
-    assertClinicPhotographyShape(records, 'planned manifest');
-  } catch {
-    return { ok: false, issues: ['content_invalid'] };
-  }
-  const unchanged = !addsImages && deletes.length === 0 && serialiseRecords(records) === serialiseRecords(current);
-  return { ok: true, records, puts, deletes, addsImages, unchanged };
-}
+/* The whole-gallery save (both galleries) lives in galleries.ts. */
+export { planPhotoSave, type CheckedImage, type DesiredPhoto, type SavePlan } from './galleries.ts';

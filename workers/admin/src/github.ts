@@ -52,11 +52,14 @@ const USER_AGENT = 'drkanani-admin-worker';
 export type WriteTarget =
   | { kind: 'hours' }
   | { kind: 'photography' }
+  | { kind: 'treatmentWork' }
   | { kind: 'services' | 'generalFaq' | 'doctorProfile' | 'managedCopy' | 'contactFacts' }
   | { kind: 'image'; file: string };
 
 const HOURS_PATH = 'src/data/hours.json';
 const PHOTOGRAPHY_PATH = 'src/data/clinic-photography.json';
+/** The doctor's work (ADR 0010). A fixed file, like every other target. */
+const TREATMENT_WORK_PATH = 'src/data/treatment-work.json';
 const MANAGED_PATHS = Object.freeze({
   services: 'src/data/services.json',
   generalFaq: 'src/data/general-faq.json',
@@ -103,6 +106,8 @@ export function pathFor(target: WriteTarget): string | null {
       return HOURS_PATH;
     case 'photography':
       return PHOTOGRAPHY_PATH;
+    case 'treatmentWork':
+      return TREATMENT_WORK_PATH;
     case 'services': case 'generalFaq': case 'doctorProfile': case 'managedCopy': case 'contactFacts':
       return MANAGED_PATHS[target.kind];
     case 'image': {
@@ -146,6 +151,7 @@ export type CommitVerb =
   | 'replace clinic photo'
   | 'describe clinic photo'
   | 'update clinic photos'
+  | 'update doctor work'
   | 'update visual content';
 
 const SCOPE: Record<CommitVerb, 'hours' | 'media' | 'content'> = {
@@ -158,6 +164,7 @@ const SCOPE: Record<CommitVerb, 'hours' | 'media' | 'content'> = {
   'replace clinic photo': 'media',
   'describe clinic photo': 'media',
   'update clinic photos': 'media',
+  'update doctor work': 'media',
   'update visual content': 'content',
 };
 
@@ -202,7 +209,12 @@ export function commitMessage(
   if (subject !== undefined && (subject.length > MAX_IMAGE_FILENAME || !IMAGE_FILE.test(subject))) return null;
 
   const headline = subject === undefined ? verb : `${verb} ${subject}`;
-  const confirmation = patientContentConfirmed === true ? 'Patient-content confirmed: yes\n' : '';
+  // A fixed line per gallery, never user text. Clinic photography confirms it
+  // shows no patient; the doctor's work is patient imagery by nature, so what
+  // is recorded there is the owner's approval to publish it (ADR 0010).
+  const confirmation = patientContentConfirmed !== true ? ''
+    : verb === 'update doctor work' ? 'Owner approved publication: yes\n'
+    : 'Patient-content confirmed: yes\n';
   return `cms(${SCOPE[verb]}): ${headline}\n\nChanged by: ${CMS_ACTOR}\n${confirmation}`;
 }
 
@@ -636,6 +648,8 @@ export async function readBlobBytes(env: Env, sha: string, limit: number): Promi
 }
 
 export interface PhotoCommit {
+  /** Which fixed manifest — never a path. */
+  manifestKind: 'photography' | 'treatmentWork';
   /** Manifest blob SHA the editor loaded; anything else is a conflict. */
   expectedManifestSha: string;
   manifest: string;
@@ -648,8 +662,12 @@ export interface PhotoCommit {
 export async function commitPhotoChanges(env: Env, change: PhotoCommit): Promise<Result<{ commit: string }>> {
   const config = configure(env);
   if (config === null) return refuse('not_configured');
-  const message = commitMessage('update clinic photos', undefined, change.patientContentConfirmed);
-  const manifestPath = pathFor({ kind: 'photography' });
+  const message = commitMessage(
+    change.manifestKind === 'treatmentWork' ? 'update doctor work' : 'update clinic photos',
+    undefined,
+    change.patientContentConfirmed,
+  );
+  const manifestPath = pathFor({ kind: change.manifestKind });
   if (message === null || manifestPath === null) return refuse('refused');
 
   const entries: Array<Record<string, unknown>> = [{ path: manifestPath, mode: '100644', type: 'blob', content: change.manifest }];
