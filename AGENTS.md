@@ -67,6 +67,13 @@ as unreviewed material. This records the owner's publishing direction, not
 verified patient consent or a legal clearance. All other media still follow
 the default rule; the asset guard and explicit staging remain mandatory.
 
+**Owner instruction, 2026-09-25 (ADR 0010):** the doctor's work
+(`src/data/treatment-work.json`) is now managed by the owner in Edit Mode, as a
+collection separate from clinic photography. The CMS writes it only through
+its fixed target, with owner approval recorded on every new or replaced image.
+This is a publishing direction, not verified consent or legal clearance; that
+review remains open.
+
 This rule exists because thirteen patient before/after images reached the
 public repository in a single unreviewed `git add -A`. The guard cannot
 recognise a patient photograph; it makes skipping the look impossible.

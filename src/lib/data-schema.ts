@@ -24,7 +24,7 @@
  */
 
 import { LOCALES } from '../i18n/config.ts';
-import type { ClinicPhotographRecord } from '../data/media-types.ts';
+import type { ClinicPhotographRecord, TreatmentWorkRecord } from '../data/media-types.ts';
 
 /**
  * Sunday-first, per the Israeli working week. The order is SIGNIFICANT —
@@ -154,12 +154,11 @@ export function assertHoursShape(value: unknown, source = 'src/data/hours.json')
 /* -------------------------------------------------------------------------- */
 
 /**
- * The only categories the CMS may write. `treatment-work` is deliberately
- * absent and must stay that way: treatment and patient imagery is
- * developer-managed, reviewed in a pull request, and Israeli dental
- * advertising regulations make publishing it a legal matter rather than an
- * editorial one. scripts/check-assets.mjs enforces the same list at commit
- * time — two gates, one rule.
+ * Clinic-photography categories. `treatment-work` is deliberately absent:
+ * treatment imagery is a separate collection (src/data/treatment-work.json,
+ * ADR 0010) with its own rules, and a result photograph must never become
+ * clinic photography. scripts/check-assets.mjs enforces the same list at
+ * commit time — two gates, one rule.
  */
 export const CMS_CATEGORIES = [
   'exterior', 'reception', 'treatment-room', 'equipment',
@@ -198,6 +197,9 @@ export function frameProblems(frame: unknown): string[] {
   if (typeof z !== 'number' || !Number.isFinite(z) || z < FRAME_LIMITS.minZoom || z > FRAME_LIMITS.maxZoom) problems.push('"frame.zoom" must be a number from 1 to 3');
   return problems;
 }
+
+/** Every doctor's-work file starts with this; no clinic file may. */
+export const WORK_PREFIX = 'work';
 
 /** Validate the CMS photography manifest and return it typed. */
 export function assertClinicPhotographyShape(
@@ -242,9 +244,14 @@ export function assertClinicPhotographyShape(
 
     if (!(CMS_CATEGORIES as readonly string[]).includes(category as string)) {
       problems.push(
-        `${at}: category ${JSON.stringify(category)} is not one the CMS may write ` +
-          `(${CMS_CATEGORIES.join(', ')}). Treatment work is developer-managed.`,
+        `${at}: category ${JSON.stringify(category)} is not a clinic-photography category ` +
+          `(${CMS_CATEGORIES.join(', ')}). Treatment work has its own collection.`,
       );
+    }
+    // The two galleries never share a file: deleting from one can then never
+    // break the other.
+    if (typeof file === 'string' && file.startsWith(`${WORK_PREFIX}-`)) {
+      problems.push(`${at}: "${file}" is a doctor's-work file and cannot be clinic photography`);
     }
 
     // Required, not defaulted: an absent state is ambiguous, and guessing
@@ -284,4 +291,91 @@ export function assertClinicPhotographyShape(
 
   if (problems.length > 0) throw new DataShapeError(source, problems);
   return value as ClinicPhotographRecord[];
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Doctor's work (treatment work)                                            */
+/* -------------------------------------------------------------------------- */
+
+const WORK_KEYS = new Set([
+  'id', 'file', 'category', 'width', 'height', 'status',
+  'provenance', 'sourcePostUrl', 'alt', 'caption',
+]);
+const PROVENANCES = ['instagram-post', 'owner-supplied'] as const;
+const WORK_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+const INSTAGRAM_POST = /^https:\/\/www\.instagram\.com\/p\/[A-Za-z0-9_-]+\/$/;
+
+/** A localized text object: all three languages, none empty. */
+function localizedProblems(value: unknown, name: string): string[] {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return [`"${name}" must be an object with he, ar and en`];
+  const problems: string[] = [];
+  for (const key of Object.keys(value)) if (!(LOCALES as readonly string[]).includes(key)) problems.push(`"${name}" has unknown language "${key}"`);
+  for (const locale of LOCALES) {
+    const text = (value as Record<string, unknown>)[locale];
+    if (typeof text !== 'string' || text.trim() === '') problems.push(`"${name}.${locale}" is required and must not be empty`);
+  }
+  return problems;
+}
+
+/**
+ * Validate the doctor's-work manifest (src/data/treatment-work.json) and
+ * return it typed.
+ *
+ * Written by the CMS since ADR 0010, so it gets the checks a machine-written
+ * file needs: a stable id and a bare, prefixed filename per record, both
+ * unique; the whole artwork's dimensions; an explicit publication state; alt
+ * text in all three languages. A title (caption) is optional, but never
+ * partial. No framing: this gallery always shows the complete artwork.
+ */
+export function assertTreatmentWorkShape(
+  value: unknown,
+  source = 'src/data/treatment-work.json',
+): TreatmentWorkRecord[] {
+  const problems: string[] = [];
+  if (!Array.isArray(value)) throw new DataShapeError(source, ['must be a JSON array']);
+  const files = new Set<string>();
+  const ids = new Set<string>();
+
+  value.forEach((record, i) => {
+    const at = `record ${i + 1}`;
+    if (record === null || typeof record !== 'object' || Array.isArray(record)) {
+      problems.push(`${at}: must be an object`);
+      return;
+    }
+    for (const key of Object.keys(record)) if (!WORK_KEYS.has(key)) problems.push(`${at}: unknown field "${key}"`);
+    const r = record as Record<string, unknown>;
+
+    if (typeof r.id !== 'string' || !WORK_ID.test(r.id)) problems.push(`${at}: "id" must be lowercase letters, digits and hyphens`);
+    else if (ids.has(r.id)) problems.push(`${at}: id "${r.id}" is used more than once`);
+    else ids.add(r.id);
+
+    const file = r.file;
+    if (typeof file !== 'string' || file === '') {
+      problems.push(`${at}: "file" is required and must be a non-empty string`);
+    } else {
+      if (file.includes('/') || file.includes('\\') || file.includes('..')) problems.push(`${at}: "file" must be a bare filename`);
+      if (!PHOTO_EXT.some((ext) => file.toLowerCase().endsWith(ext))) problems.push(`${at}: "file" must end in ${PHOTO_EXT.join(', ')}`);
+      if (!file.startsWith(`${WORK_PREFIX}-`)) problems.push(`${at}: "file" must start with "${WORK_PREFIX}-" — the two galleries never share a file`);
+      if (files.has(file)) problems.push(`${at}: "${file}" is registered more than once`);
+      files.add(file);
+    }
+
+    if (r.category !== 'treatment-work') problems.push(`${at}: "category" must be "treatment-work"`);
+    if (!(STATUSES as readonly string[]).includes(r.status as string)) problems.push(`${at}: "status" is required and must be ${STATUSES.join(' or ')}`);
+    for (const name of ['width', 'height'] as const) {
+      const n = r[name];
+      if (typeof n !== 'number' || !Number.isInteger(n) || n <= 0) problems.push(`${at}: "${name}" must be a positive integer`);
+    }
+    if (!(PROVENANCES as readonly string[]).includes(r.provenance as string)) problems.push(`${at}: "provenance" must be ${PROVENANCES.join(' or ')}`);
+    // A source link is evidence only for a post that was matched to it.
+    if (r.sourcePostUrl !== undefined) {
+      if (r.provenance !== 'instagram-post') problems.push(`${at}: only an instagram-post may carry "sourcePostUrl"`);
+      if (typeof r.sourcePostUrl !== 'string' || !INSTAGRAM_POST.test(r.sourcePostUrl)) problems.push(`${at}: "sourcePostUrl" must be an Instagram post URL`);
+    }
+    for (const problem of localizedProblems(r.alt, 'alt')) problems.push(`${at}: ${problem}`);
+    if (r.caption !== undefined) for (const problem of localizedProblems(r.caption, 'caption')) problems.push(`${at}: ${problem}`);
+  });
+
+  if (problems.length > 0) throw new DataShapeError(source, problems);
+  return value as TreatmentWorkRecord[];
 }

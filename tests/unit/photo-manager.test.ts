@@ -16,8 +16,9 @@ import { planPhotoSave, type DesiredPhoto } from '../../workers/admin/src/media.
 import { inspectImage } from '../../workers/admin/src/image.ts';
 import type { ClinicPhotographRecord } from '../../src/data/media-types.ts';
 import { adminEnv, adminRequest, asContents, callAdmin, CONTENT_BRANCH, type Reply } from '../helpers/admin-api.ts';
+import { solidJpeg } from '../helpers/jpeg.ts';
 
-const JPEG = new Uint8Array(readFileSync(new URL('../../src/assets/images/work-extraction-01.jpg', import.meta.url)));
+const JPEG = new Uint8Array(solidJpeg(890, 1600));
 const ALT = { he: 'חדר הטיפולים', ar: 'غرفة العلاج', en: 'Treatment room' };
 const BLOB_A = 'a'.repeat(40);
 const HEAD = '1'.repeat(40);

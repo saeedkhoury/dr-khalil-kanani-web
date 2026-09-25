@@ -22,7 +22,7 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, extname } from 'node:path';
 
-import { findClaims, type ClaimFinding } from '../src/lib/claims.ts';
+import { findClaims, withoutBeforeAfterDescriptor, type ClaimFinding } from '../src/lib/claims.ts';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 const SCAN_DIRS = ['src/content', 'src/i18n', 'src/components', 'src/pages'];
@@ -50,6 +50,12 @@ const SCAN_FILES = [
   'src/data/doctor-profile.json', 'src/data/managed-copy.json',
   'src/data/contact-facts.json',
 ];
+/**
+ * The doctor's work (ADR 0010) is CMS-writable too, so it is scanned — with
+ * the one allowance its subject needs: the plain before/after descriptor
+ * (src/lib/claims.ts, withoutBeforeAfterDescriptor). Every other rule applies.
+ */
+const WORK_FILES = ['src/data/treatment-work.json'];
 const SCAN_EXT = new Set(['.md', '.mdx', '.ts', '.astro', '.json']);
 
 /* The rules themselves live in src/lib/claims.ts, imported above, because
@@ -96,15 +102,17 @@ function jsonStrings(value: unknown): string[] {
 const targets = [
   ...SCAN_DIRS.flatMap((dir) => walk(join(ROOT, dir))),
   ...SCAN_FILES.map((file) => join(ROOT, file)),
+  ...WORK_FILES.map((file) => join(ROOT, file)),
 ];
 
 {
   for (const file of targets) {
     const ext = extname(file);
     const raw = readFileSync(file, 'utf8');
+    const work = WORK_FILES.includes(relative(ROOT, file));
     const texts = ext === '.json' ? jsonStrings(JSON.parse(raw)) : stripComments(raw, ext).split('\n');
     texts.forEach((text, i) => {
-      for (const finding of findClaims(text)) {
+      for (const finding of findClaims(work ? withoutBeforeAfterDescriptor(text) : text)) {
         findings.push({ ...finding, file: relative(ROOT, file), line: ext === '.json' ? 1 : i + 1 });
       }
     });

@@ -1,10 +1,9 @@
 /**
  * MEDIA TYPES — the content model, separated from the manifest that uses it.
  *
- * These live apart from `media.ts` for one reason: the future admin Worker
- * must be able to import the types WITHOUT importing the manifest, because
- * the manifest holds `treatmentWork` and the Worker must never be able to
- * reach it. Types are safe to share; data is not.
+ * These live apart from `media.ts` so the admin Worker can import the types
+ * without importing the site's manifest module. Types are safe to share; the
+ * Worker reads data only from the two fixed JSON files it manages.
  *
  * See docs/specs/2026-09-22-admin-cms-plan.md.
  */
@@ -119,6 +118,19 @@ export interface ClinicPhotographRecord extends ClinicPhotograph {
   needsEnglishReview?: boolean;
 }
 export type TreatmentWorkPhotograph = MediaAsset<TreatmentWorkCategory>;
+
+/**
+ * A doctor's-work record AS STORED in src/data/treatment-work.json (ADR 0010).
+ *
+ * `id` is stable for the life of the record — a replaced image keeps it, and
+ * its file name. `status` makes hiding reversible, exactly as for clinic
+ * photography; the site renders the published subset. Array order is display
+ * order.
+ */
+export interface TreatmentWorkRecord extends TreatmentWorkPhotograph {
+  id: string;
+  status: PublicationStatus;
+}
 export type Illustration = MediaAsset<IllustrationCategory>;
 export type HeroPhotograph = MediaAsset<HeroCategory>;
 export type DoctorPortrait = MediaAsset<PortraitCategory>;

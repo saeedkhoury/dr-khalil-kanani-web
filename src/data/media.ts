@@ -28,7 +28,8 @@
  */
 
 import clinicPhotographyData from './clinic-photography.json' with { type: 'json' };
-import { assertClinicPhotographyShape } from '../lib/data-schema.ts';
+import treatmentWorkData from './treatment-work.json' with { type: 'json' };
+import { assertClinicPhotographyShape, assertTreatmentWorkShape } from '../lib/data-schema.ts';
 
 import type {
   ClinicPhotograph,
@@ -40,6 +41,7 @@ import type {
   Illustration,
   MediaAsset,
   TreatmentWorkPhotograph,
+  TreatmentWorkRecord,
 } from './media-types';
 
 export type {
@@ -54,6 +56,7 @@ export type {
   MediaAsset,
   ClinicPhotograph,
   TreatmentWorkPhotograph,
+  TreatmentWorkRecord,
   Illustration,
   HeroPhotograph,
   DoctorPortrait,
@@ -62,138 +65,26 @@ export type {
 
 
 /**
- * TREATMENT AND RESULT CASES — a category of its own.
+ * TREATMENT AND RESULT CASES — the doctor's work, a category of its own.
  *
- * Owner-directed. The original local files were opened and matched visually
- * to the clinic's Instagram posts on 2026-09-21. Each entry is individually
- * approved; see docs/decisions/0009-owner-directed-instagram-gallery.md.
+ * Owner-directed. The original files were opened and matched visually to the
+ * clinic's Instagram posts on 2026-09-21 (docs/decisions/0009-owner-directed-
+ * instagram-gallery.md). Since 2026-09-25 the owner manages this collection in
+ * Edit Mode (ADR 0010), so it is stored as data — src/data/treatment-work.json
+ * — and validated on import like clinic photography. Neither route
+ * establishes patient consent or regulatory compliance; that item stays open.
  *
  * These are NOT clinic photography and must never be used as the hero, the
- * doctor portrait, or the clinic gallery. The type prevents it.
- *
- * Adding an entry here requires the owner's explicit, per-image instruction.
+ * doctor portrait, or the clinic gallery. The types prevent it, and the two
+ * collections never share a file (data-schema.ts).
  */
-export const treatmentWork: TreatmentWorkPhotograph[] = [
-  {
-    file: 'work-veneers-01.jpg', category: 'treatment-work', width: 1254, height: 1254,
-    sourcePostUrl: 'https://www.instagram.com/p/DdJ042BMJUu/',
-    alt: {
-      he: 'פרסום של המרפאה עם שתי תמונות של השיניים הקדמיות, מסומנות לפני ואחרי',
-      ar: 'منشور للعيادة يعرض صورتين للأسنان الأمامية مع علامتي قبل وبعد',
-      en: 'Clinic post with two photographs of front teeth labelled before and after',
-    },
-    provenance: 'instagram-post',
-    caption: { he: 'ציפויי שיניים', ar: 'قشور الأسنان', en: 'Veneers' },
-  },
-  {
-    file: 'work-cleaning-01.jpg', category: 'treatment-work', width: 1254, height: 1254,
-    sourcePostUrl: 'https://www.instagram.com/p/DdWvC8csM-6/',
-    alt: {
-      he: 'פרסום של המרפאה עם שתי תמונות של השיניים והחניכיים, מסומנות לפני ואחרי ניקוי',
-      ar: 'منشور للعيادة يعرض صورتين للأسنان واللثة مع علامتي قبل التنظيف وبعده',
-      en: 'Clinic post with two photographs of teeth and gums labelled before and after cleaning',
-    },
-    provenance: 'instagram-post',
-    caption: { he: 'ניקוי אבנית', ar: 'تنظيف الجير', en: 'Dental cleaning' },
-  },
-  {
-    file: 'work-cleaning-02.jpg', category: 'treatment-work', width: 1290, height: 1380,
-    sourcePostUrl: 'https://www.instagram.com/p/Da8QjY7MiIP/',
-    alt: {
-      he: 'פרסום של המרפאה עם ארבע תמונות של שיניים בזוויות שונות, מסומנות לפני ואחרי',
-      ar: 'منشور للعيادة يعرض أربع صور للأسنان من زوايا مختلفة مع علامتي قبل وبعد',
-      en: 'Clinic post with four photographs of teeth from different angles labelled before and after',
-    },
-    provenance: 'instagram-post',
-    caption: { he: 'ניקוי שיניים', ar: 'تنظيف الأسنان', en: 'Teeth cleaning' },
-  },
-  {
-    file: 'work-restoration-01.jpg', category: 'treatment-work', width: 1279, height: 1600,
-    provenance: 'owner-supplied',
-    alt: {
-      he: 'שתי תמונות של השיניים הקדמיות העליונות, מסומנות לפני ואחרי',
-      ar: 'صورتان للأسنان الأمامية العلوية، موسومتان بقبل وبعد',
-      en: 'Two photographs of the upper front teeth, labelled before and after',
-    },
-  },
-  {
-    file: 'work-restoration-02.jpg', category: 'treatment-work', width: 900, height: 1600,
-    provenance: 'owner-supplied',
-    alt: {
-      he: 'שלוש תמונות של שיניים טוחנות מזוויות שונות, מסומנות לפני ואחרי',
-      ar: 'ثلاث صور للأضراس من زوايا مختلفة، موسومة بقبل وبعد',
-      en: 'Three photographs of molar teeth from different angles, labelled before and after',
-    },
-  },
-  {
-    file: 'work-restoration-03.jpg', category: 'treatment-work', width: 1279, height: 1600,
-    provenance: 'owner-supplied',
-    alt: {
-      he: 'שתי תמונות של השיניים העליונות, מסומנות לפני ואחרי',
-      ar: 'صورتان للأسنان العلوية، موسومتان بقبل وبعد',
-      en: 'Two photographs of the upper teeth, labelled before and after',
-    },
-  },
-  {
-    file: 'work-restoration-04.jpg', category: 'treatment-work', width: 900, height: 1600,
-    provenance: 'owner-supplied',
-    alt: {
-      he: 'פרסום של המרפאה עם שתי תמונות של השיניים הקדמיות, מסומנות לפני ואחרי',
-      ar: 'منشور للعيادة يعرض صورتين للأسنان الأمامية، موسومتين بقبل وبعد',
-      en: 'Clinic post with two photographs of the front teeth, labelled before and after',
-    },
-  },
-  {
-    file: 'work-cleaning-03.jpg', category: 'treatment-work', width: 1254, height: 1254,
-    provenance: 'owner-supplied',
-    alt: {
-      he: 'פרסום של המרפאה עם שתי תמונות של השיניים והחניכיים, מסומנות לפני ואחרי',
-      ar: 'منشور للعيادة يعرض صورتين للأسنان واللثة، موسومتين بقبل وبعد',
-      en: 'Clinic post with two photographs of the teeth and gums, labelled before and after',
-    },
-    caption: { he: 'ניקוי אבנית', ar: 'تنظيف الجير', en: 'Dental cleaning' },
-  },
-  {
-    file: 'work-veneers-02.jpg', category: 'treatment-work', width: 1254, height: 1254,
-    provenance: 'owner-supplied',
-    alt: {
-      he: 'פרסום של המרפאה עם שתי תמונות של השיניים הקדמיות, מסומנות לפני ואחרי',
-      ar: 'منشور للعيادة يعرض صورتين للأسنان الأمامية، موسومتين بقبل وبعد',
-      en: 'Clinic post with two photographs of the front teeth, labelled before and after',
-    },
-    caption: { he: 'ציפויי שיניים', ar: 'قشور الأسنان', en: 'Veneers' },
-  },
-  {
-    file: 'work-whitening-01.jpg', category: 'treatment-work', width: 1254, height: 1254,
-    provenance: 'owner-supplied',
-    alt: {
-      he: 'פרסום של המרפאה בכותרת "הלבנת שיניים וניקוי אבנית", ובו שתי תמונות מסומנות לפני ואחרי',
-      ar: 'منشور للعيادة بعنوان "تبييض الأسنان وإزالة الجير"، يعرض صورتين موسومتين بقبل وبعد',
-      en: 'Clinic post headed "teeth whitening and tartar cleaning", with two photographs labelled before and after',
-    },
-    caption: { he: 'הלבנה וניקוי אבנית', ar: 'تبييض وتنظيف الجير', en: 'Whitening and tartar cleaning' },
-  },
-  {
-    file: 'work-extraction-01.jpg', category: 'treatment-work', width: 890, height: 1600,
-    provenance: 'owner-supplied',
-    alt: {
-      he: 'פרסום של המרפאה ובו תצלום של שן שנעקרה, מוחזקת בכפפה',
-      ar: 'منشور للعيادة يعرض صورة لسن مخلوع مُمسَك بقفاز',
-      en: 'Clinic post showing a photograph of an extracted tooth held in a gloved hand',
-    },
-    caption: { he: 'עקירת שן', ar: 'خلع سن', en: 'Tooth extraction' },
-  },
-  {
-    file: 'work-extraction-02.jpg', category: 'treatment-work', width: 900, height: 1600,
-    provenance: 'owner-supplied',
-    alt: {
-      he: 'פרסום של המרפאה ובו תצלום של שן שנעקרה, מונחת על פד גזה',
-      ar: 'منشور للعيادة يعرض صورة لسن مخلوع موضوع على شاش',
-      en: 'Clinic post showing a photograph of an extracted tooth resting on gauze',
-    },
-    caption: { he: 'עקירת שן', ar: 'خلع سن', en: 'Tooth extraction' },
-  },
-];
+export const treatmentWorkRecords: TreatmentWorkRecord[] =
+  assertTreatmentWorkShape(treatmentWorkData);
+
+/** The PUBLISHED subset, as plain assets — what the site renders. */
+export const treatmentWork: TreatmentWorkPhotograph[] = treatmentWorkRecords
+  .filter((record) => record.status === 'published')
+  .map(({ id: _id, status: _status, ...asset }) => asset);
 
 /** Original AI-generated artwork, visually reviewed on 2026-09-21.
  * Inanimate objects only; never presented as clinic or patient photography.

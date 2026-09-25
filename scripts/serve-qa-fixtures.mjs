@@ -54,26 +54,22 @@ function substitute(source, pattern, replacement, what) {
   return source.replace(pattern, replacement);
 }
 
-const mediaPath = join(fixture, 'src/data/media.ts');
-// The homepage renders the 'work' gallery, so the fixtures must live in
-// treatmentWork. Under the split manifest a clinic-photography category would
-// type-check but never render, which is exactly the silent mismatch the
-// explicit `kind` prop exists to prevent.
-const assets = [1, 2].map((number) => ({
-  file: 'qa-mark.svg', category: 'treatment-work', width: 288, height: 285,
-  alt: { he: `סמל בדיקה ${number}`, ar: `رمز اختبار ${number}`, en: `Test mark ${number}` },
-  caption: { he: `סמל בדיקה ${number}`, ar: `رمز اختبار ${number}`, en: `Test mark ${number}` },
-}));
-writeFileSync(mediaPath, substitute(
-  readFileSync(mediaPath, 'utf8'),
-  /export const treatmentWork: TreatmentWorkPhotograph\[\] = \[[\s\S]*?\n\];/,
-  `export const treatmentWork: TreatmentWorkPhotograph[] = ${JSON.stringify(assets)};`,
-  'treatmentWork collection',
-));
+// The homepage renders the 'work' gallery, so the fixtures must live in the
+// doctor's-work collection (src/data/treatment-work.json). resolveImage above
+// maps every file to the QA mark, so these names never reach a real image.
+writeFileSync(
+  join(fixture, 'src/data/treatment-work.json'),
+  JSON.stringify([1, 2].map((number) => ({
+    id: `work-qa-0${number}`, file: `work-qa-0${number}.jpg`, category: 'treatment-work',
+    width: 288, height: 285, status: 'published', provenance: 'owner-supplied',
+    alt: { he: `סמל בדיקה ${number}`, ar: `رمز اختبار ${number}`, en: `Test mark ${number}` },
+    caption: { he: `סמל בדיקה ${number}`, ar: `رمز اختبار ${number}`, en: `Test mark ${number}` },
+  })), null, 2) + '\n',
+);
 /**
  * The JSON manifests are OVERWRITTEN, not copied.
  *
- * Same reason treatmentWork is substituted above: these files are copied from
+ * Same reason the doctor's work is replaced above: these files are copied from
  * src/, so once the owner adds real clinic photographs the fixture would serve
  * them — real images of a real clinic, in a build whose whole premise is that
  * it contains no real content. The fixture must declare its own data.

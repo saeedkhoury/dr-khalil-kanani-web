@@ -18,8 +18,10 @@ import type { ClinicPhotographRecord } from '../../src/data/media-types.ts';
 import {
   adminRequest, asCommit, asContents, asLargeFile, asRaw, callAdmin, decodeContent, REPO_CONTENTS, CONTENT_BRANCH,
 } from '../helpers/admin-api.ts';
+import { solidJpeg } from '../helpers/jpeg.ts';
 
-const JPEG = new Uint8Array(readFileSync(new URL('../../src/assets/images/work-extraction-01.jpg', import.meta.url)));
+// Generated, not a site image (ADR 0010: the doctor may delete site images).
+const JPEG = new Uint8Array(solidJpeg(890, 1600));
 const PNG = new Uint8Array(readFileSync(new URL('../../src/assets/images/illustration-tooth-01.png', import.meta.url)));
 
 const photo = (file: string, status: 'published' | 'unpublished' = 'published'): ClinicPhotographRecord => ({

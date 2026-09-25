@@ -17,7 +17,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { assertClinicPhotographyShape, assertHoursShape, DataShapeError } from '../src/lib/data-schema.ts';
+import { assertClinicPhotographyShape, assertHoursShape, assertTreatmentWorkShape, DataShapeError } from '../src/lib/data-schema.ts';
 import { parseManaged, servicesSchema, faqSchema, doctorProfileSchema, managedCopySchema, contactFactsSchema } from '../src/lib/managed-schema.ts';
 
 const ROOT = fileURLToPath(new URL('..', import.meta.url));
@@ -51,6 +51,15 @@ const CHECKS: Check[] = [
       const records = v as Array<{ status?: string }>;
       const published = records.filter((r) => r.status === 'published').length;
       return `${records.length} photograph(s), ${published} published`;
+    },
+  },
+  {
+    path: 'src/data/treatment-work.json',
+    assert: assertTreatmentWorkShape,
+    describe: (v) => {
+      const records = v as Array<{ status?: string }>;
+      const published = records.filter((r) => r.status === 'published').length;
+      return `${records.length} doctor's-work image(s), ${published} published`;
     },
   },
 ];

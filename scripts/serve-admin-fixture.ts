@@ -35,6 +35,7 @@ import type { Env } from '../workers/admin/src/http.ts';
 import {
   AUDIENCE, DOCTOR, TEAM_DOMAIN, jwksDocument, makeToken,
 } from '../tests/helpers/access-jwt.ts';
+import { solidJpeg } from '../tests/helpers/jpeg.ts';
 
 if (process.env.NODE_ENV === 'production') {
   throw new Error('[admin fixture] refusing to run in production');
@@ -136,7 +137,9 @@ let commits = 0;
  * the text "image" inline, which is how a Worker that failed on every real
  * photograph passed its browser tests.
  */
-const REAL_JPEG = readFileSync(fileURLToPath(new URL('../src/assets/images/work-extraction-01.jpg', import.meta.url)));
+// A generated JPEG — never a site image, so the fixture holds no patient
+// material and does not depend on content the doctor may delete.
+const REAL_JPEG = solidJpeg(1600, 1200);
 const images = new Map<string, { bytes: Uint8Array; sha: string }>(
   store.photos.map((record, i) => [record.file, { bytes: new Uint8Array(REAL_JPEG), sha: String(i + 1).padStart(40, 'e') }]),
 );

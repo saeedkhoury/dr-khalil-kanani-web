@@ -151,17 +151,17 @@ test('status is required and constrained — an absent state is ambiguous', () =
   assert.match(photoProblems([photo({ status: true })]).join('\n'), /"status" is required/);
 });
 
-test('rejects treatment-work — the CMS may never publish patient imagery', () => {
-  // THE test. Treatment and patient photography is developer-managed and
-  // legally constrained; the CMS writes clinic photography and nothing else.
+test('rejects treatment-work in clinic photography — result images never become clinic photos', () => {
+  // THE test. The doctor's work is its own collection (ADR 0010); a result
+  // photograph must never stand in for a picture of the clinic.
   const problems = photoProblems([photo({ category: 'treatment-work' })]).join('\n');
-  assert.match(problems, /not one the CMS may write/);
+  assert.match(problems, /not a clinic-photography category/);
   assert.match(problems, /treatment-work/);
 });
 
 test('rejects any category outside the clinic-photography union', () => {
   for (const bad of ['hero', 'portrait', 'illustration', 'patient', '', null]) {
-    assert.match(photoProblems([photo({ category: bad })]).join('\n'), /not one the CMS may write/, `accepted ${bad}`);
+    assert.match(photoProblems([photo({ category: bad })]).join('\n'), /not a clinic-photography category/, `accepted ${bad}`);
   }
 });
 

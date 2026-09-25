@@ -33,16 +33,24 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));
 /**
  * Two registration sources, deliberately different in mutability.
  *
- *   DEV_MANIFEST  developer-managed: treatmentWork, illustrations, hero,
- *                 portrait. Hand-edited, reviewed in a pull request.
- *   CMS_MANIFEST  written automatically by the admin CMS. Machine-generated,
- *                 so it needs checks a human author would not.
+ *   DEV_MANIFEST   developer-managed: illustrations, hero, portrait.
+ *                  Hand-edited, reviewed in a pull request.
+ *   CMS_MANIFESTS  written automatically by the admin CMS — clinic
+ *                  photography, and the doctor's work since ADR 0010.
+ *                  Machine-generated, so they need checks a human author
+ *                  would not. Each allows only its own categories.
  *
  * Both are read from the git INDEX, so an unstaged registration can never
  * approve a staged image.
  */
 const DEV_MANIFEST = 'src/data/media.ts';
-const CMS_MANIFEST = 'src/data/clinic-photography.json';
+const CMS_MANIFESTS = [
+  { path: 'src/data/clinic-photography.json', categories: new Set([
+    'exterior', 'reception', 'treatment-room', 'equipment',
+    'doctor-working', 'team', 'atmosphere',
+  ]) },
+  { path: 'src/data/treatment-work.json', categories: new Set(['treatment-work']) },
+];
 
 /**
  * FULL mode   — the complete tracked asset state. Used by `npm run verify`
@@ -57,12 +65,6 @@ const scanAll =
   process.env.CI === 'true' ||
   process.argv.includes('--all') ||
   process.argv.includes('--full');
-
-/** Categories the CMS is permitted to write. treatment-work is NOT among them. */
-const CMS_CATEGORIES = new Set([
-  'exterior', 'reception', 'treatment-room', 'equipment',
-  'doctor-working', 'team', 'atmosphere',
-]);
 
 /** Extensions the CMS may register. SVG is excluded: it can carry script. */
 const CMS_EXT = new Set(['.jpg', '.jpeg', '.png']);
@@ -140,51 +142,52 @@ function registrations() {
     for (const m of dev.matchAll(/\bfile:\s*['"]([^'"]+)['"]/g)) claim(m[1], DEV_MANIFEST);
   }
 
-  // ── CMS-managed manifest (JSON) ──
-  const cmsRaw = readIndex(CMS_MANIFEST);
-  if (cmsRaw !== null) {
-    let cms;
-    try {
-      cms = JSON.parse(cmsRaw);
-    } catch (error) {
-      problems.push({ file: CMS_MANIFEST, why: `is not valid JSON: ${error.message}` });
-      return { names, problems };
-    }
-    if (!Array.isArray(cms)) {
-      problems.push({ file: CMS_MANIFEST, why: 'must be a JSON array' });
-      return { names, problems };
-    }
-    for (const entry of cms) {
-      const file = entry?.file;
-      if (typeof file !== 'string' || file === '') {
-        problems.push({ file: CMS_MANIFEST, why: 'a record has no "file" field' });
-        continue;
-      }
-      // A registered name is a BARE FILENAME. Anything path-shaped is refused
-      // before it can be joined to a directory.
-      if (file.includes('/') || file.includes('\\') || file.includes('..')) {
-        problems.push({ file, why: 'registered name must be a bare filename — no "/", "\\" or ".."' });
-        continue;
-      }
-      if (!CMS_EXT.has(extname(file).toLowerCase())) {
-        problems.push({
-          file,
-          why: `CMS photography must be ${[...CMS_EXT].join(', ')} — SVG can carry script and is never a photograph`,
-        });
-        continue;
-      }
-      if (!CMS_CATEGORIES.has(entry?.category)) {
-        problems.push({
-          file,
-          why: `category "${entry?.category}" is not one the CMS may write. Treatment work is developer-managed and lives in ${DEV_MANIFEST}`,
-        });
-        continue;
-      }
-      claim(file, CMS_MANIFEST);
-    }
-  }
+  // ── CMS-managed manifests (JSON) ──
+  for (const manifest of CMS_MANIFESTS) readCmsManifest(manifest, claim, problems);
 
   return { names, problems };
+}
+
+/** One CMS manifest: parsed, shape-checked per record, each file claimed. */
+function readCmsManifest({ path, categories }, claim, problems) {
+  const raw = readIndex(path);
+  if (raw === null) return;
+  let entries;
+  try {
+    entries = JSON.parse(raw);
+  } catch (error) {
+    problems.push({ file: path, why: `is not valid JSON: ${error.message}` });
+    return;
+  }
+  if (!Array.isArray(entries)) {
+    problems.push({ file: path, why: 'must be a JSON array' });
+    return;
+  }
+  for (const entry of entries) {
+    const file = entry?.file;
+    if (typeof file !== 'string' || file === '') {
+      problems.push({ file: path, why: 'a record has no "file" field' });
+      continue;
+    }
+    // A registered name is a BARE FILENAME. Anything path-shaped is refused
+    // before it can be joined to a directory.
+    if (file.includes('/') || file.includes('\\') || file.includes('..')) {
+      problems.push({ file, why: 'registered name must be a bare filename — no "/", "\\" or ".."' });
+      continue;
+    }
+    if (!CMS_EXT.has(extname(file).toLowerCase())) {
+      problems.push({
+        file,
+        why: `CMS images must be ${[...CMS_EXT].join(', ')} — SVG can carry script and is never a photograph`,
+      });
+      continue;
+    }
+    if (!categories.has(entry?.category)) {
+      problems.push({ file, why: `category "${entry?.category}" does not belong in ${path}` });
+      continue;
+    }
+    claim(file, path);
+  }
 }
 
 /** Registered records whose image file is not tracked in the repository. */
@@ -219,7 +222,7 @@ for (const file of media) {
   if (!registered.has(basename(file))) {
     problems.push({
       file,
-      why: `not registered in ${DEV_MANIFEST} or ${CMS_MANIFEST}`,
+      why: `not registered in ${DEV_MANIFEST} or ${CMS_MANIFESTS.map((m) => m.path).join(', ')}`,
     });
   }
 }

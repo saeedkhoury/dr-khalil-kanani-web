@@ -134,16 +134,34 @@ test('E. the same filename registered in both manifests is rejected', () => fixt
   assert.match(result.stdout, /registered twice/);
 }));
 
-test('F. a treatment-work category in the CMS JSON is rejected', () => fixture((root) => {
-  // THE test. The CMS may only ever write clinic photography; treatment and
-  // patient work is developer-managed and lives in media.ts.
+test('F. a treatment-work category in the CLINIC JSON is rejected', () => fixture((root) => {
+  // THE test. Clinic photography may only ever hold clinic photography; the
+  // doctor's work is its own collection (ADR 0010) and never borrowed here.
   image(root, 'reception-01.jpg');
   writeFileSync(join(root, 'src/data/media.ts'), "export const gallery = [{ file: 'unreviewed.png' }];");
   execFileSync('git', ['add', 'src/data/media.ts'], { cwd: root });
   cms(root, [record({ category: 'treatment-work' })]);
   const result = guard(root, false);
   assert.equal(result.status, 1);
-  assert.match(result.stdout, /not one the CMS may write/);
+  assert.match(result.stdout, /does not belong in src\/data\/clinic-photography\.json/);
+}));
+
+test('F2. a clinic category in the DOCTOR\'S WORK JSON is rejected', () => fixture((root) => {
+  image(root, 'work-01.jpg');
+  writeFileSync(join(root, 'src/data/media.ts'), "export const gallery = [{ file: 'unreviewed.png' }];");
+  writeFileSync(join(root, 'src/data/treatment-work.json'), JSON.stringify([{ file: 'work-01.jpg', category: 'reception' }]));
+  execFileSync('git', ['add', 'src/data/media.ts', 'src/data/treatment-work.json'], { cwd: root });
+  const result = guard(root, false);
+  assert.equal(result.status, 1);
+  assert.match(result.stdout, /does not belong in src\/data\/treatment-work\.json/);
+}));
+
+test('F3. a doctor\'s-work image registered in its own JSON is accepted', () => fixture((root) => {
+  image(root, 'work-01.jpg');
+  writeFileSync(join(root, 'src/data/media.ts'), "export const gallery = [{ file: 'unreviewed.png' }];");
+  writeFileSync(join(root, 'src/data/treatment-work.json'), JSON.stringify([{ file: 'work-01.jpg', category: 'treatment-work' }]));
+  execFileSync('git', ['add', 'src/data/media.ts', 'src/data/treatment-work.json'], { cwd: root });
+  assert.equal(guard(root, false).status, 0);
 }));
 
 test('a path-shaped registered name is rejected', () => fixture((root) => {

@@ -178,3 +178,19 @@ export function findClaims(text: string): ClaimFinding[] {
 export function blockingClaims(text: string): ClaimFinding[] {
   return findClaims(text).filter((f) => f.severity === 'error');
 }
+
+/**
+ * The doctor's-work descriptions ONLY (src/data/treatment-work.json).
+ *
+ * Those images are owner-directed clinic posts that are themselves labelled
+ * "before" and "after" (ADR 0009, ADR 0010), and accurate alt text has to say
+ * so. This removes exactly that plain descriptor — the three before/after
+ * patterns of `patient-identity` — and nothing else, before the normal rules
+ * run. Testimonials, patient stories, guarantees, success rates and every
+ * other rule still apply to the same text. It says nothing about whether
+ * publishing such images is lawful; that review remains open.
+ */
+const BEFORE_AFTER_DESCRIPTOR = [/\bbefore\s*(&|and|\/)\s*after\b/gi, /לפני\s*(ו)?אחרי/g, /قبل وبعد/g];
+export function withoutBeforeAfterDescriptor(text: string): string {
+  return BEFORE_AFTER_DESCRIPTOR.reduce((rest, pattern) => rest.replace(pattern, ' '), text);
+}

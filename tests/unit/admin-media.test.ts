@@ -21,7 +21,9 @@ import type { ClinicPhotographRecord } from '../../src/data/media-types.ts';
 
 /* ── fixtures built from real images already in the repository ── */
 const real = (name: string) => new Uint8Array(readFileSync(new URL(`../../src/assets/images/${name}`, import.meta.url)));
-const JPEG = real('work-extraction-01.jpg');   // 890x1600
+// Generated, not a site image: the doctor may delete any doctor's-work photo
+// through the CMS, and that must never break CI (ADR 0010).
+const JPEG = new Uint8Array(solidJpeg(890, 1600));   // 890x1600
 const PNG = real('illustration-tooth-01.png'); // 1536x1024
 const TINY_PNG = new Uint8Array(Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAAAAAA6mKC9AAAAD0lEQVR4nGP4jwYYRrYAAID5/wEokJxdAAAAAElFTkSuQmCC',
@@ -203,7 +205,7 @@ describe('the CMS can never create treatment-work — enforced three ways', () =
       width: 2400, height: 1600, status: 'published',
       alt: { he: 'x', ar: 'x', en: 'x' },
     }];
-    assert.throws(() => assertClinicPhotographyShape(forged, 'forged'), /not one the CMS may write/);
+    assert.throws(() => assertClinicPhotographyShape(forged, 'forged'), /not a clinic-photography category/);
   });
 
   test('every permitted category is accepted, and only those', () => {
@@ -336,6 +338,7 @@ import {
   asLargeFile, CONTENT_BRANCH, FAKE_GITHUB_TOKEN, REPO_CONTENTS,
 } from '../helpers/admin-api.ts';
 import type { Env } from '../../workers/admin/src/http.ts';
+import { solidJpeg } from '../helpers/jpeg.ts';
 
 const stored = (records: unknown[]) => `${JSON.stringify(records, null, 2)}\n`;
 
