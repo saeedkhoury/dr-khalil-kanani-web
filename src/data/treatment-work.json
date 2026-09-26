@@ -40,6 +40,25 @@
     }
   },
   {
+    "id": "work-whitening-01",
+    "file": "work-whitening-01.jpg",
+    "category": "treatment-work",
+    "width": 1254,
+    "height": 1254,
+    "status": "published",
+    "provenance": "owner-supplied",
+    "alt": {
+      "he": "פרסום של המרפאה בכותרת \"הלבנת שיניים וניקוי אבנית\", ובו שתי תמונות מסומנות לפני ואחרי",
+      "ar": "منشور للعيادة بعنوان \"تبييض الأسنان وإزالة الجير\"، يعرض صورتين موسومتين بقبل وبعد",
+      "en": "Clinic post headed \"teeth whitening and tartar cleaning\", with two photographs labelled before and after"
+    },
+    "caption": {
+      "he": "הלבנה וניקוי אבנית",
+      "ar": "تبييض وتنظيف الجير",
+      "en": "Whitening and tartar cleaning"
+    }
+  },
+  {
     "id": "work-cleaning-02",
     "file": "work-cleaning-02.jpg",
     "category": "treatment-work",
@@ -88,6 +107,25 @@
     }
   },
   {
+    "id": "work-veneers-02",
+    "file": "work-veneers-02.jpg",
+    "category": "treatment-work",
+    "width": 1254,
+    "height": 1254,
+    "status": "published",
+    "provenance": "owner-supplied",
+    "alt": {
+      "he": "פרסום של המרפאה עם שתי תמונות של השיניים הקדמיות, מסומנות לפני ואחרי",
+      "ar": "منشور للعيادة يعرض صورتين للأسنان الأمامية، موسومتين بقبل وبعد",
+      "en": "Clinic post with two photographs of the front teeth, labelled before and after"
+    },
+    "caption": {
+      "he": "ציפויי שיניים",
+      "ar": "قشور الأسنان",
+      "en": "Veneers"
+    }
+  },
+  {
     "id": "work-restoration-03",
     "file": "work-restoration-03.jpg",
     "category": "treatment-work",
@@ -132,44 +170,6 @@
       "he": "ניקוי אבנית",
       "ar": "تنظيف الجير",
       "en": "Dental cleaning"
-    }
-  },
-  {
-    "id": "work-veneers-02",
-    "file": "work-veneers-02.jpg",
-    "category": "treatment-work",
-    "width": 1254,
-    "height": 1254,
-    "status": "published",
-    "provenance": "owner-supplied",
-    "alt": {
-      "he": "פרסום של המרפאה עם שתי תמונות של השיניים הקדמיות, מסומנות לפני ואחרי",
-      "ar": "منشور للعيادة يعرض صورتين للأسنان الأمامية، موسومتين بقبل وبعد",
-      "en": "Clinic post with two photographs of the front teeth, labelled before and after"
-    },
-    "caption": {
-      "he": "ציפויי שיניים",
-      "ar": "قشور الأسنان",
-      "en": "Veneers"
-    }
-  },
-  {
-    "id": "work-whitening-01",
-    "file": "work-whitening-01.jpg",
-    "category": "treatment-work",
-    "width": 1254,
-    "height": 1254,
-    "status": "published",
-    "provenance": "owner-supplied",
-    "alt": {
-      "he": "פרסום של המרפאה בכותרת \"הלבנת שיניים וניקוי אבנית\", ובו שתי תמונות מסומנות לפני ואחרי",
-      "ar": "منشور للعيادة بعنوان \"تبييض الأسنان وإزالة الجير\"، يعرض صورتين موسومتين بقبل وبعد",
-      "en": "Clinic post headed \"teeth whitening and tartar cleaning\", with two photographs labelled before and after"
-    },
-    "caption": {
-      "he": "הלבנה וניקוי אבנית",
-      "ar": "تبييض وتنظيف الجير",
-      "en": "Whitening and tartar cleaning"
     }
   },
   {
