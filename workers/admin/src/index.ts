@@ -15,7 +15,7 @@ import { fail, ok, readJson, sameOrigin, type Env } from './http.ts';
 import { parseHours, serialiseHours, validateHoursPayload } from './hours.ts';
 import {
   addRecord, describeRecord, parseRecords, type CheckedImage, type DesiredPhoto, removeRecord, reorderRecords, serialiseRecords, setStatus,
-  validateReplacement, validateUpload, MAX_IMAGE_BYTES, MIN_LONG_EDGE, nextFilename,
+  validateReplacement, validateUpload, MAX_IMAGE_BYTES, nextFilename,
 } from './media.ts';
 import { inspectImage } from './image.ts';
 import { commitPhotoChanges, createImageBlob, readBlobBytes } from './github.ts';
@@ -411,7 +411,6 @@ async function stagePhoto({ request, env }: Context): Promise<Response> {
   if (bytes.length > MAX_IMAGE_BYTES) return fail('INVALID', ['file_too_large']);
   const image = inspectImage(bytes);
   if (image === null) return fail('INVALID', ['unsupported_format']);
-  if (Math.max(image.width, image.height) < MIN_LONG_EDGE) return fail('INVALID', ['image_too_small']);
   const blob = await createImageBlob(env, bytes);
   if (!blob.ok) return upstream(blob.reason);
   return ok({ blob: blob.data, width: image.width, height: image.height, extension: image.extension });
@@ -455,7 +454,6 @@ async function savePhotos({ request, env }: Context): Promise<Response> {
       if (!bytes.ok) return bytes.reason === 'not_found' ? fail('INVALID', [`photo_${i}:file_required`]) : upstream(bytes.reason);
       const info = inspectImage(bytes.data);
       if (info === null) return fail('INVALID', [`photo_${i}:unsupported_format`]);
-      if (Math.max(info.width, info.height) < MIN_LONG_EDGE) return fail('INVALID', [`photo_${i}:image_too_small`]);
       image = { blob, width: info.width, height: info.height, extension: info.extension };
     }
     desired.push({

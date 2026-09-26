@@ -441,12 +441,24 @@ test('a phone photo over the send limit is resized before upload, never enlarged
   await expect.poll(() => tilesOf(page).last().locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBe(1600);
 });
 
-test('an image that is too small is refused on its tile, with the reason', async ({ page }) => {
+test('an Instagram-sized 1080px photo is accepted and saved as it is — there is no minimum size', async ({ page, request }) => {
+  test.setTimeout(90_000);
   await openManager(page);
   const pm = managerOf(page);
-  await pm.locator('#pm-add-input').setInputFiles({ name: 'tiny.png', mimeType: 'image/png', buffer: noisePng(400, 300) });
-  await expect(tilesOf(page).last()).toContainText('קטנה מדי');
-  await expect(pm.locator('.pm-save')).toBeDisabled();
+  await pm.locator('#pm-add-input').setInputFiles({ name: 'post.png', mimeType: 'image/png', buffer: noisePng(1080, 1080, 5) });
+  const added = tilesOf(page).last();
+  await expect(added).toContainText('חדשה');
+  await expect(added).not.toContainText('קטנה מדי');
+  await added.locator('.pm-edit').click();
+  const sheet = pm.locator('.pe');
+  for (const [lang, text] of [['he', 'חדר טיפולים'], ['ar', 'غرفة العلاج'], ['en', 'Treatment room']] as const) await sheet.locator(`textarea[data-alt="${lang}"]`).fill(text);
+  await sheet.getByRole('button', { name: 'סיום' }).click();
+  await pm.locator('#pm-confirm').check();
+  await pm.locator('.pm-save').click();
+  await expect(pmStatus(page)).toContainText('מעדכן את האתר…', { timeout: 30_000 });
+  await request.post('/__fixture/deploy');
+  await expect(pmStatus(page)).toContainText('עודכן בתצוגת הבדיקה ✓', { timeout: 30_000 });
+  await expect.poll(() => tilesOf(page).last().locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBe(1080);
 });
 
 /* ── The doctor's work (ADR 0010): its own gallery, the same manager ────── */
