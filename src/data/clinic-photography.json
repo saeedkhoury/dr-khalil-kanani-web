@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "file": "reception-01.jpg",
+    "category": "reception",
+    "width": 2400,
+    "height": 1600,
+    "status": "unpublished",
+    "alt": {
+      "he": "בדיקת סנכרון — תמונה מוסתרת",
+      "ar": "اختبار المزامنة — صورة مخفية",
+      "en": "Sync test — hidden image"
+    }
+  }
+]
