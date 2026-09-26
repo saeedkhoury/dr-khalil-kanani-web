@@ -79,10 +79,16 @@ h2 { font-size: var(--text-xl); color: var(--color-ink); margin-block: 0 0.25rem
 
 /* ── Hours ── */
 .day { display: grid; grid-template-columns: 1fr; gap: 0.5rem; }
+/* Grid and flex children may shrink below their content. A time field is
+   much wider on some systems ("09:00 AM" in a wide fallback font on Linux)
+   and must wrap onto its own line, never push the page sideways. */
+.day > * { min-inline-size: 0; }
 .day .name { font-weight: 600; color: var(--color-ink); }
-.day .times { display: flex; gap: 0.5rem; align-items: center; }
+.day .times { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; min-inline-size: 0; }
 .day .times label { font-size: var(--text-xs); color: var(--color-muted); }
 .day input[type="time"] {
+  min-inline-size: 0;
+  max-inline-size: 100%;
   min-block-size: 48px;
   font: inherit;
   padding-inline: 0.5rem;

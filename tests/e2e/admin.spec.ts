@@ -13,6 +13,12 @@ const PANEL = 'http://127.0.0.1:4332/panel';
 
 test.use({ baseURL: 'http://127.0.0.1:4332' });
 
+test.describe('at phone width', () => {
+  // en-US renders <input type="time"> as "09:00 AM" — the widest form. It is
+  // what GitHub's Linux runner shows, so the test pins it instead of passing
+  // on a 24-hour desktop and failing the deploy.
+  test.use({ locale: 'en-US' });
+
 test('panel is accessible at phone width, in Hebrew and RTL', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto(PANEL);
@@ -29,6 +35,23 @@ test('panel is accessible at phone width, in Hebrew and RTL', async ({ page }) =
     .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
     .analyze();
   expect(audit.violations).toEqual([]);
+});
+
+test('very wide time fields wrap instead of pushing the page sideways', async ({ page }) => {
+  // Fonts differ by system: GitHub's Linux runner renders "09:00 AM" ~30px
+  // wider than a Mac, and the page overflowed there. Exaggerate the width
+  // well past any real font; the hours rows must still fit a 375px phone.
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto(PANEL);
+  const overflow = await page.evaluate(() => {
+    for (const input of document.querySelectorAll<HTMLInputElement>('.day input[type="time"]')) {
+      input.style.letterSpacing = '.3em';
+      input.style.fontSize = '18px';
+    }
+    return document.documentElement.scrollWidth - document.documentElement.clientWidth;
+  });
+  expect(overflow).toBe(0);
+});
 });
 
 test('hours load from the repository and save', async ({ page }) => {
