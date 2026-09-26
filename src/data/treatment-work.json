@@ -229,5 +229,24 @@
       "ar": "خلع سن",
       "en": "Tooth extraction"
     }
+  },
+  {
+    "id": "work-01",
+    "file": "work-01.jpg",
+    "category": "treatment-work",
+    "width": 1279,
+    "height": 1600,
+    "status": "unpublished",
+    "provenance": "owner-supplied",
+    "alt": {
+      "he": "בדיקה",
+      "ar": "‏فحص",
+      "en": "test"
+    },
+    "caption": {
+      "he": "סתימות",
+      "ar": "الحشوات",
+      "en": "Fillings"
+    }
   }
 ]
