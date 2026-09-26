@@ -128,6 +128,11 @@
       "he": "שתי תמונות של השיניים הקדמיות העליונות, מסומנות לפני ואחרי",
       "ar": "صورتان للأسنان الأمامية العلوية، موسومتان بقبل وبعد",
       "en": "Two photographs of the upper front teeth, labelled before and after"
+    },
+    "caption": {
+      "he": "סתימות",
+      "ar": "حشوات تجميلية",
+      "en": "Fillings"
     }
   },
   {
@@ -142,6 +147,11 @@
       "he": "שלוש תמונות של שיניים טוחנות מזוויות שונות, מסומנות לפני ואחרי",
       "ar": "ثلاث صور للأضراس من زوايا مختلفة، موسومة بقبل وبعد",
       "en": "Three photographs of molar teeth from different angles, labelled before and after"
+    },
+    "caption": {
+      "he": "סתימות",
+      "ar": "حشوات تجميلية",
+      "en": "Fillings"
     }
   },
   {
@@ -156,6 +166,11 @@
       "he": "שתי תמונות של השיניים העליונות, מסומנות לפני ואחרי",
       "ar": "صورتان للأسنان العلوية، موسومتان بقبل وبعد",
       "en": "Two photographs of the upper teeth, labelled before and after"
+    },
+    "caption": {
+      "he": "סתימות",
+      "ar": "حشوات تجميلية",
+      "en": "Fillings"
     }
   },
   {
@@ -170,6 +185,11 @@
       "he": "פרסום של המרפאה עם שתי תמונות של השיניים הקדמיות, מסומנות לפני ואחרי",
       "ar": "منشور للعيادة يعرض صورتين للأسنان الأمامية، موسومتين بقبل وبعد",
       "en": "Clinic post with two photographs of the front teeth, labelled before and after"
+    },
+    "caption": {
+      "he": "סתימות",
+      "ar": "حشوات تجميلية",
+      "en": "Fillings"
     }
   },
   {
