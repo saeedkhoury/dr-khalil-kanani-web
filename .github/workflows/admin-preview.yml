@@ -1,0 +1,82 @@
+# Rebuild Edit Mode (admin.drkhalilkanani.com) after every content change.
+#
+# WHY: the admin site is a static build of the same pages visitors see. Without
+# this, a save committed correctly but the page the doctor was looking at still
+# showed the old content after a reload — so a working save looked like a
+# failed one. The editor watches this workflow for the saved commit and offers
+# "refresh" when it has finished.
+#
+# SAFETY:
+# - Deploys ONLY from the branch named in the repository variable
+#   ADMIN_DEPLOY_BRANCH. The integration branch and main each carry their own
+#   Worker configuration; naming exactly one prevents a push to the other
+#   from overwriting the live admin with the wrong content branch.
+# - Runs only when the repository variable ADMIN_PREVIEW is 'on', which is set
+#   once the CLOUDFLARE_API_TOKEN secret exists. Otherwise the job is SKIPPED,
+#   and the editor says automatic updates are not set up — rather than a run
+#   that "succeeds" without deploying and leaves the editor waiting. The token
+#   is scoped to deploying Workers; it never reaches the browser and is not
+#   the GitHub token the Worker uses.
+# - Runs the same data and claims gates as the public deploy before building.
+# - This deploys the ADMIN site only. The public site is deploy.yml, on main.
+name: Admin preview
+
+on:
+  push:
+    branches: ['main', 'codex/visual-cms-integration']
+    paths: ['src/**', 'workers/admin/**', 'public/**', 'astro.config.*', 'package*.json']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# The newest commit wins; it contains every earlier change.
+concurrency:
+  group: admin-preview
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: github.ref_name == vars.ADMIN_DEPLOY_BRANCH && vars.ADMIN_PREVIEW == 'on'
+    runs-on: ubuntu-latest
+    env:
+      HAS_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+    steps:
+      - name: Deploy credential present
+        # Switched on without a credential is a misconfiguration: fail loudly,
+        # so the editor reports a failed update instead of waiting forever.
+        if: env.HAS_TOKEN != 'true'
+        run: |
+          echo "::error::ADMIN_PREVIEW is on but CLOUDFLARE_API_TOKEN is not configured."
+          exit 1
+      - uses: actions/checkout@v4
+        if: env.HAS_TOKEN == 'true'
+      - uses: actions/setup-node@v4
+        if: env.HAS_TOKEN == 'true'
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci
+        if: env.HAS_TOKEN == 'true'
+      - name: Structured data and claims gates
+        if: env.HAS_TOKEN == 'true'
+        run: npm run lint:data && npm run lint:claims
+      - name: Build Edit Mode
+        if: env.HAS_TOKEN == 'true'
+        env:
+          NODE_ENV: production
+          # Same acknowledged fields as the public build (see deploy.yml).
+          ACK_UNVERIFIED: 'doctor.ar,doctor.en,tagline.ar'
+        run: npm run build:admin
+      - name: Record which commit this build contains
+        if: env.HAS_TOKEN == 'true'
+        # The Worker reads this to tell the editor, truthfully, when the page
+        # being served includes a saved change.
+        run: echo "$GITHUB_SHA" > workers/admin/dist/build.txt
+      - name: Deploy the admin Worker
+        if: env.HAS_TOKEN == 'true'
+        working-directory: workers/admin
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.138.0 deploy --message "Edit Mode ${GITHUB_SHA::7}"

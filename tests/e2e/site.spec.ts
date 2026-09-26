@@ -16,6 +16,10 @@ const routes = ['', 'about/', 'contact/', 'faq/', 'privacy/', 'accessibility/', 
 
 for (const locale of locales) {
   test(`${locale}: clinic work photographs, profile buttons and full-size navigation`, async ({ page }) => {
+    // The owner manages this gallery (ADR 0010). With fewer than two published
+    // photos there is no strip navigation to test — and a content change must
+    // never be able to fail the deploy that publishes it.
+    test.skip(WORK_TILE_COUNT < 2, 'fewer than two published doctor\'s-work photos');
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(`/${locale}/`);
     const gallery = page.locator('section[aria-labelledby="gallery-heading"]');

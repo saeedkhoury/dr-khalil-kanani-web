@@ -14,6 +14,7 @@
 import { type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
 import Icon from '../primitives/Icon.astro';
+import EditControl from '../editor/EditControl.astro';
 
 interface Props {
   locale: Locale;
@@ -30,6 +31,7 @@ const Heading = headingLevel;
 
 <section class="section" aria-labelledby={`${id}-heading`}>
   <div class="shell max-w-3xl">
+    <EditControl kind="faq" locale={locale} />
     <p class="eyebrow">{t('faq.title')}</p>
     <Heading id={`${id}-heading`} class="mt-2">{title ?? t('faq.title')}</Heading>
 

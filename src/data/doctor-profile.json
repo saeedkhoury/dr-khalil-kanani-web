@@ -1,0 +1,25 @@
+{
+  "intro": {
+    "he": "ד״ר חליל כנעאני מפעיל מרפאת שיניים ואסתטיקה בג׳דיידה-מכר. המרפאה נותנת מענה בעברית, בערבית ובאנגלית, ומטפלת במגוון טיפולי שיניים משמרים ואסתטיים.",
+    "ar": "يدير د. خليل كنعاني عيادة أسنان وتجميل في الجديدة-المكر. تقدّم العيادة خدماتها بالعربية والعبرية والإنجليزية، وتشمل مجموعة من علاجات الأسنان الترميمية والتجميلية.",
+    "en": "Dr. Khalil Kanani runs a dental and aesthetic clinic in Jadeidi-Makr. The clinic works in Hebrew, Arabic and English and covers a range of restorative and aesthetic dental treatments."
+  },
+  "approach": {
+    "he": [
+      "הסבר על הממצאים ועל האפשרויות לפני תחילת כל טיפול.",
+      "תוכנית טיפול שנבנית לפי מצב השיניים והעדפות המטופל.",
+      "שיחה בשפה שנוחה למטופל — עברית, ערבית או אנגלית."
+    ],
+    "ar": [
+      "شرح للنتائج وللخيارات قبل بدء أي علاج.",
+      "خطة علاج تُبنى وفق حالة الأسنان وتفضيلات المريض.",
+      "حديث باللغة التي تريح المريض — العربية أو العبرية أو الإنجليزية."
+    ],
+    "en": [
+      "An explanation of the findings and the options before any treatment begins.",
+      "A treatment plan built around the condition of the teeth and the patient’s preferences.",
+      "A conversation in whichever language the patient prefers — Hebrew, Arabic or English."
+    ]
+  },
+  "credentials": []
+}

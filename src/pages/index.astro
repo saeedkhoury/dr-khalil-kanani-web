@@ -1,37 +1,15 @@
 ---
-/**
- * Root entry.
- *
- * Renders the default locale (Hebrew) homepage seamlessly for visitors landing
- * on the root URL, with canonical pointing at /he/ so search engines maintain
- * the clean language taxonomy defined in ADR 0002.
- */
 import BaseLayout from '../layouts/BaseLayout.astro';
-import Hero from '../components/sections/Hero.astro';
-import TrustStrip from '../components/sections/TrustStrip.astro';
-import TreatmentsGrid from '../components/sections/TreatmentsGrid.astro';
-import DoctorIntro from '../components/sections/DoctorIntro.astro';
-import FaqAccordion from '../components/sections/FaqAccordion.astro';
-
+import HomeSections from '../components/sections/HomeSections.astro';
 import { DEFAULT_LOCALE, localizePath } from '../i18n/config';
 import { useTranslations } from '../i18n/ui';
-import { getTreatments } from '../lib/content';
-import { generalFaq } from '../data/faq';
 import { clinic } from '../data/clinic';
 
 export const prerender = true;
-
 const locale = DEFAULT_LOCALE;
 const t = useTranslations(locale);
-const treatments = await getTreatments(locale);
-const faq = generalFaq.slice(0, 5).map((f) => ({ q: f.q[locale], a: f.a[locale] }));
 const canonical = new URL(localizePath(locale, ''), Astro.site ?? clinic.siteUrl).toString();
 ---
-
 <BaseLayout locale={locale} title={t('site.title')} description={t('hero.subtitle')} canonical={canonical}>
-  <Hero locale={locale} />
-  <TrustStrip locale={locale} />
-  <TreatmentsGrid locale={locale} treatments={treatments} limit={6} />
-  <DoctorIntro locale={locale} />
-  <FaqAccordion locale={locale} items={faq} id="home-faq" />
+  <HomeSections locale={locale} />
 </BaseLayout>

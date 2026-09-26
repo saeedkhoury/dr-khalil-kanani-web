@@ -1,4 +1,24 @@
+/* KEEP THE ADMIN CMS OUT OF THE PUBLIC STYLESHEET.
+
+   Tailwind scans the project for class names and cannot tell a class from a
+   token name in prose. `var(--text-base)` inside the admin Worker's own
+   stylesheet, and `--ease-out` quoted in a test assertion, were both read as
+   class usage — emitting `.text-base` and `.ease-out` into THIS stylesheet,
+   which no page uses, and changing the file hash on all 47 pages.
+
+   These two directories are excluded because this phase added them. A
+   stricter `source(none)` allow-list would be better still, but it also drops
+   four utilities the current stylesheet carries from documentation prose
+   (`border-be`, `border-bs`, `ring`, `uppercase` — used in docs/ and
+   .claude/skills/, not on any page). That is a real 467-byte cleanup of the
+   PUBLIC site and belongs in its own reviewed change, not smuggled in with
+   the CMS. See HANDOFF.md. */
 @import 'tailwindcss';
+@source not "../../workers";
+@source not "../../tests";
+/* Preserve two harmless utilities previously picked up from removed Markdown.
+   Keeping the CSS hash stable makes the public migration diff reviewable. */
+@source inline("collapse lowercase");
 
 /* ==========================================================================
    DR. KHALIL KANANI — DESIGN SYSTEM

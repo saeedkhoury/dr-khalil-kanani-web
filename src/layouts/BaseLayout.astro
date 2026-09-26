@@ -27,6 +27,7 @@ import { buildGraph } from '../lib/schema';
 import Header from '../components/sections/Header.astro';
 import Footer from '../components/sections/Footer.astro';
 import StickyActionBar from '../components/sections/StickyActionBar.astro';
+import { BAR_STRINGS } from '../components/editor/bar-strings';
 
 interface Props {
   locale: Locale;
@@ -58,6 +59,9 @@ const xDefault = new URL(
 const fullTitle = title === t('site.title') ? title : `${title} | ${t('site.shortName')}`;
 
 const graph = buildGraph({ locale, pathname, title: fullTitle, description, breadcrumbs });
+const editing = process.env.VISUAL_CMS === '1';
+// Edit Mode's own words, in the page's language. Rendered only when editing.
+const bar = BAR_STRINGS[locale as keyof typeof BAR_STRINGS] ?? BAR_STRINGS.he;
 ---
 
 <!doctype html>
@@ -69,12 +73,12 @@ const graph = buildGraph({ locale, pathname, title: fullTitle, description, brea
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
-    <link rel="canonical" href={canonical} />
+    {!editing && <link rel="canonical" href={canonical} />}
 
-    {noindex && <meta name="robots" content="noindex, follow" />}
+    {editing ? <meta name="robots" content="noindex, nofollow" /> : noindex && <meta name="robots" content="noindex, follow" />}
 
     {
-      alternates.map((alt) => (
+      !editing && alternates.map((alt) => (
         <link
           rel="alternate"
           hreflang={alt.locale}
@@ -82,7 +86,7 @@ const graph = buildGraph({ locale, pathname, title: fullTitle, description, brea
         />
       ))
     }
-    <link rel="alternate" hreflang="x-default" href={xDefault} />
+    {!editing && <link rel="alternate" hreflang="x-default" href={xDefault} />}
 
     {/*
       Only the fonts this locale actually needs.
@@ -99,7 +103,7 @@ const graph = buildGraph({ locale, pathname, title: fullTitle, description, brea
     {locale === 'ar' && <Font cssVariable="--font-ar" preload />}
     {locale === 'en' && <Font cssVariable="--font-en" preload />}
 
-    <meta property="og:type" content="website" />
+    {!editing && <meta property="og:type" content="website" />}
     <meta property="og:title" content={fullTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
@@ -116,10 +120,12 @@ const graph = buildGraph({ locale, pathname, title: fullTitle, description, brea
       document.documentElement.classList.remove('no-js');
     </script>
 
-    <script type="application/ld+json" set:html={JSON.stringify(graph)} />
+    {!editing && <script type="application/ld+json" set:html={JSON.stringify(graph)} />}
+    {editing && <link rel="stylesheet" href="/visual-editor.css" />}
   </head>
 
   <body>
+    {editing && <div class="visual-editor-bar" data-visual-editor-locale={locale} lang={locale}><span class="visual-bar-head"><strong>{bar.title}</strong><span class="visual-bar-notice"><span class="visual-bar-notice-long">{bar.notice}</span><span class="visual-bar-notice-short">{bar.noticeShort}</span></span></span><span class="visual-bar-actions"></span></div>}
     <a class="skip-link" href="#main">{t('a11y.skipToContent')}</a>
 
     <Header locale={locale} />
@@ -131,6 +137,8 @@ const graph = buildGraph({ locale, pathname, title: fullTitle, description, brea
     <Footer locale={locale} />
 
     {!hideActionBar && <StickyActionBar locale={locale} />}
+
+    {editing && <script is:inline src="/visual-editor.js" defer></script>}
 
     <script>
       // Scroll reveal + header state.

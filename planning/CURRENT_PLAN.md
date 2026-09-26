@@ -6,6 +6,17 @@ The original numbered implementation plan (core pages, six treatments in three
 languages and appointment requests) is complete. The current Phase 3 refers to
 the premium upgrade in `CHANGELOG.md`, merged through PR #1.
 
+## Current authorized workstream — admin CMS local remediation
+
+The later approved Admin CMS design and implementation plan are in
+`docs/specs/2026-09-22-admin-cms-{design,plan}.md`. The owner's remediation
+instruction supersedes the initial component/page freeze only for minimum
+clinic-gallery integration, and requires stale writes to fail rather than
+silently overwrite. Remediation is complete locally on `feat/admin-cms`.
+See [the audit](../docs/audits/2026-09-24-admin-cms-remediation.md) and `HANDOFF.md`
+for current verification. Infrastructure remains blocked and unauthorized.
+The older completion notes below describe the earlier public-site workstream.
+
 ## Completed
 
 - Typography, hero, treatment cards, conditional gallery, Google aggregate

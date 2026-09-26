@@ -29,6 +29,7 @@ import { clinic } from '../../data/clinic';
 import { resolveImage } from '../../lib/images';
 import Icon from '../primitives/Icon.astro';
 import Button from '../primitives/Button.astro';
+import EditControl from '../editor/EditControl.astro';
 
 interface Props {
   locale: Locale;
@@ -41,6 +42,7 @@ const t = useTranslations(locale);
 // Drop entries whose file is missing rather than rendering a broken image.
 const assets = galleryFor(kind);
 const workGallery = kind === 'work';
+const clinicGallery = kind === 'clinic';
 const illustrative = kind === 'illustrations';
 const resolvedItems = assets
   .map((asset) => ({ asset, resolved: resolveImage(asset.file) }))
@@ -51,11 +53,42 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
   ...item,
   fullSize: await getImage({ src: item.resolved, width: Math.min(1536, item.resolved.width), format: item.resolved.format === 'svg' ? 'svg' : 'webp', quality: 85 }),
 })));
+
+// ── Edit Mode ─────────────────────────────────────────────────────────────
+// Each managed gallery ends with its own Edit tile, so the doctor manages the
+// gallery he is looking at: the clinic grid opens the clinic-photo manager,
+// the doctor's-work strip opens the doctor's-work manager (ADR 0010). In Edit
+// Mode a section renders even when empty, or there would be nothing to put
+// the tile at the end of. None of this exists in the public build.
+const editing = process.env.VISUAL_CMS === '1';
+const editable = editing && (clinicGallery || workGallery);
+/**
+ * The doctor's framing as inline style: object-position puts the focal point
+ * at the same relative spot in the frame as in the photo, and scaling around
+ * that same point zooms without ever uncovering the frame. The values were
+ * validated as bare numbers in range (data-schema.ts), so nothing else can
+ * reach this attribute.
+ */
+const frameStyle = (frame?: { x: number; y: number; zoom: number }) => {
+  if (!frame) return undefined;
+  const r = (n: number) => Math.round(n * 100) / 100;
+  return `object-position:${r(frame.x)}% ${r(frame.y)}%;transform:scale(${r(frame.zoom)});transform-origin:${r(frame.x)}% ${r(frame.y)}%`;
+};
+const WORK_EMPTY_NOTE = {
+  he: 'אין כרגע עבודות מוצגות באתר. הרצועה תופיע למטופלים כשתוצג בה תמונה.',
+  ar: 'لا توجد حاليًا أعمال معروضة في الموقع. سيظهر الشريط للزوار عند عرض صورة فيه.',
+  en: 'No work is shown on the site right now. Visitors will see this strip once a photo is shown.',
+}[locale];
+const EMPTY_NOTE = {
+  he: 'עדיין אין תמונות מרפאה מוצגות באתר. הגלריה תופיע למטופלים כשתוצג בה תמונה ראשונה.',
+  ar: 'لا توجد بعد صور معروضة للعيادة. سيظهر المعرض للزوار عند عرض أول صورة.',
+  en: 'No clinic photos are shown yet. Visitors will see this gallery once the first photo is shown.',
+}[locale];
 ---
 
 {
-  items.length > 0 && (
-    <section class="section-lg bg-[var(--color-mist)]" aria-labelledby="gallery-heading" data-gallery-kind={workGallery ? 'work' : illustrative ? 'illustrations' : 'clinic'}>
+  (items.length > 0 || editable) && (
+    <section class="section-lg bg-[var(--color-mist)]" aria-labelledby="gallery-heading" data-gallery-kind={workGallery ? 'work' : illustrative ? 'illustrations' : 'clinic'} data-visual-only={items.length === 0 ? '' : undefined}>
       <div class="shell">
         <div class="max-w-2xl">
           <p class="eyebrow">{t(workGallery ? 'gallery.workEyebrow' : illustrative ? 'gallery.artEyebrow' : 'gallery.eyebrow')}</p>
@@ -130,7 +163,11 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
           class:list={[
             workGallery
               ? 'flex gap-4'
-              : 'mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:auto-rows-[15rem]',
+              : clinicGallery
+                // Every clinic photo sits in the same 4:3 frame, so the framing
+                // the doctor chose looks the same on a phone and a desktop.
+                ? 'mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3'
+                : 'mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:auto-rows-[15rem]',
           ]}
           style="list-style:none;padding-inline-start:0;margin-block-end:0"
         >
@@ -139,13 +176,13 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
               class:list={[
                 'reveal',
                 workGallery ? 'shrink-0 snap-start' : '',
-                !workGallery && asset.feature ? 'sm:col-span-2 lg:row-span-2' : '',
+                !workGallery && !clinicGallery && asset.feature ? 'sm:col-span-2 lg:row-span-2' : '',
               ]}
               style={`--i:${i % 3}`}
             >
               <button
                 type="button"
-                class:list={['group relative block w-full cursor-pointer overflow-hidden rounded-[var(--radius-media)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-0', !workGallery && 'h-full']}
+                class:list={['group relative block w-full cursor-pointer overflow-hidden rounded-[var(--radius-media)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-0', clinicGallery ? 'aspect-[4/3]' : !workGallery && 'h-full']}
                 data-gallery-open={i}
                 aria-label={asset.alt[locale]}
               >
@@ -156,7 +193,7 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
                   sizes={asset.feature ? '(min-width: 1024px) 66vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'}
                   loading={i < 3 ? 'eager' : 'lazy'}
                   decoding={i < 3 ? 'sync' : 'async'}
-                  style={workGallery ? `aspect-ratio:${asset.width} / ${asset.height}` : undefined}
+                  style={workGallery ? `aspect-ratio:${asset.width} / ${asset.height}` : clinicGallery ? frameStyle(asset.frame) : undefined}
                   class:list={[
                     'transition-opacity duration-[var(--dur-base)] group-hover:opacity-90',
                     /* Fixed height, width follows the aspect ratio. `contain`
@@ -176,7 +213,15 @@ const items = await Promise.all(resolvedItems.map(async (item) => ({
               </button>
             </li>
           ))}
+          {editable && (
+            <li class:list={['visual-gallery-edit', workGallery && 'visual-gallery-edit-strip shrink-0 snap-start']} data-visual-only>
+              {workGallery
+                ? <EditControl kind="work" locale={locale} />
+                : <EditControl kind="photos" focus="gallery" locale={locale} />}
+            </li>
+          )}
         </ul>
+        {editable && items.length === 0 && <p class="visual-gallery-empty" data-visual-only>{workGallery ? WORK_EMPTY_NOTE : EMPTY_NOTE}</p>}
         </div>
       </div>
 

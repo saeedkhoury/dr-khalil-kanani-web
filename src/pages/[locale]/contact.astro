@@ -8,6 +8,7 @@ import { LOCALES, localizePath, type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
 import { getTreatments } from '../../lib/content';
 import { clinic, telUrl, whatsappUrl, hasAddress, hasHours } from '../../data/clinic';
+import EditControl from '../../components/editor/EditControl.astro';
 
 export function getStaticPaths() {
   return LOCALES.map((locale) => ({ params: { locale } }));
@@ -46,6 +47,7 @@ const dayNames: Record<Locale, Record<string, string>> = {
     <!-- Direct channels first: for a local clinic these convert far better
          than a form, and they are the fastest path for someone in pain. -->
     <div>
+      <EditControl kind="contact" locale={locale} /><EditControl kind="hours" locale={locale} /><EditControl kind="copy" focus="contact" locale={locale} />
       <p class="eyebrow">{t('nav.contact')}</p>
       <h1 class="mt-2">{t('contact.title')}</h1>
       <p class="mt-4 text-[var(--text-lg)] text-[var(--color-muted)]">{t('contact.subtitle')}</p>

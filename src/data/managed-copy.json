@@ -1,0 +1,147 @@
+{
+  "hero.eyebrow": {
+    "he": "ג׳דיידה-מכר",
+    "ar": "الجديدة-المكر",
+    "en": "Jadeidi-Makr"
+  },
+  "hero.title": {
+    "he": "רפואת שיניים ואסתטיקה",
+    "ar": "طب وتجميل الأسنان",
+    "en": "Dental & aesthetic care"
+  },
+  "hero.subtitle": {
+    "he": "מרפאה פרטית בג׳דיידה-מכר. טיפול אישי, הסבר מלא לפני כל טיפול, ושירות בעברית, בערבית ובאנגלית.",
+    "ar": "عيادة خاصة في الجديدة-المكر. رعاية شخصية، شرح كامل قبل كل علاج، وخدمة بالعربية والعبرية والإنجليزية.",
+    "en": "A private clinic in Jadeidi-Makr. Personal care, a full explanation before every treatment, and service in Hebrew, Arabic and English."
+  },
+  "trust.explanation.title": {
+    "he": "הסבר מלא מראש",
+    "ar": "شرح كامل مسبقًا",
+    "en": "Explained in advance"
+  },
+  "trust.explanation.body": {
+    "he": "לפני כל טיפול תקבלו הסבר על מה שנעשה ולמה.",
+    "ar": "قبل كل علاج تحصلون على شرح لما سيجري ولماذا.",
+    "en": "Before any treatment you get a clear explanation of what and why."
+  },
+  "trust.languages.title": {
+    "he": "עברית · ערבית · אנגלית",
+    "ar": "عربية · عبرية · إنجليزية",
+    "en": "Hebrew · Arabic · English"
+  },
+  "trust.languages.body": {
+    "he": "מדברים איתכם בשפה שנוחה לכם.",
+    "ar": "نتحدث معكم باللغة التي تريحكم.",
+    "en": "We speak with you in the language you are comfortable in."
+  },
+  "trust.availability.title": {
+    "he": "זמינות וקביעת תורים",
+    "ar": "مواعيد وتوفّر",
+    "en": "Appointments & availability"
+  },
+  "trust.availability.body": {
+    "he": "מענה טלפוני ובוואטסאפ, וקביעת תור נוחה.",
+    "ar": "ردّ عبر الهاتف والواتساب، وحجز موعد ميسّر.",
+    "en": "Reachable by phone and WhatsApp, with straightforward booking."
+  },
+  "trust.personal.title": {
+    "he": "טיפול אישי",
+    "ar": "رعاية شخصية",
+    "en": "Personal care"
+  },
+  "trust.personal.body": {
+    "he": "רופא אחד שמכיר אתכם ואת התיק שלכם.",
+    "ar": "طبيب واحد يعرفكم ويعرف ملفكم.",
+    "en": "One dentist who knows you and your history."
+  },
+  "treatments.title": {
+    "he": "הטיפולים שלנו",
+    "ar": "علاجاتنا",
+    "en": "Our treatments"
+  },
+  "treatments.intro": {
+    "he": "מידע על הטיפולים הניתנים במרפאה.",
+    "ar": "معلومات عن العلاجات المتوفرة في العيادة.",
+    "en": "Information about the treatments available at the clinic."
+  },
+  "doctor.title": {
+    "he": "על ד״ר חליל כנעאני",
+    "ar": "عن د. خليل كنعاني",
+    "en": "About Dr. Khalil Kanani"
+  },
+  "doctor.cta": {
+    "he": "עוד על הרופא",
+    "ar": "المزيد عن الطبيب",
+    "en": "More about the dentist"
+  },
+  "faq.title": {
+    "he": "שאלות נפוצות",
+    "ar": "أسئلة شائعة",
+    "en": "Frequently asked questions"
+  },
+  "contact.title": {
+    "he": "צרו קשר",
+    "ar": "اتصلوا بنا",
+    "en": "Contact us"
+  },
+  "contact.subtitle": {
+    "he": "נשמח לענות על כל שאלה ולסייע בקביעת תור.",
+    "ar": "يسعدنا الإجابة عن أي سؤال والمساعدة في حجز موعد.",
+    "en": "We are glad to answer any question and help you book."
+  },
+  "location.title": {
+    "he": "איך מגיעים למרפאה",
+    "ar": "كيف تصلون إلى العيادة",
+    "en": "How to reach the clinic"
+  },
+  "location.subtitle": {
+    "he": "המרפאה נמצאת בג׳דיידה-מכר. אפשר לנווט ישירות מכאן.",
+    "ar": "العيادة في الجديدة-المكر. يمكنكم التوجّه إليها مباشرة من هنا.",
+    "en": "The clinic is in Jadeidi-Makr. You can navigate straight there from here."
+  },
+  "gallery.eyebrow": {
+    "he": "המרפאה",
+    "ar": "العيادة",
+    "en": "The clinic"
+  },
+  "gallery.title": {
+    "he": "הצצה למרפאה",
+    "ar": "لمحة عن العيادة",
+    "en": "A look inside"
+  },
+  "gallery.intro": {
+    "he": "תמונות מהמרפאה בג׳דיידה-מכר.",
+    "ar": "صور من العيادة في الجديدة-المكر.",
+    "en": "Photographs of the clinic in Jadeidi-Makr."
+  },
+  "action.bookAppointment": {
+    "he": "לקביעת תור",
+    "ar": "حجز موعد",
+    "en": "Book an appointment"
+  },
+  "action.readMore": {
+    "he": "קראו עוד",
+    "ar": "اقرأ المزيد",
+    "en": "Read more"
+  },
+  "action.allTreatments": {
+    "he": "כל הטיפולים",
+    "ar": "كل العلاجات",
+    "en": "All treatments"
+  },
+  "feedback.title": {
+    "he": "חוות דעת של מטופלים",
+    "ar": "آراء المرضى",
+    "en": "Patient feedback"
+  },
+  "feedback.body": {
+    "he": "חוות דעת על המרפאה מתפרסמות בפרופיל Google של המרפאה. אפשר לקרוא אותן שם.",
+    "ar": "تُنشر الآراء حول العيادة في ملف Google الخاص بها. يمكنكم قراءتها هناك.",
+    "en": "Reviews of the clinic are published on its Google profile. You can read them there."
+  },
+  "feedback.cta": {
+    "he": "קריאת חוות הדעת ב-Google",
+    "ar": "قراءة الآراء على Google",
+    "en": "Read reviews on Google"
+  }
+}

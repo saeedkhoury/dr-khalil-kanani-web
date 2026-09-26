@@ -18,6 +18,7 @@ import { resolveImage } from '../../lib/images';
 import Button from '../primitives/Button.astro';
 import Icon from '../primitives/Icon.astro';
 import HeroLogo from './HeroLogo.astro';
+import EditControl from '../editor/EditControl.astro';
 
 interface Props {
   locale: Locale;
@@ -52,6 +53,7 @@ const withImage = hasHeroImage() && heroAsset !== undefined;
   </div>
 
   <div class="shell hero-layout py-12 md:py-20">
+    <EditControl kind="copy" focus="hero" locale={locale} />
     <HeroLogo />
     <div class="hero-copy">
       <p class="eyebrow enter flex items-center gap-1.5" style="--i:0">

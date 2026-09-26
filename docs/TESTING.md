@@ -1,11 +1,32 @@
 # Testing
 
+## Current Admin CMS verification — 2026-09-24
+
+The clean local remediation run passed 418 unit tests (257 admin and 37
+appointment Worker tests included), 52 Chromium tests and the 47-page built
+HTML audit. Detailed commands, limits, mutation evidence, baseline comparison
+and the reconstructed requirements matrix are in
+[the remediation audit](audits/2026-09-24-admin-cms-remediation.md).
+
+`npm test` includes both Workers. To run their subsets independently:
+
+```bash
+node --experimental-strip-types --test tests/unit/admin-*.test.ts
+node --experimental-strip-types --test tests/unit/appointment-email.test.ts
+```
+
+Playwright also uses loopback port 4332 for the actual admin Worker with
+mock GitHub and generated Access JWT/JWKS. No real remote mutations are made.
+The gallery fixture now tests the About page's clinic collection independently
+of homepage treatment work. English fallback stays Arabic and flagged for
+review. The older counts below are historical public-site verification notes.
+
 ## Required checks
 
 ```bash
 npm run verify
 npm test
-npm run lint:assets -- --all
+npm run lint:assets:full
 npm run build
 npm run lint:a11y
 npx playwright install chromium

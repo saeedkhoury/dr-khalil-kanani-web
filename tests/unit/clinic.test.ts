@@ -158,6 +158,28 @@ describe('verification manifest', () => {
     }
   });
 
+  test('hours.published is derived from the data, not stored as a literal', () => {
+    // The point of the getter. A stored `published: false` would still read
+    // false after the owner filled the hours in, so the launch gate would
+    // call them hidden while they were on screen — exactly the drift this
+    // replaces.
+    assert.equal(hasHours(), false);
+    assert.equal(VERIFICATION.hours.published, false);
+
+    const before = clinic.hours[0];
+    try {
+      // Temporary, restored below: nothing else can observe a value derived
+      // from data without briefly changing that data.
+      clinic.hours[0] = { day: 'Sunday', opens: '08:00', closes: '17:00', closed: false };
+      assert.equal(hasHours(), true);
+      assert.equal(VERIFICATION.hours.published, true, 'published must follow the hours');
+    } finally {
+      clinic.hours[0] = before;
+    }
+
+    assert.equal(VERIFICATION.hours.published, false, 'and follow them back');
+  });
+
   test('a field defaults to published unless it opts out', () => {
     // Fail-safe: forgetting the flag must mean "treated as published", so the
     // gate errs toward blocking rather than toward silently shipping.

@@ -20,6 +20,7 @@ import { LOCALES, localizePath, type Locale } from '../../../i18n/config';
 import { useTranslations } from '../../../i18n/ui';
 import { getTreatment, getRelated, getTreatmentSlugs } from '../../../lib/content';
 import { clinic, whatsappUrl } from '../../../data/clinic';
+import EditControl from '../../../components/editor/EditControl.astro';
 
 export async function getStaticPaths() {
   const slugs = await getTreatmentSlugs();
@@ -29,6 +30,7 @@ export async function getStaticPaths() {
 const locale = Astro.params.locale as Locale;
 const slug = Astro.params.slug as string;
 const t = useTranslations(locale);
+const editing = process.env.VISUAL_CMS === '1';
 
 const entry = await getTreatment(locale, slug);
 if (!entry) return Astro.rewrite('/404');
@@ -77,6 +79,7 @@ const reviewed = d.reviewedOn
   </nav>
 
   <article>
+    {editing && <div class="shell"><EditControl kind="services" focus={slug} locale={locale} /></div>}
     <!-- Lede -->
     <header class="shell pt-6 pb-10">
       <div class="flex items-center gap-3">

@@ -43,17 +43,17 @@ function launchGate() {
  * The form now hands off to WhatsApp (ADR 0007), so no server is needed at
  * all. Output goes to `dist/` and what is built is exactly what is served.
  *
- * Fonts are declared here rather than linked from Google so Astro downloads,
- * subsets and self-hosts them. Discovery found a competitor loading all 18
- * variants of a webfont render-blocking from Google Fonts; self-hosting with
- * explicit subsets avoids that, and removes a third-party request that would
- * otherwise leak visitor IPs (a privacy consideration under Amendment 13).
+ * The exact Noto font bytes previously served by Astro are kept in
+ * src/assets/fonts. Astro copies these local files into the build without
+ * requesting mutable Google Fonts responses. Locale-specific faces keep the
+ * visitor download limited to the script the page uses.
  *
  * Only four weights ship: 300 is reserved for large display type, 400 carries
  * body copy, 600 is for eyebrow labels and UI, 700 for emphasis.
  */
 export default defineConfig({
   site: process.env.ASTRO_SITE || clinic.siteUrl,
+  outDir: process.env.VISUAL_CMS === '1' ? './workers/admin/dist' : './dist',
   base: process.env.ASTRO_BASE || undefined,
   trailingSlash: 'always',
 
@@ -69,42 +69,69 @@ export default defineConfig({
 
   fonts: [
     {
-      provider: fontProviders.google(),
+      provider: fontProviders.local(),
       name: 'Noto Sans Hebrew',
       cssVariable: '--font-he',
       weights: [300, 400, 600, 700],
       styles: ['normal'],
-      subsets: ['hebrew', 'latin'],
+      options: {
+        variants: [
+          {
+            src: ['./src/assets/fonts/noto-sans-hebrew-hebrew.woff2'],
+            weight: '300 700',
+            style: 'normal',
+            unicodeRange: ['U+0307-0308', 'U+0590-05FF', 'U+200C-2010', 'U+20AA', 'U+25CC', 'U+FB1D-FB4F'],
+          },
+          {
+            src: ['./src/assets/fonts/noto-sans-hebrew-latin.woff2'],
+            weight: '300 700',
+            style: 'normal',
+            unicodeRange: ['U+0000-00FF', 'U+0131', 'U+0152-0153', 'U+02BB-02BC', 'U+02C6', 'U+02DA', 'U+02DC', 'U+0304', 'U+0308', 'U+0329', 'U+2000-206F', 'U+20AC', 'U+2122', 'U+2191', 'U+2193', 'U+2212', 'U+2215', 'U+FEFF', 'U+FFFD'],
+          },
+        ],
+      },
       fallbacks: ['Arial Hebrew', 'David', 'system-ui', 'sans-serif'],
     },
     {
-      provider: fontProviders.google(),
+      provider: fontProviders.local(),
       name: 'Noto Sans Arabic',
       cssVariable: '--font-ar',
       weights: [300, 400, 600, 700],
       styles: ['normal'],
-      subsets: ['arabic'],
+      options: {
+        variants: [{
+          src: ['./src/assets/fonts/noto-sans-arabic-arabic.woff2'],
+          weight: '300 700',
+          style: 'normal',
+        }],
+      },
       fallbacks: ['Geeza Pro', 'Tahoma', 'system-ui', 'sans-serif'],
     },
     {
-      provider: fontProviders.google(),
+      provider: fontProviders.local(),
       name: 'Noto Sans',
       cssVariable: '--font-en',
       weights: [300, 400, 600, 700],
       styles: ['normal'],
-      subsets: ['latin'],
+      options: {
+        variants: [{
+          src: ['./src/assets/fonts/noto-sans-latin.woff2'],
+          weight: '300 700',
+          style: 'normal',
+        }],
+      },
       fallbacks: ['system-ui', 'Segoe UI', 'Helvetica Neue', 'sans-serif'],
     },
   ],
 
   integrations: [
     launchGate(),
-    sitemap({
+    ...(process.env.VISUAL_CMS === '1' ? [] : [sitemap({
       i18n: {
         defaultLocale: 'he',
         locales: { he: 'he', ar: 'ar', en: 'en' },
       },
-    }),
+    })]),
   ],
 
   vite: {

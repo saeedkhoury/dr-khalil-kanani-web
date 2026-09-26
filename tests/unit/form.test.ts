@@ -11,9 +11,12 @@ import assert from 'node:assert/strict';
 
 import { IL_PHONE, normalisePhone, isValidIsraeliPhone } from '../../src/lib/phone.ts';
 import { CONTACT_METHODS, DAYPARTS } from '../../src/lib/form-options.ts';
+import { blockingClaims, withoutBeforeAfterDescriptor } from '../../src/lib/claims.ts';
 import {
   treatmentWork,
+  treatmentWorkRecords,
   clinicPhotography,
+  clinicPhotographyRecords,
   illustrations,
   portrait,
   heroImage,
@@ -111,25 +114,48 @@ describe('form options', () => {
 });
 
 describe('media manifest', () => {
-  test('contains the twelve owner-approved treatment cases, with no invented portrait', () => {
-    // 13 source files, 12 unique — one is a byte-identical duplicate that was
-    // skipped rather than published twice.
-    assert.equal(treatmentWork.length, 12);
-    assert.equal(hasTreatmentWork(), true);
-    // No duplicate filenames, which is how the skipped duplicate would resurface.
-    const files = treatmentWork.map((a) => a.file);
+  test('the doctor\'s work is the published subset of its records, with no invented portrait', () => {
+    // Since ADR 0010 the owner edits this collection, so the test states what
+    // must stay true after any edit — not how many images there are today.
+    assert.deepEqual(
+      treatmentWork.map((a) => a.file),
+      treatmentWorkRecords.filter((r) => r.status === 'published').map((r) => r.file),
+    );
+    assert.equal(hasTreatmentWork(), treatmentWork.length > 0);
+    // No duplicate filenames or ids, which is how a skipped duplicate would resurface.
+    const files = treatmentWorkRecords.map((a) => a.file);
     assert.equal(new Set(files).size, files.length, 'duplicate file registered');
+    const ids = treatmentWorkRecords.map((a) => a.id);
+    assert.equal(new Set(ids).size, ids.length, 'duplicate id');
+    // Rendered assets carry no CMS bookkeeping.
+    for (const asset of treatmentWork) assert.ok(!('status' in asset) && !('id' in asset), `${asset.file} leaks CMS fields`);
     assert.equal(portrait, null);
     assert.equal(hasPortrait(), false);
   });
 
-  test('clinic photography is empty and hero is unset — nothing is invented', () => {
-    // Treatment-result images must never be borrowed to fill these. They
-    // stay empty until real clinic photographs exist.
-    assert.equal(clinicPhotography.length, 0);
-    assert.equal(hasClinicPhotography(), false);
+  test('hero is unset and clinic photography borrows nothing — nothing is invented', () => {
+    // Treatment-result images must never be borrowed to fill these. How many
+    // clinic photographs exist is the owner's business (the CMS writes them);
+    // that none of them is a treatment case is this test's.
     assert.equal(heroImage, null);
     assert.equal(hasHeroImage(), false);
+    assert.equal(hasClinicPhotography(), clinicPhotography.length > 0);
+    const workFiles = new Set(treatmentWorkRecords.map((r) => r.file));
+    for (const asset of clinicPhotographyRecords) assert.ok(!workFiles.has(asset.file), `${asset.file} is in both collections`);
+  });
+
+  test('clinicPhotography is the published subset of the records', () => {
+    // Unpublishing is reversible: the record stays in the manifest and is
+    // filtered out on read. Every consumer reads this export, so a photograph
+    // the owner took down cannot reach a page by accident.
+    assert.deepEqual(
+      clinicPhotography,
+      clinicPhotographyRecords.filter((r) => r.status === 'published'),
+    );
+    for (const asset of clinicPhotography) {
+      const record = clinicPhotographyRecords.find((r) => r.file === asset.file);
+      assert.equal(record?.status, 'published', `${asset.file} is rendered but not published`);
+    }
   });
 
   test('the collections are disjoint by category', () => {
@@ -220,16 +246,15 @@ describe('media manifest', () => {
     }
   });
 
-  test('alt text describes the image without asserting a medical outcome', () => {
-    // The images carry Hebrew marketing text in their pixels, including
-    // outcome claims. Those must not be transcribed into alt text, where they
-    // would become site copy that the claims linter is meant to catch.
-    const OUTCOME = /ללא כאב|without pain|painless|guaranteed|מדהים|amazing|best|הטוב ביותר|بلا ألم|مذهل/i;
-    for (const asset of treatmentWork) {
-      for (const locale of ['he', 'ar', 'en'] as const) {
-        const text = asset.alt[locale];
-        assert.ok(text.trim().length > 10, `${asset.file} (${locale}): alt text too short to describe the image`);
-        assert.doesNotMatch(text, OUTCOME, `${asset.file} (${locale}): alt text asserts an outcome`);
+  test('doctor\'s-work text passes the same claims gate the Worker applies', () => {
+    // The images carry marketing text in their pixels, including outcome
+    // claims. Those must not become site copy. The Worker refuses a save that
+    // breaks these rules, so CI checks exactly the same thing — a stricter
+    // private rule here would let the CMS commit what CI then rejects,
+    // blocking the public deploy.
+    for (const asset of treatmentWorkRecords) {
+      for (const text of [...Object.values(asset.alt), ...Object.values(asset.caption ?? {})]) {
+        assert.deepEqual(blockingClaims(withoutBeforeAfterDescriptor(text)), [], `${asset.file}: "${text}"`);
       }
     }
   });

@@ -13,6 +13,18 @@
  * while any launch-blocking field is still unverified.
  */
 
+import hoursData from './hours.json' with { type: 'json' };
+import contactData from './contact-facts.json' with { type: 'json' };
+import { assertHoursShape, type OpeningHoursRow } from '../lib/data-schema.ts';
+import { contactFactsSchema, parseManaged } from '../lib/managed-schema.ts';
+
+const contact = parseManaged(contactFactsSchema, contactData, 'contact facts');
+const digits = (value: string): string => value.replace(/\D/g, '');
+const international = (value: string): string => `+972${digits(value).slice(1)}`;
+const schemaPhone = (value: string): string => `+972-${value.slice(1)}`;
+
+export type { OpeningHoursRow };
+
 export type Verification =
   /** Confirmed by 2+ independent sources. Safe to publish. */
   | 'verified'
@@ -60,22 +72,22 @@ export const clinic = {
   phone: {
     /** Landline. VERIFIED: flyer + Instagram bio agree exactly. */
     landline: {
-      display: '04-884-8891',
-      tel: '+97248848891',
-      schema: '+972-4-884-8891',
+      display: contact.landline,
+      tel: international(contact.landline),
+      schema: schemaPhone(contact.landline),
     },
     /** Mobile / WhatsApp. VERIFIED: flyer + Instagram bio + post footer agree. */
     mobile: {
-      display: '052-288-5179',
-      tel: '+972522885179',
+      display: contact.mobile,
+      tel: international(contact.mobile),
       /** wa.me requires international format with no '+' and no leading zero. */
-      whatsapp: '972522885179',
-      schema: '+972-52-288-5179',
+      whatsapp: international(contact.mobile).slice(1),
+      schema: schemaPhone(contact.mobile),
     },
   },
 
   /** UNVERIFIED — clinic has no published email address. Owner must supply. */
-  email: '',
+  email: contact.email,
 
   /* ------------------------------------------------------------------------ */
   /*  Location                                                                 */
@@ -89,14 +101,10 @@ export const clinic = {
      * One canonical form per script. Transliteration drift across listings is
      * the single most common NAP failure in Israel.
      */
-    street: { he: 'רחוב 1003', ar: 'شارع 1003', en: 'Street 1003' },
-    locality: {
-      he: 'ג׳דיידה-מכר',
-      ar: 'الجديدة-المكر',
-      en: 'Jadeidi-Makr',
-    },
-    region: { he: 'מחוז הצפון', ar: 'لواء الشمال', en: 'Northern District' },
-    postalCode: '2510500',
+    street: contact.street,
+    locality: contact.locality,
+    region: contact.region,
+    postalCode: contact.postalCode,
     country: 'IL',
     /** Coordinates resolved from the owner's Waze link, not an address search. */
     geo: { lat: 32.9336, lng: 35.148804 } as { readonly lat: number; readonly lng: number },
@@ -105,18 +113,19 @@ export const clinic = {
 
   /* ------------------------------------------------------------------------ */
   /*  Hours — Sunday-first, per the Israeli working week.                      */
-  /*  PLACEHOLDER. Owner must supply. Do not guess clinic hours.               */
+  /*                                                                          */
+  /*  The ONLY clinic fact stored outside this file. It lives in hours.json    */
+  /*  because it is the one fact the owner must be able to change himself,     */
+  /*  and a file containing nothing but seven rows cannot be corrupted by      */
+  /*  editing it the way a TypeScript module can.                              */
+  /*                                                                          */
+  /*  Validated on import: JSON has no compile-time shape, so a bad edit must  */
+  /*  fail the build rather than render a wrong hour at a real clinic.         */
+  /*                                                                          */
+  /*  PLACEHOLDER until the owner supplies real hours. Do not guess them.      */
   /* ------------------------------------------------------------------------ */
 
-  hours: [
-    { day: 'Sunday', opens: '', closes: '', closed: false },
-    { day: 'Monday', opens: '', closes: '', closed: false },
-    { day: 'Tuesday', opens: '', closes: '', closed: false },
-    { day: 'Wednesday', opens: '', closes: '', closed: false },
-    { day: 'Thursday', opens: '', closes: '', closed: false },
-    { day: 'Friday', opens: '', closes: '', closed: false },
-    { day: 'Saturday', opens: '', closes: '', closed: true },
-  ],
+  hours: assertHoursShape(hoursData),
 
   /* ------------------------------------------------------------------------ */
   /*  Social                                                                   */
@@ -135,9 +144,9 @@ export const clinic = {
   requestEndpoint: 'https://drkanani-appointment-email.saed-khoury10.workers.dev' as string,
 
   social: {
-    instagram: 'https://www.instagram.com/dr.khalil.kanani',
+    instagram: contact.instagram,
     /** Hidden until the owner supplies the clinic’s exact Facebook page. */
-    facebook: '' as string,
+    facebook: contact.facebook,
     /**
      * Google Business Profile. UNVERIFIED — no profile was found during
      * discovery and the clinic may not have claimed one yet.
@@ -147,7 +156,7 @@ export const clinic = {
      * site, so the site LINKS OUT here rather than republishing reviews
      * (ADR 0005). Until this is set, the feedback block does not render.
      */
-    googleBusiness: '',
+    googleBusiness: contact.googleBusiness,
   },
 
   /**
@@ -226,24 +235,40 @@ export const VERIFICATION: Record<
   'tagline.he': { tier: 'verified', blocking: true, note: 'Logo lockup + flyer + IG bio' },
   'tagline.ar': { tier: 'unverified', blocking: true, note: 'Translation needs native review.' },
   'tagline.en': { tier: 'unverified', blocking: false },
-  'phone.landline': { tier: 'verified', blocking: true, note: 'Flyer + Instagram bio' },
-  'phone.mobile': {
-    tier: 'verified',
-    blocking: true,
-    note: 'Flyer + IG bio + post footer. WhatsApp presence NOT yet confirmed.',
+  'phone.landline': {
+    tier: contact.landline === '04-884-8891' ? 'verified' : 'owner', blocking: true,
+    note: contact.landline === '04-884-8891' ? 'Flyer + Instagram bio' : 'Updated in owner-confirmed CMS commit.',
   },
-  email: { tier: 'placeholder', blocking: false, note: 'No published address found.' },
+  'phone.mobile': {
+    tier: contact.mobile === '052-288-5179' ? 'verified' : 'owner',
+    blocking: true,
+    note: contact.mobile === '052-288-5179' ? 'Flyer + IG bio + post footer. WhatsApp presence NOT yet confirmed.' : 'Updated in owner-confirmed CMS commit.',
+  },
+  email: { tier: contact.email ? 'owner' : 'placeholder', blocking: false, note: contact.email ? 'Owner-confirmed CMS value.' : 'No published address found.' },
   'address.street': { tier: 'owner', blocking: true, note: 'Owner supplied Street 1003, Jadeidi-Makr on 2026-09-21.' },
   'address.locality': { tier: 'owner', blocking: false, note: 'IG address + post footer' },
   'address.geo': { tier: 'owner', blocking: true, note: 'Resolved from owner-supplied https://waze.com/ul/hsvbgrg6s4 on 2026-09-21.' },
-  hours: { tier: 'placeholder', blocking: true, published: false, note: 'Owner must supply. hasHours() hides the block.' },
+  hours: {
+    tier: hasHours() ? 'owner' : 'placeholder',
+    blocking: true,
+    /**
+     * DERIVED, never stored. hasHours() is what actually decides whether the
+     * block renders, so a literal here drifts the moment the owner fills the
+     * hours in — the gate would keep calling them hidden while they were on
+     * screen. One authoritative value, read through a getter.
+     */
+    get published() {
+      return hasHours();
+    },
+    note: 'Owner must supply. hasHours() hides the block.',
+  },
   siteUrl: {
     tier: 'placeholder',
     blocking: true,
     published: false,
     note: 'Overridden by ASTRO_SITE in CI, so the placeholder never ships.',
   },
-  'social.instagram': { tier: 'verified', blocking: false },
+  'social.instagram': { tier: contact.instagram === 'https://www.instagram.com/dr.khalil.kanani' ? 'verified' : 'owner', blocking: false },
 };
 
 /* -------------------------------------------------------------------------- */

@@ -33,6 +33,13 @@ jobs:
       - run: npm ci
 
       # Gates run BEFORE the build so a failure is reported as what it is.
+      #
+      # Data schema FIRST: it is the cheapest check and the one a CMS commit is
+      # most likely to fail. Letting the build catch a malformed manifest by
+      # throwing on import would report it as a stack trace from inside
+      # `astro build`, which is exactly what this named step exists to avoid.
+      - name: Data schema (CMS-writable JSON)
+        run: npm run lint:data
       - name: Medical claims linter
         run: npm run lint:claims
       - name: Mixed-script linter
@@ -93,7 +100,12 @@ jobs:
           retention-days: 7
 
       - name: Prepare Pages files
-        run: touch ./dist/.nojekyll
+        # build.txt names the exact commit this deployment contains. Edit
+        # Mode reads it to say "Live" only when the official site really has
+        # a saved change — never merely because a workflow finished.
+        run: |
+          touch ./dist/.nojekyll
+          echo "$GITHUB_SHA" > ./dist/build.txt
 
       - uses: actions/upload-pages-artifact@v3
         with:
