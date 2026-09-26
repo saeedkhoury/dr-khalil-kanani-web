@@ -470,8 +470,11 @@ test('doctor\'s work: the strip ends with its own Edit tile, and it opens THAT g
   await expect(pm).toHaveAttribute('data-gallery', 'work');
   expect(stem(await filesOf(page))).toEqual(onPage);
   // Existing titles are shown; a missing one is flagged, never invented.
-  await expect(tilesOf(page).nth(0).locator('.pm-text')).toHaveText('ציפויי שיניים');
-  await expect(tilesOf(page).nth(3).locator('.pm-text')).toHaveText('ללא כותרת');
+  // Read from the data, not pinned to today's order: the owner reorders this.
+  const records = await storedWork(page.request);
+  for (const [i, r] of records.entries()) {
+    await expect(tilesOf(page).nth(i).locator('.pm-text')).toHaveText(r.caption?.he ?? 'ללא כותרת');
+  }
   // The whole artwork, no framing controls.
   await tilesOf(page).nth(0).locator('.pm-edit').click();
   await expect(pm.locator('.pe-whole img')).toBeVisible();
@@ -516,9 +519,11 @@ test('doctor\'s work: a partial title is refused in words; a full one saves', as
   test.setTimeout(90_000);
   await openWork(page);
   const pm = managerOf(page);
-  const untitled = tilesOf(page).filter({ hasText: 'ללא כותרת' }).first();
-  const file = (await untitled.getAttribute('data-file'))!;
-  await untitled.locator('.pm-edit').click();
+  // Any photo will do: its title is cleared, then set in one language only.
+  const first = tilesOf(page).first();
+  const file = (await first.getAttribute('data-file'))!;
+  await first.locator('.pm-edit').click();
+  for (const lang of ['ar', 'en']) await pm.locator(`input[data-caption="${lang}"]`).fill('');
   await pm.locator('input[data-caption="he"]').fill('שיקום שיניים');
   await pm.locator('.pe-done').click();
   await pm.locator('.pm-save').click();

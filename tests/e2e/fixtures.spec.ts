@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
+import { clinicPhotography } from '../../src/data/media';
 
 for (const locale of ['he', 'ar', 'en']) {
   test(`${locale}: populated gallery, rating and click-to-load map`, async ({ page }) => {
@@ -77,9 +78,10 @@ for (const locale of ['he', 'ar', 'en']) {
       await expect(page.locator('#lightbox-position')).toHaveText('2 / 2');
       await page.keyboard.press('Escape');
       await expect(tile).toBeFocused();
+      // The real site renders a clinic gallery exactly when the owner has
+      // published clinic photographs — derived, never assumed empty.
       await page.goto(`/${locale}/about/`);
-      await expect(page.locator('[data-gallery-kind="clinic"]')).toHaveCount(0);
-      await expect(page.locator('#gallery-lightbox')).toHaveCount(0);
+      await expect(page.locator('[data-gallery-kind="clinic"]')).toHaveCount(clinicPhotography.length > 0 ? 1 : 0);
     });
   }
 }
