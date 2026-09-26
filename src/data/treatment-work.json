@@ -98,6 +98,25 @@
     }
   },
   {
+    "id": "work-extraction-02",
+    "file": "work-extraction-02.jpg",
+    "category": "treatment-work",
+    "width": 900,
+    "height": 1600,
+    "status": "published",
+    "provenance": "owner-supplied",
+    "alt": {
+      "he": "פרסום של המרפאה ובו תצלום של שן שנעקרה, מונחת על פד גזה",
+      "ar": "منشور للعيادة يعرض صورة لسن مخلوع موضوع على شاش",
+      "en": "Clinic post showing a photograph of an extracted tooth resting on gauze"
+    },
+    "caption": {
+      "he": "עקירת שן",
+      "ar": "خلع سن",
+      "en": "Tooth extraction"
+    }
+  },
+  {
     "id": "work-cleaning-03",
     "file": "work-cleaning-03.jpg",
     "category": "treatment-work",
@@ -204,25 +223,6 @@
       "he": "פרסום של המרפאה ובו תצלום של שן שנעקרה, מוחזקת בכפפה",
       "ar": "منشور للعيادة يعرض صورة لسن مخلوع مُمسَك بقفاز",
       "en": "Clinic post showing a photograph of an extracted tooth held in a gloved hand"
-    },
-    "caption": {
-      "he": "עקירת שן",
-      "ar": "خلع سن",
-      "en": "Tooth extraction"
-    }
-  },
-  {
-    "id": "work-extraction-02",
-    "file": "work-extraction-02.jpg",
-    "category": "treatment-work",
-    "width": 900,
-    "height": 1600,
-    "status": "published",
-    "provenance": "owner-supplied",
-    "alt": {
-      "he": "פרסום של המרפאה ובו תצלום של שן שנעקרה, מונחת על פד גזה",
-      "ar": "منشور للعيادة يعرض صورة لسن مخلوع موضوع على شاش",
-      "en": "Clinic post showing a photograph of an extracted tooth resting on gauze"
     },
     "caption": {
       "he": "עקירת שן",
