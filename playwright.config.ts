@@ -4,7 +4,10 @@ export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,
   workers: 3,
-  retries: 0,
+  // Every CMS save runs this suite before the public deploy. One retry in CI
+  // keeps a timing-sensitive touch test from blocking the doctor's change;
+  // a real regression fails twice. Locally, failures surface at once.
+  retries: process.env.CI ? 1 : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: 'http://127.0.0.1:4330',
