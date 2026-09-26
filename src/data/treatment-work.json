@@ -40,6 +40,25 @@
     }
   },
   {
+    "id": "work-veneers-02",
+    "file": "work-veneers-02.jpg",
+    "category": "treatment-work",
+    "width": 1254,
+    "height": 1254,
+    "status": "published",
+    "provenance": "owner-supplied",
+    "alt": {
+      "he": "פרסום של המרפאה עם שתי תמונות של השיניים הקדמיות, מסומנות לפני ואחרי",
+      "ar": "منشور للعيادة يعرض صورتين للأسنان الأمامية، موسومتين بقبل وبعد",
+      "en": "Clinic post with two photographs of the front teeth, labelled before and after"
+    },
+    "caption": {
+      "he": "ציפויי שיניים",
+      "ar": "قشور الأسنان",
+      "en": "Veneers"
+    }
+  },
+  {
     "id": "work-whitening-01",
     "file": "work-whitening-01.jpg",
     "category": "treatment-work",
@@ -79,6 +98,25 @@
     }
   },
   {
+    "id": "work-cleaning-03",
+    "file": "work-cleaning-03.jpg",
+    "category": "treatment-work",
+    "width": 1254,
+    "height": 1254,
+    "status": "published",
+    "provenance": "owner-supplied",
+    "alt": {
+      "he": "פרסום של המרפאה עם שתי תמונות של השיניים והחניכיים, מסומנות לפני ואחרי",
+      "ar": "منشور للعيادة يعرض صورتين للأسنان واللثة، موسومتين بقبل وبعد",
+      "en": "Clinic post with two photographs of the teeth and gums, labelled before and after"
+    },
+    "caption": {
+      "he": "ניקוי אבנית",
+      "ar": "تنظيف الجير",
+      "en": "Dental cleaning"
+    }
+  },
+  {
     "id": "work-restoration-01",
     "file": "work-restoration-01.jpg",
     "category": "treatment-work",
@@ -107,25 +145,6 @@
     }
   },
   {
-    "id": "work-veneers-02",
-    "file": "work-veneers-02.jpg",
-    "category": "treatment-work",
-    "width": 1254,
-    "height": 1254,
-    "status": "published",
-    "provenance": "owner-supplied",
-    "alt": {
-      "he": "פרסום של המרפאה עם שתי תמונות של השיניים הקדמיות, מסומנות לפני ואחרי",
-      "ar": "منشور للعيادة يعرض صورتين للأسنان الأمامية، موسومتين بقبل وبعد",
-      "en": "Clinic post with two photographs of the front teeth, labelled before and after"
-    },
-    "caption": {
-      "he": "ציפויי שיניים",
-      "ar": "قشور الأسنان",
-      "en": "Veneers"
-    }
-  },
-  {
     "id": "work-restoration-03",
     "file": "work-restoration-03.jpg",
     "category": "treatment-work",
@@ -151,25 +170,6 @@
       "he": "פרסום של המרפאה עם שתי תמונות של השיניים הקדמיות, מסומנות לפני ואחרי",
       "ar": "منشور للعيادة يعرض صورتين للأسنان الأمامية، موسومتين بقبل وبعد",
       "en": "Clinic post with two photographs of the front teeth, labelled before and after"
-    }
-  },
-  {
-    "id": "work-cleaning-03",
-    "file": "work-cleaning-03.jpg",
-    "category": "treatment-work",
-    "width": 1254,
-    "height": 1254,
-    "status": "published",
-    "provenance": "owner-supplied",
-    "alt": {
-      "he": "פרסום של המרפאה עם שתי תמונות של השיניים והחניכיים, מסומנות לפני ואחרי",
-      "ar": "منشور للعيادة يعرض صورتين للأسنان واللثة، موسومتين بقبل وبعد",
-      "en": "Clinic post with two photographs of the teeth and gums, labelled before and after"
-    },
-    "caption": {
-      "he": "ניקוי אבנית",
-      "ar": "تنظيف الجير",
-      "en": "Dental cleaning"
     }
   },
   {
