@@ -74,6 +74,10 @@ jobs:
       - name: Accessibility audit (built HTML)
         run: npm run lint:a11y
 
+      # The same crawl production runs, against this preview's own origin.
+      - name: SEO crawl (built site)
+        run: node scripts/audit-seo.mjs --dist dist --origin https://preview.invalid
+
       - name: Install browser for QA
         run: npx playwright install --with-deps chromium
       - name: Browser QA (three locales, responsive layouts, axe and contact flow)
