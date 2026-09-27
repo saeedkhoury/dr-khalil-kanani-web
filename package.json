@@ -25,7 +25,8 @@
     "test:watch": "node --experimental-strip-types --test --watch \"tests/unit/*.test.ts\"",
     "lint:a11y": "node scripts/audit-html.mjs",
     "test:e2e": "playwright test",
-    "verify:same-site": "node scripts/compare-admin-public.mjs"
+    "verify:same-site": "node scripts/compare-admin-public.mjs",
+    "lint:seo": "node scripts/audit-seo.mjs --dist dist --origin https://www.drkhalilkanani.com"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
@@ -33,6 +34,7 @@
     "astro": "^7.3.3",
     "jose": "^6.2.12",
     "motion": "^13.4.0",
+    "sharp": "^0.35.4",
     "tailwindcss": "^4.3.3",
     "zod": "^4.6.5"
   },

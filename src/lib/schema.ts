@@ -24,10 +24,15 @@
  *
  *  • Nothing unverified is emitted. An empty PostalAddress is worse than no
  *    address — one of the reference sites shipped exactly that.
+ *
+ *  • Every URL and @id is built from the SAME origin as the page's canonical.
+ *    The graph used to read a placeholder origin directly, so the live site
+ *    described a clinic at example.invalid for its first weeks (SEO audit,
+ *    2026-09-27). The origin is now a required argument.
  */
 
-import { clinic, hasAddress, hasHours } from '../data/clinic';
-import type { Locale } from '../i18n/config';
+import { clinic, hasAddress, hasGeo, hasHours, mapsUrl } from '../data/clinic.ts';
+import { localizePath, type Locale } from '../i18n/config.ts';
 
 const ID = {
   website: '#website',
@@ -35,11 +40,23 @@ const ID = {
   doctor: '#dentist',
 };
 
-function abs(path = ''): string {
-  return new URL(path, clinic.siteUrl).toString();
+/**
+ * JSON for inside <script>. Titles and descriptions come from the CMS, and
+ * JSON.stringify leaves `<` alone, so a text containing "</script>" would end
+ * the element and run whatever followed. \u003c is the same character to a
+ * JSON parser and inert to the HTML one.
+ */
+export function serializeGraph(graph: unknown): string {
+  return JSON.stringify(graph).replace(/</g, '\\u003c');
 }
 
+/** Raster logo rendered at build (src/pages/logo.png.ts); Google needs ≥112px. */
+export const LOGO_PATH = '/logo.png';
+export const LOGO_SIZE = 512;
+
 interface GraphOptions {
+  /** The origin every URL is built on — the same one as the canonical. */
+  origin: string;
   locale: Locale;
   /** Path of the current page, e.g. '/he/treatments/dental-implants/' */
   pathname: string;
@@ -48,8 +65,10 @@ interface GraphOptions {
   breadcrumbs?: Array<{ name: string; path: string }>;
 }
 
-export function buildGraph({ locale, pathname, title, description, breadcrumbs }: GraphOptions) {
+export function buildGraph({ origin, locale, pathname, title, description, breadcrumbs }: GraphOptions) {
+  const abs = (path = ''): string => new URL(path, origin).toString();
   const nodes: Record<string, unknown>[] = [];
+  const logo = { '@type': 'ImageObject', '@id': abs('/#logo'), url: abs(LOGO_PATH), contentUrl: abs(LOGO_PATH), width: LOGO_SIZE, height: LOGO_SIZE, caption: clinic.doctor[locale] };
 
   /* ---- WebSite -------------------------------------------------------- */
   nodes.push({
@@ -70,7 +89,10 @@ export function buildGraph({ locale, pathname, title, description, breadcrumbs }
     '@type': 'Dentist',
     '@id': abs(ID.clinic), // identical on /he/, /ar/ and /en/
     name: `${clinic.doctor[locale]} — ${clinic.tagline[locale]}`,
+    // The domain's home, identical on every page so the entity never splits.
     url: abs('/'),
+    logo,
+    image: { '@id': abs('/#logo') },
     telephone: clinic.phone.landline.schema,
     // The clinic's genuine differentiator, machine-readable. Mirror this in
     // the GBP "Languages spoken" attribute.
@@ -98,12 +120,14 @@ export function buildGraph({ locale, pathname, title, description, breadcrumbs }
     };
   }
 
-  if (clinic.address.geo.lat !== 0 && clinic.address.geo.lng !== 0) {
+  if (hasGeo()) {
     dentist.geo = {
       '@type': 'GeoCoordinates',
       latitude: clinic.address.geo.lat,
       longitude: clinic.address.geo.lng,
     };
+    // The same pin the page's own map link opens: one location, everywhere.
+    dentist.hasMap = mapsUrl(locale);
   }
 
   if (hasHours()) {
@@ -125,6 +149,7 @@ export function buildGraph({ locale, pathname, title, description, breadcrumbs }
     '@id': abs(ID.doctor),
     name: clinic.doctor[locale],
     jobTitle: locale === 'he' ? 'רופא שיניים' : locale === 'ar' ? 'طبيب أسنان' : 'Dentist',
+    url: abs(localizePath(locale, 'about')),
     knowsLanguage: ['he', 'ar', 'en'],
     worksFor: { '@id': abs(ID.clinic) },
   });

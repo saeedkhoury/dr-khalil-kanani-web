@@ -127,6 +127,12 @@ export default defineConfig({
   integrations: [
     launchGate(),
     ...(process.env.VISUAL_CMS === '1' ? [] : [sitemap({
+      // Canonical, indexable URLs only. `/` renders the Hebrew home but its
+      // canonical is /he/ (docs/SEO-RUNBOOK.md, "one home page"), so listing
+      // it would hand Google a URL the page itself disowns. 404 is noindex.
+      // No <lastmod>: nothing here could make it accurate, and Google ignores
+      // one that is not.
+      filter: (page) => new URL(page).pathname !== '/' && !/\/404\/?$/.test(new URL(page).pathname),
       i18n: {
         defaultLocale: 'he',
         locales: { he: 'he', ar: 'ar', en: 'en' },

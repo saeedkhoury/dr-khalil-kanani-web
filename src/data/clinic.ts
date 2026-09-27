@@ -184,8 +184,12 @@ export const clinic = {
     checkedOn: '' as string,
   },
 
-  /** Production origin. Owner must confirm the domain. */
-  siteUrl: 'https://example.invalid',
+  /**
+   * Production origin — the ONE canonical host. The apex and http:// both
+   * redirect here (GitHub Pages), so every canonical, hreflang, sitemap and
+   * schema URL names exactly this origin.
+   */
+  siteUrl: 'https://www.drkhalilkanani.com',
 } as const;
 
 /* -------------------------------------------------------------------------- */
@@ -263,10 +267,9 @@ export const VERIFICATION: Record<
     note: 'Owner must supply. hasHours() hides the block.',
   },
   siteUrl: {
-    tier: 'placeholder',
+    tier: 'verified',
     blocking: true,
-    published: false,
-    note: 'Overridden by ASTRO_SITE in CI, so the placeholder never ships.',
+    note: 'Live domain: DNS, GitHub Pages custom domain and TLS all serve www.drkhalilkanani.com.',
   },
   'social.instagram': { tier: contact.instagram === 'https://www.instagram.com/dr.khalil.kanani' ? 'verified' : 'owner', blocking: false },
 };
