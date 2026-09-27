@@ -142,8 +142,17 @@ const commitChain: Reply[] = [
 ];
 
 describe('POST /api/photos/stage', () => {
+  test('stages a 1080px photo: there is no minimum size', async () => {
+    const small = solidJpeg(1080, 1350);
+    assert.equal(inspectImage(new Uint8Array(small))!.width, 1080);
+    const { response } = await callAdmin(
+      await adminRequest('/api/photos/stage', { method: 'POST', body: { contentBase64: small.toString('base64'), confirmed: true } }),
+      [{ status: 201, body: { sha: BLOB_A } }],
+    );
+    assert.equal(response.status, 200);
+  });
+
   test('checks the image and stores it as a blob only — no commit, no branch', async () => {
-    assert.ok(Math.max(inspectImage(JPEG)!.width, inspectImage(JPEG)!.height) >= 1200);
     const { response, calls } = await callAdmin(
       await adminRequest('/api/photos/stage', { method: 'POST', body: { contentBase64: Buffer.from(JPEG).toString('base64'), confirmed: true } }),
       [{ status: 201, body: { sha: BLOB_A } }],

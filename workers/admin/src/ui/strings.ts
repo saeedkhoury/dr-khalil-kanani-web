@@ -106,7 +106,6 @@ export const UI = {
     file_required: 'יש לבחור תמונה',
     file_too_large: 'הקובץ גדול מדי (עד 8 מגהבייט)',
     unsupported_format: 'אפשר להעלות רק JPG או PNG',
-    image_too_small: 'התמונה קטנה מדי (נדרש לפחות 1200 פיקסלים בצד הארוך)',
     category_full: 'יש כבר 99 תמונות בסוג הזה',
     photo_not_actionable: 'לא ניתן לבצע את הפעולה על התמונה הזו',
     // Prohibited advertising content, refused before anything is committed.

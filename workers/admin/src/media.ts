@@ -21,13 +21,6 @@ import { inspectImage, type ImageInfo } from './image.ts';
 /** 8 MB. A clinic photograph from any phone is well under this. */
 export const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 
-/**
- * The long edge must be at least this. Below it the image cannot fill a
- * hero or a grid tile on a modern display without visible softness, and a
- * blurry clinic is worse than no photograph.
- */
-export const MIN_LONG_EDGE = 1200;
-
 export type MediaIssue = string;
 
 export interface UploadRequest {
@@ -172,9 +165,9 @@ export function validateUpload(request: UploadRequest, existing: readonly string
   if (request.bytes.length > 0 && image === null) {
     // Covers SVG, GIF, WebP, HTML, a renamed script, and a truncated JPEG.
     issues.push('unsupported_format');
-  } else if (image !== null && Math.max(image.width, image.height) < MIN_LONG_EDGE) {
-    issues.push('image_too_small');
   }
+  // No minimum size, deliberately: Instagram exports are 1080px and the owner
+  // judges sharpness, not a pixel rule. The build never enlarges an image.
 
   if (issues.length > 0 || image === null) {
     return { ok: false, issues: issues.length > 0 ? issues : ['unsupported_format'] };
@@ -317,9 +310,6 @@ export function validateReplacement(
 
   const image = inspectImage(bytes);
   if (image === null) return { ok: false, issues: ['unsupported_format'] };
-  if (Math.max(image.width, image.height) < MIN_LONG_EDGE) {
-    return { ok: false, issues: ['image_too_small'] };
-  }
   if (!file.toLowerCase().endsWith(`.${image.extension}`)) {
     // Serving PNG bytes from a .jpg path is a content-type mismatch that the
     // build would not catch and a browser would have to guess about.

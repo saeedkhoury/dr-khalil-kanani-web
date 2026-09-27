@@ -38,7 +38,6 @@ const SOURCE = String.raw`
   function t(key, values){ let text=S[key]; if(text==null) text=STRINGS.he[key]; if(text==null) text=key; if(values) for(const k of Object.keys(values)) text=text.split('{'+k+'}').join(String(values[k])); return text; }
   const names = {he:STRINGS.he.langName, ar:STRINGS.ar.langName, en:STRINGS.en.langName};
   const urls = {copy:'/api/content/copy',services:'/api/content/services',doctor:'/api/content/doctor',faq:'/api/content/faq',contact:'/api/content/contact',hours:'/api/hours',photos:'/api/photos'};
-  const MIN_EDGE = 1200;
   // What is actually sent. The site never shows a photograph wider than
   // 1536px, and a 10 MB request from a phone is slow and was refused outright
   // by a browser during testing, so anything over this is resized first.
@@ -505,11 +504,10 @@ const SOURCE = String.raw`
     if(!/^image\/(jpeg|png)$/.test(type)) throw new Error(t('notJpgPng',{name:file.name}));
     let bitmap; try{ bitmap=await createImageBitmap(file); }catch{ throw new Error(t('unreadable',{name:file.name})); }
     const w=bitmap.width,h=bitmap.height,long=Math.max(w,h);
-    if(long<MIN_EDGE){bitmap.close();throw new Error(t('tooSmall',{name:file.name,w,h,min:MIN_EDGE}));}
     const target=mustType||type;
     if(file.size<=SEND_LIMIT && target===type){bitmap.close();return {blob:file,width:w,height:h,type};}
     // Largest first, and never larger than the original.
-    for(const edge of [SEND_EDGE,2048,1600,MIN_EDGE].map(e=>Math.min(e,long)).filter((e,i,all)=>all.indexOf(e)===i)){
+    for(const edge of [SEND_EDGE,2048,1600,1200].map(e=>Math.min(e,long)).filter((e,i,all)=>all.indexOf(e)===i)){
       const scale=edge/long; const canvas=document.createElement('canvas'); canvas.width=Math.round(w*scale); canvas.height=Math.round(h*scale);
       canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
       const blob=await new Promise(r=>canvas.toBlob(r,target,0.88));

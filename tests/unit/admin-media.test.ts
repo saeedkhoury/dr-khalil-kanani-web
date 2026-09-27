@@ -13,7 +13,7 @@ import { readFileSync } from 'node:fs';
 import { inspectImage } from '../../workers/admin/src/image.ts';
 import {
   addRecord, nextFilename, parseRecords, removeRecord, serialiseRecords, setStatus,
-  validateUpload, MAX_IMAGE_BYTES, MIN_LONG_EDGE,
+  validateUpload, MAX_IMAGE_BYTES,
 } from '../../workers/admin/src/media.ts';
 import { pathFor } from '../../workers/admin/src/github.ts';
 import { CMS_CATEGORIES, assertClinicPhotographyShape } from '../../src/lib/data-schema.ts';
@@ -163,15 +163,13 @@ describe('upload validation', () => {
     assert.ok(issuesOf({ bytes: huge }).includes('file_too_large'));
   });
 
-  test('an image below the long-edge minimum is refused', () => {
-    assert.equal(inspectImage(TINY_PNG)?.width, 16);
-    assert.ok(issuesOf({ bytes: TINY_PNG }).includes('image_too_small'));
-  });
-
-  test('the long edge is what counts, not both edges', () => {
-    // A tall portrait 890x1600 passes on its height alone.
-    assert.ok(Math.min(890, 1600) < MIN_LONG_EDGE);
-    assert.equal(validateUpload(upload() as never, []).ok, true);
+  test('there is no minimum size: an Instagram-sized 1080px photo is accepted', () => {
+    // The owner decides whether a photo is sharp enough, not a pixel rule.
+    const instagram = new Uint8Array(solidJpeg(1080, 1080));
+    const result = validateUpload(upload({ bytes: instagram }) as never, []);
+    assert.equal(result.ok, true);
+    assert.equal(result.ok && result.record.width, 1080);
+    assert.ok(!issuesOf({ bytes: TINY_PNG, altHe: '' }).includes('image_too_small'), 'not even a 16px image');
   });
 
   test('every issue is a stable machine key', () => {
@@ -476,12 +474,11 @@ describe('POST /api/photos — the exact requests that would be sent', () => {
     assert.equal(calls.length, 1);
   });
 
-  test('malformed, oversized and undersized images never create GitHub mutations', async () => {
+  test('malformed and oversized images never create GitHub mutations', async () => {
     const cases = [
       ['header-only PNG', PNG.subarray(0, 24)],
       ['truncated JPEG', JPEG.subarray(0, 400)],
       ['oversized JPEG', new Uint8Array(MAX_IMAGE_BYTES + 1)],
-      ['undersized PNG', TINY_PNG],
     ] as const;
     for (const [label, bytes] of cases) {
       const { response, calls } = await callAdmin(
