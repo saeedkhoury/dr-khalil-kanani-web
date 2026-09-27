@@ -1,5 +1,9 @@
 # SEO
 
+See also: [SEO-SEARCH-MAP.md](SEO-SEARCH-MAP.md) (query ↔ page),
+[SEO-RUNBOOK.md](SEO-RUNBOOK.md) (canonical strategy, robots and AI crawlers,
+monitoring) and [SEO-BASELINE.md](SEO-BASELINE.md) (measured starting point).
+
 ## Structured data
 
 `Dentist` for the clinic — simultaneously a `LocalBusiness`, `MedicalBusiness`
@@ -24,13 +28,23 @@ Jadeidi-Makr and fragment every signal.
 `availableLanguage: ["he","ar","en"]` — undocumented by Google, but it
 machine-encodes the clinic's actual differentiator. `areaServed`, `sameAs`,
 `BreadcrumbList`, `WebSite` with `alternateName` in all three scripts.
+`logo`/`image`: `/logo.png`, rendered at build from the favicon SVG (Google
+needs a raster ≥112px). `hasMap`: the same pin the page's map link opens.
+The doctor's `Person` links to the About page.
+
+**Every URL is built from the page's own origin** (`buildGraph({ origin })`).
+Until 2026-09-27 the graph read a placeholder origin, and the live site
+described a clinic at `example.invalid`. `npm run lint:seo` now fails any
+build where that recurs.
 
 ## Google Business Profile — decide before building citations
 
 - **One profile**, `Dentist` primary category.
-- **Single-script name.** Google banned repeated names across scripts on
-  **2026-08-10**; the common Israeli `Hebrew / عربي` listing name is now a
-  suspension risk.
+- **Single-script name.** Google's business-name guidelines prohibit
+  "repeated bilingual names / script transliterations … even if it appears
+  this way on physical storefront signage" (checked 2026-09-27; the earlier
+  note here gave a 2026-08-10 date that could not be confirmed). The common
+  Israeli `Hebrew / عربي` listing name is a suspension risk.
 - Set the **"Languages spoken"** attribute — highest-value field for this clinic
   and routinely left blank.
 - Sun–Thu hours; special hours for both Jewish and Muslim holidays.
