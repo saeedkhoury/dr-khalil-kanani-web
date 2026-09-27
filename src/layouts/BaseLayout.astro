@@ -24,6 +24,7 @@ import { useTranslations } from '../i18n/ui';
 import { clinic } from '../data/clinic';
 import { buildGraph, serializeGraph } from '../lib/schema';
 import { socialImage } from '../lib/social-image';
+import { getTreatments } from '../lib/content';
 
 import Header from '../components/sections/Header.astro';
 import Footer from '../components/sections/Footer.astro';
@@ -63,7 +64,8 @@ const xDefault = new URL(
 // clinic keeps its own wording.
 const fullTitle = title === t('site.title') || title.includes(t('site.shortName')) ? title : `${title} | ${t('site.shortName')}`;
 
-const graph = buildGraph({ origin, locale, pathname, title: fullTitle, description, breadcrumbs });
+const services = (await getTreatments(locale)).map((t) => ({ slug: t.data.slug, name: t.data.title }));
+const graph = buildGraph({ origin, locale, pathname, title: fullTitle, description, breadcrumbs, services });
 const og = await socialImage(origin, locale);
 /** Open Graph locales as Facebook lists them (it has no ar_IL). */
 const OG_LOCALE = { he: 'he_IL', ar: 'ar_AR', en: 'en_US' } as const;

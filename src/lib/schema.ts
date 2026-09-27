@@ -63,9 +63,22 @@ interface GraphOptions {
   title: string;
   description: string;
   breadcrumbs?: Array<{ name: string; path: string }>;
+  /** Published treatments in this locale, in the doctor's order. */
+  services?: Array<{ slug: string; name: string }>;
 }
 
-export function buildGraph({ origin, locale, pathname, title, description, breadcrumbs }: GraphOptions) {
+/**
+ * The clinic's public profiles: the confirmed Instagram, plus the Facebook
+ * page and Google Business Profile the moment the owner enters them in Edit
+ * Mode. An empty field is simply absent — never guessed.
+ */
+function officialProfiles(): string[] {
+  return [clinic.social.instagram, clinic.social.facebook, clinic.social.googleBusiness]
+    .map((url) => url.trim())
+    .filter((url) => url.startsWith('https://'));
+}
+
+export function buildGraph({ origin, locale, pathname, title, description, breadcrumbs, services = [] }: GraphOptions) {
   const abs = (path = ''): string => new URL(path, origin).toString();
   const nodes: Record<string, unknown>[] = [];
   const logo = { '@type': 'ImageObject', '@id': abs('/#logo'), url: abs(LOGO_PATH), contentUrl: abs(LOGO_PATH), width: LOGO_SIZE, height: LOGO_SIZE, caption: clinic.doctor[locale] };
@@ -101,7 +114,7 @@ export function buildGraph({ origin, locale, pathname, title, description, bread
       { '@type': 'City', name: clinic.address.locality[locale] },
       { '@type': 'AdministrativeArea', name: clinic.address.region[locale] },
     ],
-    sameAs: [clinic.social.instagram],
+    sameAs: officialProfiles(),
     employee: { '@id': abs(ID.doctor) },
     // priceRange: intentionally omitted — see file header.
     // aggregateRating / review: intentionally omitted — see file header.
@@ -141,6 +154,27 @@ export function buildGraph({ origin, locale, pathname, title, description, bread
       }));
   }
 
+  // The treatments the clinic's own site describes, each with a stable @id on
+  // its page. Names come from the same CMS data as the pages, so the markup
+  // cannot list a treatment the site does not show.
+  const serviceId = (slug: string) => `${abs(localizePath(locale, `treatments/${slug}`))}#service`;
+  if (services.length > 0) {
+    dentist.hasOfferCatalog = {
+      '@type': 'OfferCatalog',
+      name: locale === 'he' ? 'טיפולים' : locale === 'ar' ? 'العلاجات' : 'Treatments',
+      itemListElement: services.map((s) => ({
+        '@type': 'Offer',
+        itemOffered: {
+          '@type': 'Service',
+          '@id': serviceId(s.slug),
+          name: s.name,
+          url: abs(localizePath(locale, `treatments/${s.slug}`)),
+          provider: { '@id': abs(ID.clinic) },
+        },
+      })),
+    };
+  }
+
   nodes.push(dentist);
 
   /* ---- Person (the dentist) ------------------------------------------- */
@@ -154,6 +188,8 @@ export function buildGraph({ origin, locale, pathname, title, description, bread
     worksFor: { '@id': abs(ID.clinic) },
   });
 
+  const current = services.find((s) => pathname === localizePath(locale, `treatments/${s.slug}`));
+
   /* ---- WebPage (one per locale page) ---------------------------------- */
   nodes.push({
     '@type': 'WebPage',
@@ -164,6 +200,8 @@ export function buildGraph({ origin, locale, pathname, title, description, bread
     inLanguage: locale, // aligns with <html lang> and hreflang
     isPartOf: { '@id': abs(ID.website) },
     about: { '@id': abs(ID.clinic) },
+    // A treatment page is ABOUT that treatment, offered by the clinic.
+    ...(current ? { mainEntity: { '@id': serviceId(current.slug) } } : {}),
   });
 
   /* ---- BreadcrumbList -------------------------------------------------- */

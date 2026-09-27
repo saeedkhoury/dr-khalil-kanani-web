@@ -58,6 +58,28 @@ describe('structured data', () => {
     }
   });
 
+  test('the clinic lists exactly the treatments it publishes, and a treatment page is about its own', () => {
+    const services = [{ slug: 'dental-implants', name: 'Dental implants' }, { slug: 'veneers', name: 'Veneers' }];
+    const graph = buildGraph({ origin: ORIGIN, locale: 'en', pathname: '/en/treatments/veneers/', title: 't', description: 'd', services })['@graph'] as Node[];
+    const dentist = graph.find((n) => n['@type'] === 'Dentist')!;
+    const offered = ((dentist.hasOfferCatalog as Node).itemListElement as Node[]).map((o) => o.itemOffered as Node);
+    assert.deepEqual(offered.map((o) => o.name), ['Dental implants', 'Veneers']);
+    assert.equal(offered[1]['@id'], `${ORIGIN}/en/treatments/veneers/#service`);
+    assert.deepEqual(offered[1].provider, { '@id': `${ORIGIN}/#clinic` });
+    const page = graph.find((n) => n['@type'] === 'WebPage')!;
+    assert.deepEqual(page.mainEntity, { '@id': `${ORIGIN}/en/treatments/veneers/#service` });
+    const home = buildGraph({ origin: ORIGIN, locale: 'en', pathname: '/en/', title: 't', description: 'd', services })['@graph'] as Node[];
+    assert.equal('mainEntity' in home.find((n) => n['@type'] === 'WebPage')!, false);
+  });
+
+  test('official profiles: only confirmed https links, never an empty or guessed one', () => {
+    const dentist = graphOf('he').find((n) => n['@type'] === 'Dentist')!;
+    const sameAs = dentist.sameAs as string[];
+    assert.ok(sameAs.includes(clinic.social.instagram));
+    for (const url of sameAs) assert.match(url, /^https:\/\/\S+$/);
+    assert.equal(sameAs.includes(''), false);
+  });
+
   test('CMS text cannot close the JSON-LD <script> element', () => {
     const graph = buildGraph({ origin: ORIGIN, locale: 'en', pathname: '/en/', title: '</script><script>alert(1)</script>', description: 'd' });
     const out = serializeGraph(graph);
