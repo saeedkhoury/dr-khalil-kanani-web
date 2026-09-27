@@ -41,6 +41,20 @@ describe('structured data', () => {
     assert.equal(new Set(clinics.map((c) => c.url)).size, 1);
   });
 
+  test('the clinic carries the Business Profile name exactly; the descriptive form is an alternate', () => {
+    const dentist = graphOf('he').find((n) => n['@type'] === 'Dentist')!;
+    assert.equal(dentist.name, clinic.doctor.he);
+    assert.deepEqual(dentist.alternateName, [`${clinic.doctor.he} — ${clinic.tagline.he}`]);
+  });
+
+  test('languages sit on properties schema.org defines for them', () => {
+    const dentist = graphOf('ar').find((n) => n['@type'] === 'Dentist')!;
+    assert.equal('availableLanguage' in dentist, false, 'not a Dentist property');
+    assert.deepEqual(dentist.knowsLanguage, ['he', 'ar', 'en']);
+    assert.deepEqual((dentist.contactPoint as Node).availableLanguage, ['he', 'ar', 'en']);
+    assert.equal((dentist.contactPoint as Node).telephone, dentist.telephone);
+  });
+
   test('the logo is a raster image Google accepts (≥112px, not SVG)', () => {
     const dentist = graphOf('en').find((n) => n['@type'] === 'Dentist')!;
     const logo = dentist.logo as Node;

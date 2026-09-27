@@ -25,7 +25,8 @@ Jadeidi-Makr and fragment every signal.
 
 ### Included
 
-`availableLanguage: ["he","ar","en"]` — undocumented by Google, but it
+`knowsLanguage` + a `ContactPoint` with `availableLanguage: ["he","ar","en"]` (schema.org
+defines availableLanguage only on ContactPoint) — undocumented by Google, but it
 machine-encodes the clinic's actual differentiator. `areaServed`, `sameAs`,
 `BreadcrumbList`, `WebSite` with `alternateName` in all three scripts.
 `logo`/`image`: `/logo.png`, rendered at build from the favicon SVG (Google

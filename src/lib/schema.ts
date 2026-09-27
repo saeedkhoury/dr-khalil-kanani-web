@@ -101,7 +101,10 @@ export function buildGraph({ origin, locale, pathname, title, description, bread
   const dentist: Record<string, unknown> = {
     '@type': 'Dentist',
     '@id': abs(ID.clinic), // identical on /he/, /ar/ and /en/
-    name: `${clinic.doctor[locale]} — ${clinic.tagline[locale]}`,
+    // Exactly the verified Google Business Profile name, so the two are read
+    // as one entity. The descriptive form stays findable as an alternate name.
+    name: clinic.doctor[locale],
+    alternateName: [`${clinic.doctor[locale]} — ${clinic.tagline[locale]}`],
     // The domain's home, identical on every page so the entity never splits.
     url: abs('/'),
     logo,
@@ -109,7 +112,16 @@ export function buildGraph({ origin, locale, pathname, title, description, bread
     telephone: clinic.phone.landline.schema,
     // The clinic's genuine differentiator, machine-readable. Mirror this in
     // the GBP "Languages spoken" attribute.
-    availableLanguage: ['he', 'ar', 'en'],
+    // schema.org defines availableLanguage on a ContactPoint, not on the
+    // business (the validator flagged it there, 2026-09-27): the clinic
+    // "knows" three languages, and its phone line is available in them.
+    knowsLanguage: ['he', 'ar', 'en'],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      telephone: clinic.phone.landline.schema,
+      contactType: 'customer service',
+      availableLanguage: ['he', 'ar', 'en'],
+    },
     areaServed: [
       { '@type': 'City', name: clinic.address.locality[locale] },
       { '@type': 'AdministrativeArea', name: clinic.address.region[locale] },
