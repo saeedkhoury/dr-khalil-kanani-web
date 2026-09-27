@@ -14,16 +14,21 @@ Current repository state. Not a history — see `CHANGELOG.md` for that.
 - **Access:** Cloudflare Access policy "Doctor, developer and clinic staff"
   (3 exact emails, OTP) + the Worker's `ALLOWED_EMAILS` secret (same 3). Staff
   have full editing rights; there are no per-person roles.
-- **Photo uploads have no minimum size** (PR #5 — CI green, awaiting merge by
-  the owner/developer). 1080px Instagram exports were being refused.
-- **SEO foundation** (branch `feat/seo-foundation`): robots.txt, canonical
+- **Photo uploads have no minimum size** (PR #5, merged and live
+  2026-09-27). 1080px Instagram exports were being refused.
+- **SEO foundation** (PR #6, merged and live 2026-09-27): robots.txt, canonical
   sitemap, JSON-LD on the real origin (it named `example.invalid` before),
   og:image, localized titles with the town, logo, IndexNow on deploy, and a
   deploy-blocking SEO crawl (`npm run lint:seo`). See docs/SEO-RUNBOOK.md,
   docs/SEO-SEARCH-MAP.md, docs/SEO-BASELINE.md, ADR 0011.
-- **Owner actions outstanding:** Google Search Console + Bing Webmaster Tools
-  verification, Google Business Profile, opening hours, confirmed Arabic and
-  Latin spellings of the doctor's name, the clinic's Facebook URL.
+- **Search Console:** Domain property verified by a DNS TXT record on the
+  Cloudflare zone (do not remove it); sitemap submitted and read. Google
+  Business Profile "ד״ר חליל כנעאני" is verified; public visibility not yet
+  observed. The JSON-LD clinic name equals the profile name.
+- **Owner actions outstanding:** Bing Webmaster Tools, opening hours (site and
+  profile), completing the Business Profile, confirmed Arabic and Latin
+  spellings of the doctor's name, the clinic's Facebook URL and the profile's
+  share link (enter both in Edit Mode → contact; they flow into `sameAs`).
 
 ## Status (as of 2026-09-24)
 

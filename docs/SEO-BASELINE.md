@@ -76,3 +76,58 @@ Home LCP is header text awaiting its web font. The doctor's-work strip sends
   Pages with no WAF or bot challenge (DNS-only, not proxied by Cloudflare),
   so no crawler is challenged.
 - ChatGPT referrals: **not measurable** — the site has no analytics.
+
+---
+
+## 2026-09-27 (later) — Search Console, Business Profile, observations
+
+### Search Console
+
+| Item | Status (as Google reported it) |
+|---|---|
+| Property | Domain property `drkhalilkanani.com`, owned by the developer’s Google account |
+| Verification | **Verified** by DNS TXT record on the Cloudflare zone — **do not remove it** |
+| Sitemap `https://www.drkhalilkanani.com/sitemap-index.xml` | Submitted 2026-09-27 → "Couldn't fetch", 0 discovered (before the SEO release; the file itself answered 200) |
+| `/he/` URL inspection | "URL is not on Google — Crawled - currently not indexed"; last crawl 2026-09-24 (Googlebot smartphone); no referring sitemap detected |
+| Indexing requests | **1** — `/he/`, 2026-09-27 ("added to a priority crawl queue") |
+| Performance / Pages reports | "Processing data" — no data yet |
+
+### Google Business Profile
+
+Profile "ד״ר חליל כנעאני", רח' 1003, ג'דיידה-מכר, 2510500 — status in the
+Business Profile Manager: **verified (אומת)**, 1 of 1 locations verified.
+Public visibility on 2026-09-27: **not observed** — a Maps search for the
+exact name plus address returned other businesses. Google showed no pending,
+review or suspension notice in the views available here; the profile's own
+edit panel could not be read from this session, so completeness (hours,
+photos, category) is unconfirmed.
+
+### Observed search results — observations, not rankings
+
+One browser, signed in, Israel, desktop; `pws=0`. Results vary by location,
+language, device, personalisation and time.
+
+| Date | Engine | Query | Lang | Observed | Target URL | Target indexed? |
+|---|---|---|---|---|---|---|
+| 2026-09-27 | Google | ד"ר חליל כנעאני | he | Site listed first among web results | `/he/` | No (only apex http URL indexed) |
+| 2026-09-27 | Google | ד״ר חליל כנעאני ג׳דיידה-מכר | he | An AI overview about a different dentist (Wasim Khalil Kanani, Clalit), then Clalit, then the site | `/he/` | No |
+| 2026-09-27 | Google | Dr. Khalil Kanani dentist | en | Hebrew home listed first; English page absent | `/en/` | No |
+| 2026-09-27 | Google | רופא שיניים ג׳דיידה מכר | he | Not on page 1; directories and a map pack of dentists 47–54 km away | `/he/` + GBP | No |
+| 2026-09-27 | Google Maps | ד״ר חליל כנעאני רח 1003 ג'דיידה-מכר | he | Profile not shown | GBP | — |
+| 2026-09-27 | Bing | site:drkhalilkanani.com | — | No pages of the site | all | No |
+
+### After the SEO release (5fc13aa, deployed 2026-09-27)
+
+| Check | Result |
+|---|---|
+| Live crawl (`node scripts/audit-seo.mjs https://www.drkhalilkanani.com`) | 46 pages crawled, 45 in sitemap, **0 errors** (997 before); 1 warning: `/en/about/` description 183 chars |
+| `robots.txt` | 200, `User-agent: * / Allow: /`, names the sitemap |
+| Sitemap | 200, valid XML, 45 canonical URLs (15 per language, 24 treatment pages), 135 hreflang links, `/` not listed |
+| Crawlers (Googlebot, Bingbot, OAI-SearchBot, GPTBot) | 200 on robots.txt and a treatment page |
+| IndexNow | 46 URLs submitted, HTTP **202** (accepted, key validation pending) |
+| Search Console sitemap | **Success** — sitemap index read, 46 discovered pages (read before the release; the old sitemap still listed `/`) |
+| `/he/` | **"URL is on Google — Page is indexed"**; crawled 2026-09-27 12:38 (Googlebot smartphone); Google-selected canonical = declared canonical `/he/`; discovered via the sitemap |
+| `/en/` | "Discovered – currently not indexed" (known from the sitemap, not yet crawled) |
+| `/he/treatments/dental-implants/` | "URL is unknown to Google" — no indexing request made |
+| Structured data (validator.schema.org, live treatment page) | 0 errors; warnings for `availableLanguage` on `Dentist` (not a Dentist property) — fixed in the follow-up by moving it to a `ContactPoint` |
+| Google Rich Results Test | Tool answered "Something went wrong" — not run |
