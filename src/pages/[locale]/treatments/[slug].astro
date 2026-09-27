@@ -21,6 +21,7 @@ import { useTranslations } from '../../../i18n/ui';
 import { getTreatment, getRelated, getTreatmentSlugs } from '../../../lib/content';
 import { clinic, whatsappUrl } from '../../../data/clinic';
 import EditControl from '../../../components/editor/EditControl.astro';
+import { seoTitle, CONTACT_SUBJECT } from '../../../lib/seo';
 
 export async function getStaticPaths() {
   const slugs = await getTreatmentSlugs();
@@ -51,6 +52,16 @@ const breadcrumbs = [
   { name: d.title, path: localizePath(locale, `treatments/${slug}`) },
 ];
 
+// Where this treatment is given, in words a patient (and a search engine)
+// can read, with the two pages that answer "who" and "how do I get there".
+const place = clinic.address.locality[locale];
+const where = {
+  he: `המרפאה של ${clinic.doctor.he} נמצאת ב${place}.`,
+  ar: `تقع عيادة ${clinic.doctor.ar} في ${place}.`,
+  en: `${clinic.doctor.en}’s clinic is in ${place}.`,
+}[locale];
+const aboutAnchor = { he: `על ${clinic.doctor.he}`, ar: `عن ${clinic.doctor.ar}`, en: `About ${clinic.doctor.en}` }[locale];
+
 const reviewed = d.reviewedOn
   ? new Intl.DateTimeFormat(locale === 'he' ? 'he-IL' : locale === 'ar' ? 'ar-EG' : 'en-GB', {
       year: 'numeric',
@@ -61,7 +72,7 @@ const reviewed = d.reviewedOn
 
 <BaseLayout
   locale={locale}
-  title={d.seoTitle ?? d.title}
+  title={seoTitle.treatment(locale, d.title, d.seoTitle)}
   description={d.seoDescription}
   breadcrumbs={breadcrumbs}
 >
@@ -156,6 +167,12 @@ const reviewed = d.reviewedOn
       <p class="border-t border-[var(--color-line)] pt-6 text-[var(--text-sm)] text-[var(--color-muted)]">
         {reviewed && <>{t('legal.reviewedBy')} {clinic.doctor[locale]} · <span class="u-ltr">{reviewed}</span><br /></>}
         {t('legal.disclaimer')}
+      </p>
+      <p class="mt-4 text-[var(--text-sm)] text-[var(--color-muted)]">
+        {where}{' '}
+        <a href={localizePath(locale, 'about')} class="underline underline-offset-2 text-[var(--color-ink)]">{aboutAnchor}</a>
+        {' · '}
+        <a href={localizePath(locale, 'contact')} class="underline underline-offset-2 text-[var(--color-ink)]">{CONTACT_SUBJECT[locale]}</a>
       </p>
     </div>
 

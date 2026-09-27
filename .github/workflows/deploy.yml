@@ -86,6 +86,13 @@ jobs:
       - name: Accessibility audit (built HTML)
         run: npm run lint:a11y
 
+      # Crawls dist/ the way a search engine crawls the live site: robots,
+      # sitemap, canonical, hreflang, noindex, JSON-LD origin, internal links.
+      # Every CMS save passes through here, so a content edit cannot quietly
+      # de-index a page or break a language cluster.
+      - name: SEO crawl (built site)
+        run: npm run lint:seo
+
       - name: Install browser for QA
         run: npx playwright install --with-deps chromium
       - name: Browser QA (three locales, responsive layouts, axe and contact flow)
@@ -97,6 +104,20 @@ jobs:
           path: |
             playwright-report/
             test-results/
+          retention-days: 7
+
+      # Before the deploy, the live site still shows the previous build, so
+      # this is the one moment "what changed" can be computed exactly.
+      # Never blocks a deploy: search notification is a courtesy, not a gate.
+      - name: IndexNow — list changed pages
+        continue-on-error: true
+        run: node scripts/indexnow.mjs changed --dist dist --out indexnow-urls.txt
+      - uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: indexnow-urls
+          path: indexnow-urls.txt
+          if-no-files-found: ignore
           retention-days: 7
 
       - name: Prepare Pages files
@@ -120,3 +141,20 @@ jobs:
     steps:
       - uses: actions/deploy-pages@v5
         id: deployment
+
+  # After the deploy: tell IndexNow engines (Bing and partners) which pages
+  # changed — only once the live site really serves this commit.
+  indexnow:
+    needs: deploy
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/download-artifact@v4
+        with:
+          name: indexnow-urls
+      - name: IndexNow — notify
+        run: node scripts/indexnow.mjs submit --list indexnow-urls.txt --expect "$GITHUB_SHA"

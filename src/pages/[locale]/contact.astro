@@ -7,6 +7,7 @@ import Button from '../../components/primitives/Button.astro';
 import { LOCALES, localizePath, type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
 import { getTreatments } from '../../lib/content';
+import { seoTitle } from '../../lib/seo';
 import { clinic, telUrl, whatsappUrl, hasAddress, hasHours } from '../../data/clinic';
 import EditControl from '../../components/editor/EditControl.astro';
 
@@ -42,7 +43,7 @@ const dayNames: Record<Locale, Record<string, string>> = {
 };
 ---
 
-<BaseLayout locale={locale} title={t('contact.title')} description={description} breadcrumbs={breadcrumbs} hideActionBar>
+<BaseLayout locale={locale} title={seoTitle.contact(locale)} description={description} breadcrumbs={breadcrumbs} hideActionBar>
   <div class="shell section grid gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
     <!-- Direct channels first: for a local clinic these convert far better
          than a form, and they are the fastest path for someone in pain. -->

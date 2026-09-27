@@ -2,11 +2,30 @@
 
 Current repository state. Not a history — see `CHANGELOG.md` for that.
 
-**Last updated:** 2026-09-24
+**Last updated:** 2026-09-27
 
 ---
 
-## Status
+## Current state — 2026-09-27 (read this first; older sections below are history)
+
+- **Edit Mode is released.** admin.drkhalilkanani.com commits to `main`; every
+  save runs the full deploy workflow and reaches the public site in ~4 min.
+  The editor says "Live ✓" only when the public `build.txt` has the commit.
+- **Access:** Cloudflare Access policy "Doctor, developer and clinic staff"
+  (3 exact emails, OTP) + the Worker's `ALLOWED_EMAILS` secret (same 3). Staff
+  have full editing rights; there are no per-person roles.
+- **Photo uploads have no minimum size** (PR #5 — CI green, awaiting merge by
+  the owner/developer). 1080px Instagram exports were being refused.
+- **SEO foundation** (branch `feat/seo-foundation`): robots.txt, canonical
+  sitemap, JSON-LD on the real origin (it named `example.invalid` before),
+  og:image, localized titles with the town, logo, IndexNow on deploy, and a
+  deploy-blocking SEO crawl (`npm run lint:seo`). See docs/SEO-RUNBOOK.md,
+  docs/SEO-SEARCH-MAP.md, docs/SEO-BASELINE.md, ADR 0011.
+- **Owner actions outstanding:** Google Search Console + Bing Webmaster Tools
+  verification, Google Business Profile, opening hours, confirmed Arabic and
+  Latin spellings of the doctor's name, the clinic's Facebook URL.
+
+## Status (as of 2026-09-24)
 
 **LIVE** at https://www.drkhalilkanani.com (GitHub Pages, deploys on push to
 `main`).
