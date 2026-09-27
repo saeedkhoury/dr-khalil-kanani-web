@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import HomeSections from '../components/sections/HomeSections.astro';
 import { DEFAULT_LOCALE, localizePath } from '../i18n/config';
 import { useTranslations } from '../i18n/ui';
+import { seoTitle } from '../lib/seo';
 import { clinic } from '../data/clinic';
 
 export const prerender = true;
@@ -10,6 +11,6 @@ const locale = DEFAULT_LOCALE;
 const t = useTranslations(locale);
 const canonical = new URL(localizePath(locale, ''), Astro.site ?? clinic.siteUrl).toString();
 ---
-<BaseLayout locale={locale} title={t('site.title')} description={t('hero.subtitle')} canonical={canonical}>
+<BaseLayout locale={locale} title={seoTitle.home(locale, t('site.title'))} description={t('hero.subtitle')} canonical={canonical}>
   <HomeSections locale={locale} />
 </BaseLayout>

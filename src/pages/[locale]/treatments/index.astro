@@ -5,6 +5,7 @@ import ContactCta from '../../../components/sections/ContactCta.astro';
 import { LOCALES, localizePath, type Locale } from '../../../i18n/config';
 import { useTranslations } from '../../../i18n/ui';
 import { getTreatments } from '../../../lib/content';
+import { seoTitle } from '../../../lib/seo';
 
 export function getStaticPaths() {
   return LOCALES.map((locale) => ({ params: { locale } }));
@@ -26,7 +27,7 @@ const breadcrumbs = [
 ];
 ---
 
-<BaseLayout locale={locale} title={t('treatments.title')} description={description} breadcrumbs={breadcrumbs}>
+<BaseLayout locale={locale} title={seoTitle.treatments(locale)} description={description} breadcrumbs={breadcrumbs}>
   <TreatmentsGrid locale={locale} treatments={treatments} headingLevel="h1" />
   <ContactCta locale={locale} />
 </BaseLayout>
