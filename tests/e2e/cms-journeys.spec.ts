@@ -14,6 +14,7 @@
 
 import { test, expect, type Page, type Locator } from '@playwright/test';
 import services from '../../src/data/services.json' with { type: 'json' };
+import builtWork from '../../src/data/treatment-work.json' with { type: 'json' };
 import { noisePng } from '../helpers/png.ts';
 
 const ADMIN = 'http://127.0.0.1:4332';
@@ -190,7 +191,9 @@ async function openWork(page: Page, locale = 'he') {
 }
 /** The doctor's-work files the PAGE shows, in order (from the optimised image URLs). */
 const pageWorkFiles = (page: Page) => page.locator(`${WORK_SECTION} ul > li:not(.visual-gallery-edit) img`)
-  .evaluateAll((imgs) => imgs.map((i) => /(work-[a-z]+-\d{2})/.exec(i.getAttribute('src') ?? '')?.[1] ?? null));
+  // Both naming schemes: the original work-<category>-NN files and the CMS's
+  // own work-NN (galleries.ts allocates those for every new upload).
+  .evaluateAll((imgs) => imgs.map((i) => /(work-(?:[a-z]+-)?\d{2})/.exec(i.getAttribute('src') ?? '')?.[1] ?? null));
 const stem = (files: Array<string | null>) => files.map((f) => (f ?? '').replace(/\.[a-z]+$/, ''));
 /** Save, and let the fixture's rebuild land; the manager must say so truthfully. */
 async function saveAndUpdate(page: Page, request: import('@playwright/test').APIRequestContext) {
@@ -276,7 +279,10 @@ test('photos: add several, see what is missing, describe and frame them, publish
   expect(staged).toEqual([]);
   await pm.locator('#pm-confirm').check();
   await pm.locator('.pm-save').click();
-  await expect(pm.locator('.pm-issues')).toContainText(`תמונה ${before + 1}: חסר תיאור בעברית.`);
+  // Both images (~6 MB each) are staged BEFORE the server can say what is
+  // missing, which takes longer than the default 5 s on a loaded CI runner —
+  // this failed a production deploy twice (2026-09-27).
+  await expect(pm.locator('.pm-issues')).toContainText(`תמונה ${before + 1}: חסר תיאור בעברית.`, { timeout: 30_000 });
   await expect(tiles).toHaveCount(before + 2);
 
   // Describe both; publish and frame the first.
@@ -470,9 +476,15 @@ const storedWork = async (request: import('@playwright/test').APIRequestContext)
 test('doctor\'s work: the strip ends with its own Edit tile, and it opens THAT gallery — same images, same order', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/he/');
+  // Never pinned to today's content: staff add, hide and reorder these
+  // photos, and every such save runs this suite before it can go live.
+  // The PAGE was built from the repository file; the MANAGER reads the live
+  // store, which other tests in this file change (and a retry replays them).
+  // Each is compared with its own source.
+  const published = stem(builtWork.filter((r) => r.status === 'published').map((r) => r.file));
   const onPage = await pageWorkFiles(page);
-  expect(onPage.length).toBe(12);
   expect(onPage.every(Boolean)).toBe(true);
+  expect(onPage).toEqual(published);
   await expect(page.locator(`${WORK_SECTION} ul > li`).last()).toContainText('עריכת עבודות הרופא');
 
   await openWork(page);
@@ -480,10 +492,10 @@ test('doctor\'s work: the strip ends with its own Edit tile, and it opens THAT g
   await expect(pm.getByRole('heading', { name: 'ניהול עבודות הרופא' })).toBeVisible();
   await expect(pm.locator('.pm-about')).toContainText('עבודות הרופא');
   await expect(pm).toHaveAttribute('data-gallery', 'work');
-  expect(stem(await filesOf(page))).toEqual(onPage);
-  // Existing titles are shown; a missing one is flagged, never invented.
-  // Read from the data, not pinned to today's order: the owner reorders this.
+  // The manager shows every stored photo — hidden ones too — in stored order.
   const records = await storedWork(page.request);
+  expect(stem(await filesOf(page))).toEqual(stem(records.map((r) => r.file)));
+  // Existing titles are shown; a missing one is flagged, never invented.
   for (const [i, r] of records.entries()) {
     await expect(tilesOf(page).nth(i).locator('.pm-text')).toHaveText(r.caption?.he ?? 'ללא כותרת');
   }
@@ -650,6 +662,17 @@ test.describe('on a 390px touch phone', () => {
     await touch('touchEnd');
     await expect(managerOf(page).locator('.pm-ghost')).toHaveCount(0);
     expect(await filesOf(page)).toEqual(order);
+    // Let the swipe's scroll settle before pressing: a touch that lands on a
+    // still-moving list only stops the scroll (the browser's rule), so under a
+    // loaded CI runner the long-press below never began.
+    const body = managerOf(page).locator('.pm-body');
+    let last = Number.NaN;
+    await expect.poll(async () => {
+      const now = await body.evaluate((b) => b.scrollTop);
+      const settled = now === last;
+      last = now;
+      return settled;
+    }, { intervals: [200] }).toBe(true);
 
     // Long-press, then carry it onto its neighbour.
     const from = (await tiles.nth(0).boundingBox())!;
