@@ -131,3 +131,43 @@ language, device, personalisation and time.
 | `/he/treatments/dental-implants/` | "URL is unknown to Google" — no indexing request made |
 | Structured data (validator.schema.org, live treatment page) | 0 errors; warnings for `availableLanguage` on `Dentist` (not a Dentist property) — fixed in the follow-up by moving it to a `ContactPoint` |
 | Google Rich Results Test | Tool answered "Something went wrong" — not run |
+
+## 2026-09-30 — after the deploys were unblocked
+
+Production deploys failed from 2026-09-27 (69cd894, 47c0baa) on
+content-dependent browser tests — a hidden doctor's-work upload broke an
+assumption — so PR #7 and a staff upload waited until #8 fixed the tests.
+Live since 2026-09-29: **84381a6**.
+
+| Check | Result (as observed) |
+|---|---|
+| Live crawl | 46 pages, 45 in sitemap, 0 errors |
+| JSON-LD | `Dentist.name` = "ד״ר חליל כנעאני" (the profile's name); languages on a `ContactPoint` |
+| IndexNow | 45 URLs → HTTP **200** (key validated) |
+| Search Console sitemap | Success, last read 2026-09-28, **45** discovered pages |
+| Search Console performance (2026-09-26 – 09-27) | **4 clicks, 33 impressions, CTR 12.1 %, average position 2.1**; no queries shown (low volume) |
+| Search Console page indexing | "Processing data" |
+
+### Google Business Profile — publicly visible (observed 2026-09-30, Google Maps)
+
+| Field | Profile | Website | Match |
+|---|---|---|---|
+| Name | ד״ר חליל כנעאני | ד״ר חליל כנעאני (JSON-LD name) | ✓ |
+| Category | מרפאת שיניים (dental clinic) | `Dentist` | ✓ |
+| Address | רח' 1003, ג'דיידה מכר, 2510500 | רחוב 1003, ג׳דיידה-מכר, 2510500 | ✓ (spelling variant only) |
+| Pin | 32.9336519, 35.148451 (plus code W4MX+F9) | 32.9336, 35.148804 (from the owner's Waze link) | ≈ 33 m apart — owner to confirm the door |
+| Phone | **052-288-5179** | primary **04-884-8891**; 052-288-5179 as mobile/WhatsApp | ✗ primary differs |
+| Hours | Sun closed · Mon, Tue, Thu 12:00–19:00 · Wed closed · Fri, Sat 12:00–19:00 ("hours may vary") | none published (owner has not supplied them) | ✗ |
+| Website | drkhalilkanani.com | — | ✓ |
+| Reviews | 5.0 (2) | none on-site (ADR 0005) | — |
+| Photos | 14 | — | — |
+
+One of the two reviews is by a person connected to the site's development;
+Google's policy prohibits reviews with a conflict of interest.
+
+### Observed search results — observations, not rankings
+
+| Date | Engine | Query | Lang | Observed | Target | Indexed? |
+|---|---|---|---|---|---|---|
+| 2026-09-30 | Google Maps | ד״ר חליל כנעאני ג'דיידה-מכר | he | The clinic's profile is shown | GBP | profile public |
+| 2026-09-30 | Google | רופא שיניים ג'דיידה מכר | he | No map pack; directories and health-fund pages; clinic not on page 1 | `/he/` + GBP | `/he/` indexed |
