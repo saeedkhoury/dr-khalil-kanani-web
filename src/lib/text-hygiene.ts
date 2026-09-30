@@ -50,6 +50,9 @@ export function forbiddenScriptIn(text: string): { script: string; char: string 
   return null;
 }
 
+/** Request fields that carry image bytes (base64), never text. */
+const IMAGE_DATA = new Set(['contentBase64']);
+
 /**
  * Clean every string in a parsed JSON value (a CMS request body). Returns the
  * cleaned value, or the first forbidden letter found. Pure: the input is not
@@ -66,7 +69,10 @@ export function cleanJsonText(value: unknown): { ok: true; value: unknown } | { 
     }
     if (Array.isArray(node)) return node.map(walk);
     if (node !== null && typeof node === 'object') {
-      return Object.fromEntries(Object.entries(node).map(([k, v]) => [k, walk(v)]));
+      // Image bytes are not text. A photo arrives as megabytes of base64;
+      // scanning and copying it pushed the Worker past its resource limit
+      // (2026-09-30), so it is passed through as the very same string.
+      return Object.fromEntries(Object.entries(node).map(([k, v]) => [k, IMAGE_DATA.has(k) ? v : walk(v)]));
     }
     return node;
   };

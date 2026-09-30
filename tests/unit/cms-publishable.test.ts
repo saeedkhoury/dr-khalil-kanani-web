@@ -15,7 +15,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { cleanInvisibles, forbiddenScriptIn, SUSPECT_INVISIBLES } from '../../src/lib/text-hygiene.ts';
+import { cleanInvisibles, cleanJsonText, forbiddenScriptIn, SUSPECT_INVISIBLES } from '../../src/lib/text-hygiene.ts';
 import { adminRequest, asContents, callAdmin, decodeContent } from '../helpers/admin-api.ts';
 
 const SERVICES_TEXT = readFileSync(new URL('../../src/data/services.json', import.meta.url), 'utf8');
@@ -34,6 +34,24 @@ describe('the shared rule', () => {
     // Cyrillic "к" inside an Arabic word — the real case from authoring.
     assert.deepEqual(forbiddenScriptIn('يمкن'), { script: 'Cyrillic', char: 'к' });
     assert.equal(forbiddenScriptIn('يمكن שלום Hello'), null);
+  });
+});
+
+describe('image data is not text: the rule never walks a photo upload', () => {
+  // 2026-09-30, staging: a 5.6 MB iPhone photo travels as ~7.7 MB of base64.
+  // Scanning and copying it for invisible marks pushed the Worker over its
+  // resource limit (exceededResources) on the second upload of a batch.
+  test('contentBase64 is passed through untouched — the same string, not a copy', () => {
+    const base64 = 'A'.repeat(8 * 1024 * 1024);
+    const body = { contentBase64: base64, confirmed: true, alt: `x${'\u200F'}` };
+    const started = performance.now();
+    const cleaned = cleanJsonText(body);
+    const elapsed = performance.now() - started;
+    assert.ok(cleaned.ok);
+    const value = cleaned.value as typeof body;
+    assert.equal(value.contentBase64, base64, 'identical string');
+    assert.equal(value.alt, 'x', 'text beside it is still cleaned');
+    assert.ok(elapsed < 50, `took ${elapsed.toFixed(1)} ms — the image must not be scanned`);
   });
 });
 
