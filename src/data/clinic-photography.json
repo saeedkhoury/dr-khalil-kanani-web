@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "file": "reception-01.jpg",
+    "category": "reception",
+    "width": 2560,
+    "height": 1920,
+    "status": "unpublished",
+    "alt": {
+      "he": "תמונת בדיקה 1",
+      "ar": "صورة اختبار 1",
+      "en": "Test photo 1"
+    }
+  },
+  {
+    "file": "reception-02.jpg",
+    "category": "reception",
+    "width": 1600,
+    "height": 1200,
+    "status": "unpublished",
+    "alt": {
+      "he": "תמונת בדיקה 2",
+      "ar": "صورة اختبار 2",
+      "en": "Test photo 2"
+    }
+  }
+]
