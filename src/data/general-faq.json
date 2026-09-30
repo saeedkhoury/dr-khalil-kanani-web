@@ -2,7 +2,7 @@
   {
     "id": "faq-01",
     "status": "published",
-    "order": 1,
+    "order": 0,
     "q": {
       "he": "באילו שפות אפשר לדבר במרפאה?",
       "ar": "بأي لغات يمكن التحدث في العيادة؟",
@@ -17,14 +17,14 @@
   {
     "id": "faq-02",
     "status": "published",
-    "order": 0,
+    "order": 1,
     "q": {
       "he": "איך קובעים תור?",
       "ar": "كيف نحجز موعدًا؟",
       "en": "How do I make an appointment?"
     },
     "a": {
-      "he": "הדרך המהירה היא טלפון או וואטסאפ. אפשר גם לשלוח בקשה דרך האתר ונחזור אליכם — אך אם מדובר בכאב או במצב דחוף, עדיף להתקשר. (בדיקה)",
+      "he": "הדרך המהירה היא טלפון או וואטסאפ. אפשר גם לשלוח בקשה דרך האתר ונחזור אליכם — אך אם מדובר בכאב או במצב דחוף, עדיף להתקשר.",
       "ar": "أسرع طريقة هي الهاتف أو الواتساب. يمكن أيضًا إرسال طلب عبر الموقع وسنعاود الاتصال بكم — لكن إذا كان الأمر يتعلق بألم أو حالة عاجلة، يُفضّل الاتصال.",
       "en": "The fastest way is by phone or WhatsApp. You can also send a request through this site and we will get back to you — but if it involves pain or an urgent situation, please call."
     }
