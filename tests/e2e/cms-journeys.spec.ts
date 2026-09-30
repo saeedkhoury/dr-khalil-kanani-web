@@ -22,6 +22,15 @@ test.use({ baseURL: ADMIN, reducedMotion: 'reduce' });
 // One in-memory repository behind all of these; they build on each other.
 test.describe.configure({ mode: 'serial' });
 
+// Treatments are chosen from the data, never by name: the doctor may hide or
+// remove any of them, and this suite gates every one of his saves.
+// In DISPLAY order (src/lib/content.ts), so FIRST and SECOND are the cards the
+// home page actually shows, whatever order the doctor has set.
+const PUBLISHED = services.filter((s) => s.status === 'published')
+  .sort((a, b) => a.order - b.order || a.tier - b.tier || a.id.localeCompare(b.id))
+  .map((s) => s.slug);
+const FIRST = PUBLISHED[0];
+const SECOND = PUBLISHED[1] ?? PUBLISHED[0];
 const heTitle = (slug: string) => services.find((s) => s.slug === slug)!.locales.he.title;
 const heCard = (slug: string) => services.find((s) => s.slug === slug)!.locales.he.cardTitle;
 const dialogOf = (page: Page) => page.locator('dialog.visual-dialog');
@@ -61,17 +70,17 @@ test.beforeEach(async ({ page }) => { await acceptConfirms(page); });
 
 test('a treatment card pencil opens THAT treatment, on screen, with its data', async ({ page }) => {
   await page.goto('/he/');
-  await page.getByRole('button', { name: `עריכה: ${heCard('dental-implants')}`, exact: true }).click();
+  await page.getByRole('button', { name: `עריכה: ${heCard(FIRST)}`, exact: true }).click();
   const dialog = dialogOf(page);
-  const heading = dialog.getByRole('heading', { name: `עריכת טיפול: ${heTitle('dental-implants')}` });
+  const heading = dialog.getByRole('heading', { name: `עריכת טיפול: ${heTitle(FIRST)}` });
   await expectInView(dialog, heading);
   await expect(heading).toBeFocused();
-  await expect(dialog.locator('[data-path$=".locales.he.title"]')).toHaveValue(heTitle('dental-implants'));
+  await expect(dialog.locator('[data-path$=".locales.he.title"]')).toHaveValue(heTitle(FIRST));
 });
 
 test('editing a treatment saves, saves again, and says when nothing changed', async ({ page }) => {
   await page.goto('/he/');
-  await page.getByRole('button', { name: `עריכה: ${heCard('dental-implants')}`, exact: true }).click();
+  await page.getByRole('button', { name: `עריכה: ${heCard(FIRST)}`, exact: true }).click();
   const dialog = dialogOf(page);
   const summary = dialog.locator('[data-path$=".locales.he.summary"]');
   await summary.fill('תקציר שעודכן בבדיקה.');
@@ -89,15 +98,15 @@ test('editing a treatment saves, saves again, and says when nothing changed', as
 
   // Persisted: close, reopen from the page, the value is there.
   await dialog.getByRole('button', { name: 'סגירה' }).click();
-  await page.getByRole('button', { name: `עריכה: ${heCard('dental-implants')}`, exact: true }).click();
+  await page.getByRole('button', { name: `עריכה: ${heCard(FIRST)}`, exact: true }).click();
   await expect(dialog.locator('[data-path$=".locales.he.summary"]')).toHaveValue('תקציר שעודכן פעם שנייה.');
 });
 
 test('"Edit this treatment" on a treatment page opens that treatment', async ({ page }) => {
-  await page.goto('/he/treatments/veneers/');
+  await page.goto(`/he/treatments/${SECOND}/`);
   await page.getByRole('button', { name: 'עריכת הטיפול הזה' }).click();
   const dialog = dialogOf(page);
-  await expectInView(dialog, dialog.getByRole('heading', { name: `עריכת טיפול: ${heTitle('veneers')}` }));
+  await expectInView(dialog, dialog.getByRole('heading', { name: `עריכת טיפול: ${heTitle(SECOND)}` }));
 });
 
 test('a new treatment saves as a draft; publishing it incomplete names what is missing', async ({ page }) => {
@@ -805,7 +814,7 @@ test('preview hides the gallery Edit control and card pencils, and brings them b
 test('on a 390px phone the editor fills the screen and Save is always reachable', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/he/');
-  await page.getByRole('button', { name: `עריכה: ${heCard('veneers')}`, exact: true }).click();
+  await page.getByRole('button', { name: `עריכה: ${heCard(SECOND)}`, exact: true }).click();
   const dialog = dialogOf(page);
   const box = (await dialog.boundingBox())!;
   expect(box.width).toBeLessThanOrEqual(390);
