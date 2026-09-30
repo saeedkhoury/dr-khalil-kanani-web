@@ -78,7 +78,7 @@ const SOURCE = String.raw`
   const close = button(t('close'), () => {
     if (dirty && !confirm(t('unsavedClose'))) return;
     if (dirty) dropDraft();
-    dirty = false; dialog.close();
+    dirty = false; dialog.close(); afterClose();
   });
   head.append(close);
   const main = add(dialog,'div'); main.className='visual-dialog-main';
@@ -92,7 +92,7 @@ const SOURCE = String.raw`
   const saveButton = button(t('save'), () => void save(), 'primary');
   footActions.append(saveButton);
   document.body.append(dialog);
-  dialog.addEventListener('cancel',(event)=>{ if (dirty && !confirm(t('unsavedClose'))) event.preventDefault(); else { if(dirty) dropDraft(); dirty=false; } });
+  dialog.addEventListener('cancel',(event)=>{ if (dirty && !confirm(t('unsavedClose'))) event.preventDefault(); else { if(dirty) dropDraft(); dirty=false; setTimeout(afterClose,0); } });
 
   let kind='', sha='', draft=null, original=null, focus='', busy=false, dirty=false, publishing='test';
   let view={mode:'list',id:'',lang:locale}, expanded=new Set(), sent=null;
@@ -275,7 +275,9 @@ const SOURCE = String.raw`
     reloadSlot.hidden=false;
     pubTell(t(dirty||(pm.el&&pm.el.open&&pmDirty())?'updatedDirty':'updatedLater'),'published');
   }
-  dialog.addEventListener('close',()=>{ if(pendingReload && !dirty && !busy) reloadNow(pendingReload); });
+  // Called from the ways the doctor closes the editor, not from the dialog's
+  // 'close' event: Chrome does not deliver that to a page in a background tab.
+  function afterClose(){ if(pendingReload && !dirty && !busy && !dialog.open && !(pm.el&&pm.el.open)) reloadNow(pendingReload); }
 
   /* ── Opening, loading, saving ───────────────────────────────────────── */
   function loading(on){message.classList.toggle('visual-loading',on);if(on){message.textContent=t('loading');message.setAttribute('data-state','working');const sk=document.createElement('div');sk.className='visual-skeleton';sk.setAttribute('aria-hidden','true');for(let i=0;i<6;i++)sk.append(document.createElement('span'));body.replaceChildren(sk);body.setAttribute('aria-busy','true');}else{body.replaceChildren();body.removeAttribute('aria-busy');}}
