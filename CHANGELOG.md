@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-30 — CMS reliability pass
+
+- Staging admin (`admin-staging.drkhalilkanani.com` → branch `cms/integration`).
+- iPhone photos: no Worker resource exhaustion; scaled to 2560 px; uploads
+  retried; Save waits for photos still being prepared.
+- Invisible keyboard marks removed and look-alike letters refused before
+  commit, at the field.
+- Stale edits can no longer overwrite newer content via a rescued draft.
+- The automatic reload never closes an open editor.
+- Failed deploys re-run once; e2e tests independent of content; deploy jobs
+  run in parallel.
+
 ## Visual CMS — 2026-09-24
 
 - `admin.drkhalilkanani.com` becomes the website with Edit Mode rather than a

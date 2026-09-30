@@ -2,9 +2,62 @@
 
 Current repository state. Not a history — see `CHANGELOG.md` for that.
 
-**Last updated:** 2026-09-27
+**Last updated:** 2026-09-30
 
 ---
+
+## Current state — 2026-09-30 (read this first; older sections below are history)
+
+**CMS reliability pass** (branch `cms/reliability`). Every defect below was
+reproduced on the real staging admin, fixed at its cause, given a regression
+test, and re-tested on staging.
+
+**Staging admin** — `admin-staging.drkhalilkanani.com`, Worker
+`drkanani-admin-staging` (`wrangler.toml [env.staging]`). Same Access policy
+and exact-email list as production; its own Access app (7-day session). It
+writes ONLY to branch `cms/integration`, which never deploys the public site.
+Workers Builds trigger "admin-staging (cms/integration)" rebuilds it on every
+push to that branch. Test destructively there, never on `main`. To bring new
+code to it: merge the feature branch into `cms/integration`. After testing,
+reset its content to production's (`git checkout <prod> -- src/data` plus
+removing test images), as done in 6956e43.
+
+Defects found on staging and their causes:
+
+| What the doctor saw | Cause | Fix |
+|---|---|---|
+| Second iPhone photo: "unexpected error" | 7.7 MB base64 per photo; the invisible-mark filter also scanned it → Worker `exceededResources` | filter skips image data; photos > 2560 px scaled in the browser; upload auto-retried; missing descriptions caught before upload |
+| An edit committed but never published | an invisible RTL mark from the iPhone keyboard; the Worker accepted it, CI's mixed-script lint refused it | the Worker applies the same rule (`src/lib/text-hygiene.ts`): marks removed, look-alike letters refused at the field |
+| Deploys failing on unrelated content | e2e tests pinned to live content | tests are content-independent; `scripts/check-content-independence.mjs` proves it |
+| "Failed" forever after a flaky deploy | no retry; superseded commits reported as failed | `retry-deploy.yml` re-runs once; failed-but-live ⇒ published |
+| Stale text overwrote another tab's change | "load latest" did not delete the rescued draft; drafts had no base version | discarding deletes it; drafts keep their base SHA ⇒ conflict, never overwrite |
+| Page reloaded under an open editor | auto-reload decided 1.2 s early; relied on the dialog close event (not delivered to background tabs) | reloads only into the saving editor, re-checks, else waits for close |
+| "Photo 5: no file chosen" | Save pressed while a big photo was still being prepared skipped confirmation and sent it without its file | Save waits ("Preparing the photos…") |
+| Unclear validation | anonymous "retype the word"; four identical "Treatment steps" lines | issues name the field / step |
+
+Measured on staging (2026-09-30): text saves commit in 1.9–3.0 s (median
+2.4 s, n≈20); photo saves 4.5–13 s (two photos incl. a 4032 px one: 13 s).
+Save → edit view updated: 47–54 s when the Cloudflare build queue is free,
+~78 s when queued behind the previous build. One transient Cloudflare queue
+of 14–17 min was observed (15:00 UTC); the editor then says "taking longer
+than usual; still checking" and never claims failure or success.
+
+Production deploy (`deploy.yml`) now runs verify ‖ build ‖ e2e (2 shards) in
+parallel; all still block the deploy.
+
+Still open:
+- **Google sign-in** (OTP stays as the backup). The secret must be created and
+  pasted by the owner, never by an agent: Google Cloud project
+  `dr-kanani-admin` → Google Auth Platform → Clients → Create client → Web
+  application; Authorized JavaScript origin
+  `https://late-queen-efb5.cloudflareaccess.com`; redirect URI
+  `https://late-queen-efb5.cloudflareaccess.com/cdn-cgi/access/callback`. Then
+  Cloudflare Zero Trust → Settings → Authentication → Login methods → Add →
+  Google, paste the client ID and secret. After that, attach the new login
+  method to BOTH Access apps (admin and admin-staging) alongside OTP; the
+  exact-email policy is unchanged.
+- The one physical-iPhone check (Safari: sign in once, refresh, close and
+  reopen Safari — no second code while the 7-day session lasts).
 
 ## Current state — 2026-09-27 (read this first; older sections below are history)
 
