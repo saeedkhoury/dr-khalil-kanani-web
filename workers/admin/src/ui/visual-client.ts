@@ -147,8 +147,13 @@ const SOURCE = String.raw`
     const at=issue.lastIndexOf(':'); if(at<0) return t('invalidValue');
     const path=issue.slice(0,at).split('.'), reason=reasonOf(issue.slice(at+1));
     if (kind==='services'||kind==='faq') {
-      const lang=path.find(p=>LANGS.includes(p)); const key=path.slice(1).find(p=>SERVICE_FIELDS[p]);
-      return itemName(path[0])+' · '+(key?SERVICE_FIELDS[key]:t('field'))+(lang?' ('+names[lang]+')':'')+': '+reason;
+      // "Treatment steps 2 · Detail", not "Treatment steps" four times over.
+      const lang=path.find(p=>LANGS.includes(p)); const parts=[];
+      for (const p of path.slice(1)) {
+        if (/^\d+$/.test(p)) { if (parts.length) parts[parts.length-1]+=' '+(Number(p)+1); }
+        else if (SERVICE_FIELDS[p]) parts.push(SERVICE_FIELDS[p]);
+      }
+      return itemName(path[0])+' · '+(parts.length?parts.join(' · '):t('field'))+(lang?' ('+names[lang]+')':'')+': '+reason;
     }
     if (kind==='copy') { const lang=path[path.length-1]; const key=path.slice(0,-1).join('.'); return (COPY_LABELS[key]||key)+(names[lang]?' ('+names[lang]+')':'')+': '+reason; }
     if (kind==='contact') { const lang=path.find(p=>LANGS.includes(p)); return (CONTACT_LABELS[path[0]]||path[0])+(lang?' ('+names[lang]+')':'')+': '+reason; }
@@ -223,14 +228,14 @@ const SOURCE = String.raw`
    */
   async function track(commit){
     if(!commit) return;
-    const token=++trackToken; let announced=false, retryPolls=0;
+    const token=++trackToken, from=kind; let announced=false, retryPolls=0;
     pubTell(publishing==='test'?t('updating'):t('waitingPublish',{sha:short(commit)}),'working');
     for (let attempt=0; attempt<150; attempt++) {
       await sleep(attempt<6?4000:6000);
       if (token!==trackToken) return;
       let data; try { data=await api('/api/status?sha='+encodeURIComponent(commit),'GET'); } catch { continue; }
       if (token!==trackToken) return;
-      if (data.preview==='ready') { reloadWhenSafe(commit); return; }
+      if (data.preview==='ready') { reloadWhenSafe(commit, from); return; }
       if (data.preview==='failed') { pubTell(t('updateFailed'),'failed'); return; }
       if (data.preview==='none' && attempt>=8 && !announced) { announced=true; pubTell(t('updateNotConfigured'),'info'); }
       if (publishing==='production') {
@@ -245,19 +250,32 @@ const SOURCE = String.raw`
       if (data.preview==='building' && attempt===60) { announced=true; pubTell(t('updateSlow'),'info'); }
     }
   }
-  /** The page now contains the change: reload into it, unless that would lose work. */
-  function reloadWhenSafe(commit){
-    if(!dirty && !busy && !(pm.el&&pm.el.open&&pmDirty())){
+  /*
+   * The page now contains the change: reload into it — but only into the
+   * editor that saved it, with nothing unsaved. Checked again at the moment
+   * of reloading (2026-09-30, staging: the page reloaded under a DIFFERENT
+   * editor opened in the meantime, taking what had just been typed).
+   */
+  let pendingReload='';
+  function idle(from){ return !dirty && !busy && !(pm.el&&pm.el.open) && (!dialog.open || kind===from); }
+  function reloadNow(commit){ try{ sessionStorage.setItem('visual-updated',commit); }catch{} location.reload(); }
+  function reloadWhenSafe(commit, from){
+    if(idle(from)){
       pubTell(t('updated'),'published');
-      try{ sessionStorage.setItem('visual-updated',commit); }catch{}
-      setTimeout(()=>location.reload(),1200);
+      setTimeout(()=>{ if(idle(from)) reloadNow(commit); else deferReload(commit); },1200);
       return;
     }
+    deferReload(commit);
+  }
+  /** Reload when the open window closes; until then, a button. */
+  function deferReload(commit){
+    pendingReload=commit;
     reloadSlot.replaceChildren();
     reloadSlot.append(button(t('refreshNow'),()=>{ if(dirty&&!confirm(t('unsavedRefresh')))return; discard(); location.reload(); }));
     reloadSlot.hidden=false;
-    pubTell(t('updatedDirty'),'published');
+    pubTell(t(dirty||(pm.el&&pm.el.open&&pmDirty())?'updatedDirty':'updatedLater'),'published');
   }
+  dialog.addEventListener('close',()=>{ if(pendingReload && !dirty && !busy) reloadNow(pendingReload); });
 
   /* ── Opening, loading, saving ───────────────────────────────────────── */
   function loading(on){message.classList.toggle('visual-loading',on);if(on){message.textContent=t('loading');message.setAttribute('data-state','working');const sk=document.createElement('div');sk.className='visual-skeleton';sk.setAttribute('aria-hidden','true');for(let i=0;i<6;i++)sk.append(document.createElement('span'));body.replaceChildren(sk);body.setAttribute('aria-busy','true');}else{body.replaceChildren();body.removeAttribute('aria-busy');}}
