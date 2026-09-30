@@ -126,6 +126,11 @@ test('a new treatment saves as a draft; publishing it incomplete names what is m
   const issue = dialog.locator('.visual-errors button').filter({ hasText: 'שם קצר לכרטיס (עברית)' });
   await expect(issue).toBeVisible();
   await expect(dialog.locator('.visual-errors')).not.toContainText('too_small');
+  // Each line says WHICH step or item (staging 2026-09-30: four identical
+  // "Treatment steps (Hebrew): missing" lines, indistinguishable).
+  const lines = await dialog.locator('.visual-errors button').allInnerTexts();
+  expect(new Set(lines).size).toBe(lines.length);
+  await expect(dialog.locator('.visual-errors button').filter({ hasText: 'מהלך הטיפול 1 · שלב (עברית)' })).toBeVisible();
   await issue.click();
   await expect(dialog.locator('[data-path$=".locales.he.cardTitle"]')).toBeFocused();
   // An error is not overwritten by a background status check.
@@ -489,6 +494,31 @@ test('an iPhone photo (4032 px, several MB) is sent scaled to 2560 px, and a pas
   expect(attempts).toBe(2);
   expect(sent.every((s) => s.width === 2560)).toBe(true);
   await expect(pmStatus(page)).not.toContainText('נכשל');
+});
+
+test('Save pressed while a photo is still being prepared waits for it, asks for the confirmation, and sends the file', async ({ page }) => {
+  // 2026-09-30: under load, Save pressed before a 4032 px photo finished
+  // preparing skipped the "no patient" confirmation (the photo was not yet
+  // "new") and sent it without its file — "Photo 5: no file chosen".
+  test.setTimeout(60_000);
+  await page.addInitScript(() => {
+    const original = window.createImageBitmap.bind(window);
+    // A phone decoding a 12-megapixel photo: seconds, not milliseconds.
+    (window as unknown as { createImageBitmap: typeof createImageBitmap }).createImageBitmap =
+      ((...args: Parameters<typeof createImageBitmap>) =>
+        new Promise((resolve) => setTimeout(resolve, 2500)).then(() => original(...args))) as typeof createImageBitmap;
+  });
+  await openManager(page);
+  const pm = managerOf(page);
+  const saves: unknown[] = [];
+  await page.route('**/api/photos/save', async (route) => { saves.push(route.request().postDataJSON()); return route.continue(); });
+  await pm.locator('#pm-add-input').setInputFiles({ name: 'IMG_4502.JPG', mimeType: 'image/jpeg', buffer: solidJpeg(4032, 3024) });
+  await pm.locator('.pm-save').click(); // at once, while the photo is still being prepared
+
+  await expect(pmStatus(page)).toContainText('מכין את התמונות');
+  // Then the ordinary path: the confirmation is asked for, nothing was sent.
+  await expect(pm.locator('#pm-confirm')).toBeFocused({ timeout: 15_000 });
+  expect(saves).toHaveLength(0);
 });
 
 test('an Instagram-sized 1080px photo is accepted and saved as it is — there is no minimum size', async ({ page, request }) => {
@@ -958,6 +988,42 @@ test('after a save the editor waits for the rebuild, then reloads into it', asyn
   await expect(page.locator('.visual-bar-status')).toContainText('הדף מציג את השינוי האחרון שנשמר');
 
   // Restore.
+  await page.getByRole('button', { name: 'עריכת הכותרת הראשית' }).click();
+  await dialog.locator('[data-path="hero.eyebrow.he"]').fill(original);
+  await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
+  await expect(statusOf(page)).toContainText('נשמר');
+});
+
+test('the automatic reload never closes a different editor the doctor has opened since', async ({ page, request }) => {
+  // 2026-09-30, staging: hours were saved, then the contact editor opened;
+  // when the hours rebuild finished the page reloaded under the contact
+  // editor. Anything typed in the second before the reload was lost.
+  test.setTimeout(60_000);
+  await page.goto('/he/');
+  await page.getByRole('button', { name: 'עריכת הכותרת הראשית' }).click();
+  const dialog = dialogOf(page);
+  const eyebrow = dialog.locator('[data-path="hero.eyebrow.he"]');
+  const original = await eyebrow.inputValue();
+  await eyebrow.fill(`${original} ·`);
+  await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
+  await expect(statusOf(page)).toContainText('נשמר');
+
+  // A different editor, opened before the rebuild is served.
+  await dialog.getByRole('button', { name: 'סגירה', exact: true }).click();
+  await page.locator('[data-edit-kind="doctor"]').first().click();
+  await expect(dialog.locator('input[lang="en"], textarea[lang="en"]').first()).toBeVisible();
+  let reloaded = false;
+  page.on('load', () => { reloaded = true; });
+  await request.post('/__fixture/deploy');
+  await page.waitForTimeout(8000); // status polls every few seconds, then 1.2 s
+  expect(reloaded).toBe(false);
+  await expect(dialog).toBeVisible();
+
+  // Closing it lets the page catch up.
+  const load = page.waitForEvent('load', { timeout: 15_000 });
+  await dialog.getByRole('button', { name: 'סגירה', exact: true }).click();
+  await load;
+
   await page.getByRole('button', { name: 'עריכת הכותרת הראשית' }).click();
   await dialog.locator('[data-path="hero.eyebrow.he"]').fill(original);
   await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();

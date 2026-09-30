@@ -369,6 +369,6 @@ describe('edit mode, preview and unsaved work', () => {
     assert.match(VISUAL_CLIENT, /barTell\(t\('publishedSite'\),'published'\)/);
     // "Updated" only from preview 'ready', which the Worker reports only when
     // the build it serves contains the commit.
-    assert.match(VISUAL_CLIENT, /if \(data\.preview==='ready'\) \{ reloadWhenSafe\(commit\); return; \}/);
+    assert.match(VISUAL_CLIENT, /if \(data\.preview==='ready'\) \{ reloadWhenSafe\(commit, from\); return; \}/);
   });
 });
