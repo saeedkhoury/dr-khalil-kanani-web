@@ -92,6 +92,105 @@ test('text editors separate the three languages with the right direction', async
   await expect(dialog.locator('[lang="en"]').first()).toHaveAttribute('dir', 'ltr');
 });
 
+test('a look-alike letter is refused at the field it is in, not as an anonymous banner', async ({ page }) => {
+  // 2026-09-30, staging: one Cyrillic "а" in an English field was refused
+  // with "retype the word" — with a dozen fields open, and no hint which.
+  await page.goto(`${ADMIN}/he/`);
+  await page.locator('[data-edit-kind="doctor"]').first().click();
+  const dialog = page.locator('dialog.visual-dialog');
+  const field = dialog.locator('input[lang="en"], textarea[lang="en"]').first();
+  await expect(field).toBeVisible();
+  await field.fill(`${await field.inputValue()} Dent\u0430l`);
+  await dialog.getByRole('button', { name: 'שמירה' }).click();
+
+  await expect(field).toHaveAttribute('aria-invalid', 'true');
+  const issue = dialog.locator('.visual-link', { hasText: 'מאלפבית אחר' });
+  await expect(issue).toHaveCount(1);
+  await expect(issue).toContainText('English');
+});
+
+/** The first English string in an edited value, and a setter for it. */
+function firstEnglish(value: unknown): { get: () => string; set: (v: string) => void } | null {
+  if (value === null || typeof value !== 'object') return null;
+  for (const [key, child] of Object.entries(value as Record<string, unknown>)) {
+    if (key === 'en' && typeof child === 'string' && child) {
+      const owner = value as Record<string, unknown>;
+      return { get: () => owner.en as string, set: (v) => { owner.en = v; } };
+    }
+    const found = firstEnglish(child);
+    if (found) return found;
+  }
+  return null;
+}
+
+test.describe('unsaved work that the doctor discards is never offered back over newer content', () => {
+  // 2026-09-30, staging: after a stale-edit refusal the doctor pressed
+  // "load the latest", agreed to lose the edit — and was then offered it
+  // back as "unsaved changes on this device". Accepting put the stale text
+  // over the other tab's change, and the next save overwrote it silently.
+  test('"load the latest" after a conflict does not resurrect the discarded edit', async ({ page }) => {
+    const prompts: string[] = [];
+    page.on('dialog', (dialog) => { prompts.push(dialog.message()); void dialog.accept(); });
+    let reads = 0;
+    await page.route('**/api/content/doctor', async (route) => {
+      if (route.request().method() === 'GET') {
+        const response = await route.fetch();
+        const body = await response.json();
+        reads += 1;
+        if (reads > 1) { const en = firstEnglish(body.data.value)!; en.set(`${en.get()} OTHER-TAB`); }
+        return route.fulfill({ response, json: body });
+      }
+      return route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ ok: false, error: { code: 'CONFLICT' } }) });
+    });
+    await page.goto(`${ADMIN}/he/`);
+    await page.locator('[data-edit-kind="doctor"]').first().click();
+    const dialog = page.locator('dialog.visual-dialog');
+    const field = dialog.locator('input[lang="en"], textarea[lang="en"]').first();
+    await field.fill('MINE');
+    await page.waitForTimeout(600); // the rescue copy is written 400 ms after typing
+    await dialog.getByRole('button', { name: 'שמירה' }).click();
+    await dialog.getByRole('button', { name: 'טעינה מחדש של התוכן העדכני' }).click();
+
+    await expect.poll(() => reads).toBe(2);
+    await expect.poll(() => dialog.locator('input, textarea').evaluateAll(
+      (nodes) => nodes.some((n) => (n as HTMLInputElement).value.includes('OTHER-TAB')))).toBe(true);
+    expect(prompts.some((m) => m.includes('נמצאו במכשיר הזה'))).toBe(false);
+    expect(await page.evaluate(() => localStorage.getItem('visual-unsaved-doctor'))).toBeNull();
+  });
+
+  test('a rescued draft keeps the version it was written against, so it cannot overwrite newer content', async ({ page }) => {
+    page.on('dialog', (dialog) => { void dialog.accept(); });
+    let baseSha = '';
+    let sentSha = '';
+    let newer = false;
+    await page.route('**/api/content/doctor', async (route) => {
+      if (route.request().method() === 'GET') {
+        const response = await route.fetch();
+        const body = await response.json();
+        if (!baseSha) baseSha = body.data.sha;
+        // Someone else saved while this device was away.
+        if (newer) body.data.sha = 'e'.repeat(40);
+        return route.fulfill({ response, json: body });
+      }
+      sentSha = route.request().postDataJSON().sha;
+      return route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ ok: false, error: { code: 'CONFLICT' } }) });
+    });
+    await page.goto(`${ADMIN}/he/`);
+    await page.locator('[data-edit-kind="doctor"]').first().click();
+    const dialog = page.locator('dialog.visual-dialog');
+    await dialog.locator('input[lang="en"], textarea[lang="en"]').first().fill('WRITTEN BEFORE THE SESSION ENDED');
+    await page.waitForTimeout(600);
+    newer = true;
+    await page.reload();
+    await page.locator('[data-edit-kind="doctor"]').first().click();
+    await expect(dialog.locator('input[lang="en"], textarea[lang="en"]').first()).toHaveValue('WRITTEN BEFORE THE SESSION ENDED');
+    await dialog.getByRole('button', { name: 'שמירה' }).click();
+
+    await expect.poll(() => sentSha).toBe(baseSha);
+    await expect(dialog.getByRole('button', { name: 'טעינה מחדש של התוכן העדכני' })).toBeVisible();
+  });
+});
+
 test('closing with unsaved edits asks first', async ({ page }) => {
   await page.goto(`${ADMIN}/he/`);
   await page.locator('[data-edit-kind="doctor"]').first().click();

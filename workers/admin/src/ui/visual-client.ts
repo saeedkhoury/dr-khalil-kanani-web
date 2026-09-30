@@ -104,8 +104,12 @@ const SOURCE = String.raw`
      is saved, deliberately discarded, or restored. Text only — photographs
      are far too large for browser storage. */
   const RESCUE='visual-unsaved-'; let keepTimer=0;
-  function keepDraft(){ if(!kind||!draft||!dirty) return; try{ localStorage.setItem(RESCUE+kind,JSON.stringify({at:Date.now(),draft})); }catch{} }
+  // The version the draft was edited from travels with it: restored on top of
+  // newer content, it must meet the stale-edit check, not overwrite silently.
+  function keepDraft(){ if(!kind||!draft||!dirty) return; try{ localStorage.setItem(RESCUE+kind,JSON.stringify({at:Date.now(),draft,sha})); }catch{} }
   function dropDraft(which){ try{ localStorage.removeItem(RESCUE+(which||kind)); }catch{} }
+  /** The doctor chose to throw unsaved work away: nothing may offer it back. */
+  function discard(){ clearTimeout(keepTimer); dropDraft(); dirty=false; }
   function rescued(which){ try{ const v=JSON.parse(localStorage.getItem(RESCUE+which)||'null'); return v&&v.draft&&typeof v.at==='number'?v:null; }catch{ return null; } }
 
   function tell(text,state){message.textContent=text;message.setAttribute('data-state',state||'');message.classList.remove('visual-loading');barTell(text,state);}
@@ -193,7 +197,7 @@ const SOURCE = String.raw`
       if(error.issues.length>=20) add(errorBox,'p',t('moreIssues')).className='visual-hint';
       errorBox.hidden=false;
     } else if (code==='CONFLICT' || code==='NOT_FOUND') {
-      errorBox.append(button(t('reloadLatest'),()=>{ if(dirty&&!confirm(t('unsavedReload')))return; dirty=false; void open(kind,focus,true); },'primary'));
+      errorBox.append(button(t('reloadLatest'),()=>{ if(dirty&&!confirm(t('unsavedReload')))return; discard(); void open(kind,focus,true); },'primary'));
       errorBox.hidden=false;
     } else if (code==='AUTH_REQUIRED' || code==='AUTH_INVALID') {
       errorBox.append(button(t('refreshSignIn'),()=>location.reload(),'primary'));
@@ -250,7 +254,7 @@ const SOURCE = String.raw`
       return;
     }
     reloadSlot.replaceChildren();
-    reloadSlot.append(button(t('refreshNow'),()=>{ if(dirty&&!confirm(t('unsavedRefresh')))return; dirty=false; location.reload(); }));
+    reloadSlot.append(button(t('refreshNow'),()=>{ if(dirty&&!confirm(t('unsavedRefresh')))return; discard(); location.reload(); }));
     reloadSlot.hidden=false;
     pubTell(t('updatedDirty'),'published');
   }
@@ -260,8 +264,8 @@ const SOURCE = String.raw`
   async function open(next,which='',reload=false){
     // Each managed gallery opens the shared manager, named for THAT gallery:
     // 'photos' is clinic photography, 'work' is the doctor's work.
-    if(next==='photos'||next==='work'){ if(dialog.open && dirty && !confirm(t('unsavedSwitch'))) return; dirty=false; if(dialog.open) dialog.close(); return openPhotoManager(next==='work'?'work':'clinic'); }
-    if(dialog.open && dirty && !reload && !confirm(t('unsavedSwitch'))) return;
+    if(next==='photos'||next==='work'){ if(dialog.open && dirty){ if(!confirm(t('unsavedSwitch'))) return; discard(); } if(dialog.open) dialog.close(); return openPhotoManager(next==='work'?'work':'clinic'); }
+    if(dialog.open && dirty && !reload){ if(!confirm(t('unsavedSwitch'))) return; discard(); }
     kind=next;focus=which;sha='';draft=null;original=null;dirty=false;expanded=new Set();sent=null;
     view={mode:'list',id:'',lang:locale};
     title.textContent=S.titles[kind]||kind; clearErrors(); pubLine.hidden=true;
@@ -275,7 +279,7 @@ const SOURCE = String.raw`
       const kept=rescued(kind);
       if (kept && JSON.stringify(kept.draft)!==JSON.stringify(draft)) {
         const when=new Date(kept.at).toLocaleString(locale==='en'?'en-GB':locale==='ar'?'ar':'he-IL',{dateStyle:'short',timeStyle:'short'});
-        if (confirm(t('restoreDraft',{time:when}))) { draft=structuredClone(kept.draft); dirty=true; }
+        if (confirm(t('restoreDraft',{time:when}))) { draft=structuredClone(kept.draft); dirty=true; if(typeof kept.sha==='string'&&kept.sha) sha=kept.sha; }
         else dropDraft();
       } else if (kept) dropDraft();
       if (kind==='services' && focus==='new') { const created=newService(); draft.push(created); dirty=true; view={mode:'item',id:created.id,lang:locale}; focus=''; }
