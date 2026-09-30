@@ -4,7 +4,7 @@
     "slug": "emergency-dental",
     "status": "published",
     "tier": 1,
-    "order": 1,
+    "order": 0,
     "icon": "emergency",
     "locales": {
       "he": {
@@ -152,7 +152,7 @@
     "slug": "dental-implants",
     "status": "published",
     "tier": 1,
-    "order": 0,
+    "order": 1,
     "icon": "implant",
     "locales": {
       "he": {
@@ -440,7 +440,7 @@
   {
     "id": "teeth-whitening",
     "slug": "teeth-whitening",
-    "status": "unpublished",
+    "status": "published",
     "tier": 1,
     "order": 3,
     "icon": "whitening",
