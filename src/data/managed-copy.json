@@ -41,7 +41,7 @@
   },
   "trust.availability.body": {
     "he": "מענה טלפוני ובוואטסאפ, וקביעת תור נוחה.",
-    "ar": "ردّ عبر الهاتف والواتساب، واحجز موعدك ميسّر.",
+    "ar": "ردّ عبر الهاتف والواتساب، وحجز موعد ميسّر.",
     "en": "Reachable by phone and WhatsApp, with straightforward booking."
   },
   "trust.personal.title": {
@@ -117,7 +117,7 @@
   "action.bookAppointment": {
     "he": "לקביעת תור",
     "ar": "حجز موعد",
-    "en": "Book an appointment"
+    "en": "Book an appointment now"
   },
   "action.readMore": {
     "he": "קראו עוד",
