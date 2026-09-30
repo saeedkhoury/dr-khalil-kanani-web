@@ -238,8 +238,18 @@ export async function readJson<T>(
   // applied (src/lib/text-hygiene.ts): invisible marks removed, look-alike
   // letters refused — never committed only to be refused by the deploy.
   const cleaned = cleanJsonText(parsed);
-  if (!cleaned.ok) return { ok: false, code: 'INVALID', issues: ['mixed_script'] };
+  if (!cleaned.ok) return { ok: false, code: 'INVALID', issues: [mixedScriptIssue(cleaned.path)] };
   return { ok: true, body: cleaned.value as T };
+}
+
+/**
+ * Content saves send `{ value, sha }`, and every validation issue names its
+ * field relative to `value` ("0.locales.ar.summary:too_small"). A look-alike
+ * letter is named the same way, so the editor marks the field it is in.
+ */
+function mixedScriptIssue(path: string[]): string {
+  if (path[0] !== 'value' || path.length < 2) return 'mixed_script';
+  return `${path.slice(1).join('.')}:mixed_script`;
 }
 
 /**
