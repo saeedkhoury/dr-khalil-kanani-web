@@ -16,6 +16,7 @@ import { test, expect, type Page, type Locator } from '@playwright/test';
 import services from '../../src/data/services.json' with { type: 'json' };
 import builtWork from '../../src/data/treatment-work.json' with { type: 'json' };
 import { noisePng } from '../helpers/png.ts';
+import { solidJpeg } from '../helpers/jpeg.ts';
 
 const ADMIN = 'http://127.0.0.1:4332';
 test.use({ baseURL: ADMIN, reducedMotion: 'reduce' });
@@ -288,10 +289,11 @@ test('photos: add several, see what is missing, describe and frame them, publish
   expect(staged).toEqual([]);
   await pm.locator('#pm-confirm').check();
   await pm.locator('.pm-save').click();
-  // Both images (~6 MB each) are staged BEFORE the server can say what is
-  // missing, which takes longer than the default 5 s on a loaded CI runner —
-  // this failed a production deploy twice (2026-09-27).
-  await expect(pm.locator('.pm-issues')).toContainText(`תמונה ${before + 1}: חסר תיאור בעברית.`, { timeout: 30_000 });
+  // Missing descriptions are reported at once, from the browser — nothing is
+  // uploaded first. (It used to stage every photo before the server said so:
+  // minutes on a phone, and a flaky deploy gate on 2026-09-27.)
+  await expect(pm.locator('.pm-issues')).toContainText(`תמונה ${before + 1}: חסר תיאור בעברית.`);
+  expect(staged).toEqual([]);
   await expect(tiles).toHaveCount(before + 2);
 
   // Describe both; publish and frame the first.
@@ -454,6 +456,39 @@ test('a phone photo over the send limit is resized before upload, never enlarged
   await expect(pmStatus(page)).toContainText('עודכן בתצוגת הבדיקה ✓', { timeout: 30_000 });
   // Resized to 1600px on the long side — smaller, never enlarged.
   await expect.poll(() => tilesOf(page).last().locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBe(1600);
+});
+
+test('an iPhone photo (4032 px, several MB) is sent scaled to 2560 px, and a passing upload failure is retried, not shown', async ({ page }) => {
+  test.setTimeout(90_000);
+  await openManager(page);
+  const pm = managerOf(page);
+  // The first staging attempt fails as the real Worker did (503) — the doctor
+  // must not see it; the retry succeeds.
+  let attempts = 0;
+  const sent: Array<{ width: number; bytes: number }> = [];
+  await page.route('**/api/photos/stage', async (route) => {
+    attempts += 1;
+    const body = JSON.parse(route.request().postData() ?? '{}') as { contentBase64: string };
+    const bytes = Buffer.from(body.contentBase64, 'base64');
+    // JPEG SOF0: width is at offset +7 of the FFC0 marker.
+    const sof = bytes.indexOf(Buffer.from([0xff, 0xc0]));
+    sent.push({ width: sof > 0 ? bytes.readUInt16BE(sof + 7) : 0, bytes: bytes.length });
+    if (attempts === 1) return route.fulfill({ status: 503, body: 'Service Unavailable' });
+    return route.continue();
+  });
+  await pm.locator('#pm-add-input').setInputFiles({ name: 'IMG_4501.JPG', mimeType: 'image/jpeg', buffer: solidJpeg(4032, 3024) });
+  const added = tilesOf(page).last();
+  await added.locator('.pm-edit').click();
+  const sheet = pm.locator('.pe');
+  for (const [lang, text] of [['he', 'חדר המתנה'], ['ar', 'غرفة الانتظار'], ['en', 'Waiting room']] as const) await sheet.locator(`textarea[data-alt="${lang}"]`).fill(text);
+  await sheet.getByRole('button', { name: 'סיום' }).click();
+  await pm.locator('.pm-save').click(); // asks for the confirmation first
+  await pm.locator('#pm-confirm').check();
+  await pm.locator('.pm-save').click();
+  await expect(pmStatus(page)).toContainText('מעדכן את האתר…', { timeout: 30_000 });
+  expect(attempts).toBe(2);
+  expect(sent.every((s) => s.width === 2560)).toBe(true);
+  await expect(pmStatus(page)).not.toContainText('נכשל');
 });
 
 test('an Instagram-sized 1080px photo is accepted and saved as it is — there is no minimum size', async ({ page, request }) => {
@@ -678,13 +713,21 @@ test.describe('on a 390px touch phone', () => {
     // still-moving list only stops the scroll (the browser's rule), so under a
     // loaded CI runner the long-press below never began.
     const body = managerOf(page).locator('.pm-body');
-    let last = Number.NaN;
-    await expect.poll(async () => {
-      const now = await body.evaluate((b) => b.scrollTop);
-      const settled = now === last;
-      last = now;
-      return settled;
-    }, { intervals: [200] }).toBe(true);
+    const settle = async () => {
+      let last = Number.NaN;
+      await expect.poll(async () => {
+        const now = await body.evaluate((b) => b.scrollTop);
+        const settled = now === last;
+        last = now;
+        return settled;
+      }, { intervals: [200] }).toBe(true);
+    };
+    await settle();
+    // The swipe scrolled the list; with more photos the first one can sit
+    // partly under the header. A finger presses what it can see: bring it
+    // fully into view first, then let that scroll settle too.
+    await tiles.nth(0).evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await settle();
 
     // Long-press, then carry it onto its neighbour.
     const from = (await tiles.nth(0).boundingBox())!;

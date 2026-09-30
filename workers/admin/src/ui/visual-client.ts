@@ -532,7 +532,11 @@ const SOURCE = String.raw`
     let bitmap; try{ bitmap=await createImageBitmap(file); }catch{ throw new Error(t('unreadable',{name:file.name})); }
     const w=bitmap.width,h=bitmap.height,long=Math.max(w,h);
     const target=mustType||type;
-    if(file.size<=SEND_LIMIT && target===type){bitmap.close();return {blob:file,width:w,height:h,type};}
+    // Sent as-is only when it is already small in BOTH senses. A 12 MP iPhone
+    // photo (4032 px, ~5.6 MB) used to go up whole: seconds of upload on a
+    // phone, and megabytes of base64 in the Worker, which on 2026-09-30 ran it
+    // out of resources mid-batch. The site never shows more than 1536 px.
+    if(file.size<=SEND_LIMIT && long<=SEND_EDGE && target===type){bitmap.close();return {blob:file,width:w,height:h,type};}
     // Largest first, and never larger than the original.
     for(const edge of [SEND_EDGE,2048,1600,1200].map(e=>Math.min(e,long)).filter((e,i,all)=>all.indexOf(e)===i)){
       const scale=edge/long; const canvas=document.createElement('canvas'); canvas.width=Math.round(w*scale); canvas.height=Math.round(h*scale);

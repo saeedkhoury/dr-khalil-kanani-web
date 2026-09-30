@@ -233,7 +233,20 @@ export const PHOTOS_SOURCE = String.raw`
   /** Upload one photograph's bytes as a git blob (no commit). Only from Save. */
   async function stageImage(p){
     if(!p.image||p.image.blob||!p.image.local) return;
-    const data=await api('/api/photos/stage','POST',{contentBase64:await encode(p.image.local),confirmed:true});
+    const payload={contentBase64:await encode(p.image.local),confirmed:true};
+    // Staging only stores the bytes as a blob, addressed by their content: the
+    // same photo sent twice is the same blob, never a duplicate. So a passing
+    // failure (the network, GitHub, the Worker's own limits) is retried here
+    // instead of being handed to the doctor as an error.
+    let data;
+    for(let attempt=0;;attempt++){
+      try{ data=await api('/api/photos/stage','POST',payload); break; }
+      catch(error){
+        const passing=error instanceof ApiError && ['NETWORK','SERVER_ERROR','UPSTREAM_UNAVAILABLE','RATE_LIMITED'].includes(error.code);
+        if(!passing||attempt>=2) throw error;
+        await sleep(1500*(attempt+1));
+      }
+    }
     p.image={ ...p.image, blob:data.blob, width:data.width, height:data.height };
   }
 
@@ -474,6 +487,12 @@ export const PHOTOS_SOURCE = String.raw`
     for(const p of pm.photos) if(!p.invalid) p.error='';
     const needsConfirm=pm.photos.some(hasNewImage);
     if(needsConfirm&&!pm.confirmBox.checked){ pmTell(ISSUES.confirmation_required,'failed',false); pm.confirmBox.focus(); return; }
+    // Missing descriptions are known here, before a single byte is uploaded.
+    // The server says the same (same keys, same sentences), but only after
+    // every photo has gone up — minutes on a phone connection.
+    const missing=[];
+    pm.photos.forEach((p,i)=>{ for(const lang of ['he','ar','en']) if(!String(p.alt&&p.alt[lang]||'').trim()) missing.push('photo_'+i+':alt_'+lang+'_required'); });
+    if(missing.length){ pmFail(new ApiError('INVALID',missing),false); return; }
     pm.busy=true; pm.lastSave=null; ++pm.saveToken; updateSummary(); pm.issues.hidden=true;
     // First the photographs, one at a time — only now, with the confirmation.
     const queue=pm.photos.filter(p=>p.image&&p.image.local&&!p.image.blob);
