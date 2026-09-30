@@ -1,44 +1,9 @@
 [
-  {
-    "day": "Sunday",
-    "opens": "09:00",
-    "closes": "17:00",
-    "closed": false
-  },
-  {
-    "day": "Monday",
-    "opens": "09:00",
-    "closes": "17:00",
-    "closed": false
-  },
-  {
-    "day": "Tuesday",
-    "opens": "09:00",
-    "closes": "17:00",
-    "closed": false
-  },
-  {
-    "day": "Wednesday",
-    "opens": "09:00",
-    "closes": "17:00",
-    "closed": false
-  },
-  {
-    "day": "Thursday",
-    "opens": "09:00",
-    "closes": "17:00",
-    "closed": false
-  },
-  {
-    "day": "Friday",
-    "opens": "09:00",
-    "closes": "13:00",
-    "closed": false
-  },
-  {
-    "day": "Saturday",
-    "opens": "",
-    "closes": "",
-    "closed": true
-  }
+  { "day": "Sunday",    "opens": "", "closes": "", "closed": false },
+  { "day": "Monday",    "opens": "", "closes": "", "closed": false },
+  { "day": "Tuesday",   "opens": "", "closes": "", "closed": false },
+  { "day": "Wednesday", "opens": "", "closes": "", "closed": false },
+  { "day": "Thursday",  "opens": "", "closes": "", "closed": false },
+  { "day": "Friday",    "opens": "", "closes": "", "closed": false },
+  { "day": "Saturday",  "opens": "", "closes": "", "closed": true  }
 ]
