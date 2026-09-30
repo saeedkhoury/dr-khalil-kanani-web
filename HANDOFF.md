@@ -8,7 +8,12 @@ Current repository state. Not a history — see `CHANGELOG.md` for that.
 
 ## Current state — 2026-09-30 (read this first; older sections below are history)
 
-**CMS reliability pass** (branch `cms/reliability`). Every defect below was
+**CMS reliability pass — RELEASED 2026-09-30** (PR #10, merge 22cdefa; follow-up
+PR #11, merge 35d2e6c). Rollback point: tag `rollback/pre-cms-reliability-2026-09-30`
+(b0b1007). Production smoke test passed: every editor and both photo managers open
+with their data; the latest-status endpoint reports live changes as published.
+Merge → live measured at 7 min 00 s and 4 min 09 s; the variable part is
+GitHub Pages' own deploy step (1–3 min). Every defect below was
 reproduced on the real staging admin, fixed at its cause, given a regression
 test, and re-tested on staging.
 
