@@ -124,7 +124,7 @@ const he: Dict = {
   issues: {
     caption_he_required: "חסרה כותרת בעברית — יש למלא את הכותרת בכל השפות, או להשאיר את כולן ריקות.", caption_ar_required: "חסרה כותרת בערבית — יש למלא את הכותרת בכל השפות, או להשאיר את כולן ריקות.", caption_en_required: "חסרה כותרת באנגלית — יש למלא את הכותרת בכל השפות, או להשאיר את כולן ריקות.", caption_invalid: "הכותרת אינה תקינה.", frame_not_allowed: "בגלריה הזו אין מסגור — התמונה מוצגת בשלמותה.", gallery_invalid: "הגלריה אינה מוכרת. יש לרענן את הדף.",
     confirmation_required: 'יש לאשר שבתמונה אין מטופל, חלק ממטופל או תמונת לפני/אחרי.',
-    mixed_script: 'בטקסט יש אות מאלפבית אחר (למשל רוסית או יוונית) שנראית כמו אות בעברית או בערבית, כנראה מהעתקה. יש להקליד מחדש את המילה ולשמור שוב.',
+    mixed_script: 'בטקסט יש אות מאלפבית אחר (למשל רוסית או יוונית) שנראית כמו אות רגילה, כנראה מהעתקה. יש להקליד מחדש את המילה ולשמור שוב.',
     category_not_allowed: 'יש לבחור סוג תמונה מהרשימה.',
     alt_he_required: 'חסר תיאור בעברית.', alt_ar_required: 'חסר תיאור בערבית.', alt_en_required: 'חסר תיאור באנגלית.',
     alt_en_not_english: 'התיאור באנגלית צריך להיות כתוב באנגלית.',
@@ -138,7 +138,7 @@ const he: Dict = {
     published_item_or_url_locked: 'אי אפשר למחוק פריט שמוצג באתר, או לשנות כתובת של טיפול שכבר נשמר. יש להסתיר אותו, לשמור, ורק אז למחוק.',
     content_invalid: 'התוכן אינו תקין.', wrong_row_count: 'רשימת הימים לא שלמה. יש לטעון מחדש.', not_an_array: 'רשימת הימים לא תקינה. יש לטעון מחדש.',
   },
-  reasons: { too_small: 'חסר', too_big: 'ארוך מדי', invalid_format: 'בפורמט לא תקין', invalid_string: 'בפורמט לא תקין', invalid_type: 'חסר או לא תקין', custom: 'כפול — כבר קיים פריט עם אותה כתובת', invalid_union: 'לא תקין', invalid_union_discriminator: 'לא תקין', unrecognized_keys: 'מכיל שדה לא מוכר', invalid_value: 'לא תקין' },
+  reasons: { too_small: 'חסר', too_big: 'ארוך מדי', invalid_format: 'בפורמט לא תקין', invalid_string: 'בפורמט לא תקין', invalid_type: 'חסר או לא תקין', custom: 'כפול — כבר קיים פריט עם אותה כתובת', invalid_union: 'לא תקין', invalid_union_discriminator: 'לא תקין', unrecognized_keys: 'מכיל שדה לא מוכר', invalid_value: 'לא תקין', mixed_script: 'יש בו אות מאלפבית אחר (למשל רוסית או יוונית) שנראית כמו אות רגילה — יש להקליד מחדש את המילה' },
 };
 
 const ar: Dict = {
@@ -255,7 +255,7 @@ const ar: Dict = {
   issues: {
     caption_he_required: "العنوان بالعبرية ناقص — يجب تعبئة العنوان بكل اللغات أو ترك جميعها فارغة.", caption_ar_required: "العنوان بالعربية ناقص — يجب تعبئة العنوان بكل اللغات أو ترك جميعها فارغة.", caption_en_required: "العنوان بالإنجليزية ناقص — يجب تعبئة العنوان بكل اللغات أو ترك جميعها فارغة.", caption_invalid: "العنوان غير صالح.", frame_not_allowed: "لا يوجد تأطير في هذا المعرض — تُعرض الصورة كاملة.", gallery_invalid: "المعرض غير معروف. يرجى تحديث الصفحة.",
     confirmation_required: 'يجب تأكيد أن الصورة لا تُظهر مريضًا أو جزءًا من مريض أو صورة قبل/بعد.',
-    mixed_script: 'يحتوي النص على حرف من أبجدية أخرى (مثل الروسية أو اليونانية) يشبه حرفًا عربيًا أو عبريًا، وغالبًا ما يأتي من النسخ. يرجى إعادة كتابة الكلمة والحفظ مجددًا.',
+    mixed_script: 'يحتوي النص على حرف من أبجدية أخرى (مثل الروسية أو اليونانية) يشبه حرفًا عاديًا، وغالبًا ما يأتي من النسخ. يرجى إعادة كتابة الكلمة والحفظ مجددًا.',
     category_not_allowed: 'يجب اختيار نوع صورة من القائمة.',
     alt_he_required: 'الوصف بالعبرية ناقص.', alt_ar_required: 'الوصف بالعربية ناقص.', alt_en_required: 'الوصف بالإنجليزية ناقص.',
     alt_en_not_english: 'يجب أن يكون الوصف الإنجليزي مكتوبًا بالإنجليزية.',
@@ -269,7 +269,7 @@ const ar: Dict = {
     published_item_or_url_locked: 'لا يمكن حذف عنصر معروض في الموقع، أو تغيير عنوان علاج محفوظ. يجب إخفاؤه والحفظ، ثم الحذف.',
     content_invalid: 'المحتوى غير صالح.', wrong_row_count: 'قائمة الأيام غير مكتملة. يرجى إعادة التحميل.', not_an_array: 'قائمة الأيام غير صالحة. يرجى إعادة التحميل.',
   },
-  reasons: { too_small: 'ناقص', too_big: 'طويل جدًا', invalid_format: 'بصيغة غير صالحة', invalid_string: 'بصيغة غير صالحة', invalid_type: 'ناقص أو غير صالح', custom: 'مكرر — يوجد عنصر بالعنوان نفسه', invalid_union: 'غير صالح', invalid_union_discriminator: 'غير صالح', unrecognized_keys: 'يحتوي على حقل غير معروف', invalid_value: 'غير صالح' },
+  reasons: { too_small: 'ناقص', too_big: 'طويل جدًا', invalid_format: 'بصيغة غير صالحة', invalid_string: 'بصيغة غير صالحة', invalid_type: 'ناقص أو غير صالح', custom: 'مكرر — يوجد عنصر بالعنوان نفسه', invalid_union: 'غير صالح', invalid_union_discriminator: 'غير صالح', unrecognized_keys: 'يحتوي على حقل غير معروف', invalid_value: 'غير صالح', mixed_script: 'فيه حرف من أبجدية أخرى (مثل الروسية أو اليونانية) يشبه حرفًا عاديًا — يرجى إعادة كتابة الكلمة' },
 };
 
 const en: Dict = {
@@ -386,7 +386,7 @@ const en: Dict = {
   issues: {
     caption_he_required: "The Hebrew title is missing — fill in the title in every language, or leave them all empty.", caption_ar_required: "The Arabic title is missing — fill in the title in every language, or leave them all empty.", caption_en_required: "The English title is missing — fill in the title in every language, or leave them all empty.", caption_invalid: "The title is not valid.", frame_not_allowed: "This gallery has no framing — the image is always shown whole.", gallery_invalid: "Unknown gallery. Refresh the page.",
     confirmation_required: 'Confirm the photo shows no patient, part of a patient, or before/after image.',
-    mixed_script: 'The text contains a letter from another alphabet (for example Russian or Greek) that looks like a Hebrew or Arabic letter, usually from copy and paste. Retype that word and save again.',
+    mixed_script: 'The text contains a letter from another alphabet (for example Russian or Greek) that looks like an ordinary letter, usually from copy and paste. Retype that word and save again.',
     category_not_allowed: 'Choose a photo type from the list.',
     alt_he_required: 'The Hebrew description is missing.', alt_ar_required: 'The Arabic description is missing.', alt_en_required: 'The English description is missing.',
     alt_en_not_english: 'The English description must be written in English.',
@@ -400,7 +400,7 @@ const en: Dict = {
     published_item_or_url_locked: 'An item shown on the site cannot be deleted, and a saved treatment’s address cannot change. Hide it, save, then delete.',
     content_invalid: 'The content is not valid.', wrong_row_count: 'The list of days is incomplete. Reload.', not_an_array: 'The list of days is not valid. Reload.',
   },
-  reasons: { too_small: 'missing', too_big: 'too long', invalid_format: 'in an invalid format', invalid_string: 'in an invalid format', invalid_type: 'missing or invalid', custom: 'a duplicate — an item with the same address exists', invalid_union: 'invalid', invalid_union_discriminator: 'invalid', unrecognized_keys: 'contains an unknown field', invalid_value: 'invalid' },
+  reasons: { too_small: 'missing', too_big: 'too long', invalid_format: 'in an invalid format', invalid_string: 'in an invalid format', invalid_type: 'missing or invalid', custom: 'a duplicate — an item with the same address exists', invalid_union: 'invalid', invalid_union_discriminator: 'invalid', unrecognized_keys: 'contains an unknown field', invalid_value: 'invalid', mixed_script: 'contains a letter from another alphabet (for example Russian or Greek) that looks like an ordinary letter — retype that word' },
 };
 
 export const EDITOR_STRINGS = { he, ar, en } as const;

@@ -58,24 +58,28 @@ const IMAGE_DATA = new Set(['contentBase64']);
  * cleaned value, or the first forbidden letter found. Pure: the input is not
  * modified.
  */
-export function cleanJsonText(value: unknown): { ok: true; value: unknown } | { ok: false; script: string; char: string } {
-  let refused: { script: string; char: string } | null = null;
-  const walk = (node: unknown): unknown => {
+export type Refusal = { script: string; char: string; path: string[] };
+
+export function cleanJsonText(value: unknown): { ok: true; value: unknown } | ({ ok: false } & Refusal) {
+  let refused: Refusal | null = null;
+  // `path` names where the letter was (keys and array indexes), so the editor
+  // can point at the one field among many that needs retyping.
+  const walk = (node: unknown, path: string[]): unknown => {
     if (refused) return node;
     if (typeof node === 'string') {
       const found = forbiddenScriptIn(node);
-      if (found) { refused = found; return node; }
+      if (found) { refused = { ...found, path }; return node; }
       return cleanInvisibles(node);
     }
-    if (Array.isArray(node)) return node.map(walk);
+    if (Array.isArray(node)) return node.map((v, i) => walk(v, [...path, String(i)]));
     if (node !== null && typeof node === 'object') {
       // Image bytes are not text. A photo arrives as megabytes of base64;
       // scanning and copying it pushed the Worker past its resource limit
       // (2026-09-30), so it is passed through as the very same string.
-      return Object.fromEntries(Object.entries(node).map(([k, v]) => [k, IMAGE_DATA.has(k) ? v : walk(v)]));
+      return Object.fromEntries(Object.entries(node).map(([k, v]) => [k, IMAGE_DATA.has(k) ? v : walk(v, [...path, k])]));
     }
     return node;
   };
-  const cleaned = walk(value);
-  return refused ? { ok: false, ...(refused as { script: string; char: string }) } : { ok: true, value: cleaned };
+  const cleaned = walk(value, []);
+  return refused ? { ok: false, ...(refused as Refusal) } : { ok: true, value: cleaned };
 }

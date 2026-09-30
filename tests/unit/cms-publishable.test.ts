@@ -82,7 +82,16 @@ describe('a look-alike letter is refused, nothing is written, and the reason is 
     );
     assert.equal(response.status, 422);
     const body = await response.json() as { error: { code: string; issues: string[] } };
-    assert.deepEqual(body.error, { code: 'INVALID', issues: ['mixed_script'] });
+    // The field is named (relative to the edited value, like every other
+    // validation issue) so the editor can point at it — 2026-09-30, staging:
+    // "retype the word" with twelve fields open did not say which one.
+    assert.deepEqual(body.error, { code: 'INVALID', issues: ['0.locales.ar.summary:mixed_script'] });
     assert.equal(calls.filter((c) => c.method !== 'GET').length, 0, 'nothing is written');
+  });
+
+  test('a request without an edited value still gets the stable key', async () => {
+    const cleaned = cleanJsonText({ photos: [{ alt: { en: 'Dent\u0430l' } }] });
+    assert.ok(!cleaned.ok);
+    assert.deepEqual(cleaned.path, ['photos', '0', 'alt', 'en']);
   });
 });
