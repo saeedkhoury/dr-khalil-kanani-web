@@ -4,7 +4,7 @@ import services from '../../src/data/services.json' with { type: 'json' };
 import copy from '../../src/data/managed-copy.json' with { type: 'json' };
 import doctor from '../../src/data/doctor-profile.json' with { type: 'json' };
 import contact from '../../src/data/contact-facts.json' with { type: 'json' };
-import { parseManaged, servicesSchema, managedCopySchema, doctorProfileSchema, contactFactsSchema } from '../../src/lib/managed-schema.ts';
+import { parseManaged, servicesSchema, managedCopySchema, doctorProfileSchema, contactFactsSchema, editableCopyKeys } from '../../src/lib/managed-schema.ts';
 import { getTreatmentSlugs, getTreatments } from '../../src/lib/content.ts';
 import { pathFor } from '../../workers/admin/src/github.ts';
 import { VISUAL_CLIENT } from '../../workers/admin/src/ui/visual.ts';
@@ -13,15 +13,20 @@ import { adminEnv, adminRequest, asCommit, asContents, callAdmin, decodeContent,
 const SHA = 'a'.repeat(40);
 const COMMIT = 'b'.repeat(40);
 
-test('migration has 8 stable service URLs and three complete locales', async () => {
-  assert.equal(parseManaged(servicesSchema, services, 'services').length, 8);
-  assert.equal((await getTreatmentSlugs()).length, 8);
+// INVARIANTS ONLY. Every Edit Mode save runs this suite before it can go live,
+// so a test that pins today's content (8 treatments, no credentials, this phone
+// number) blocks the doctor's next ordinary edit from publishing.
+test('managed content parses, and every published treatment has one stable URL in all three locales', async () => {
+  const parsed = parseManaged(servicesSchema, services, 'services');
+  const slugs = await getTreatmentSlugs();
+  assert.equal(new Set(slugs).size, slugs.length, 'no duplicate URL');
+  assert.deepEqual(slugs, parsed.filter((s) => s.status === 'published').map((s) => s.slug).sort((a, b) => slugs.indexOf(a) - slugs.indexOf(b)));
   for (const locale of ['he', 'ar', 'en'] as const) {
-    assert.deepEqual((await getTreatments(locale)).map(item => item.data.slug), await getTreatmentSlugs());
+    assert.deepEqual((await getTreatments(locale)).map(item => item.data.slug).sort(), [...slugs].sort());
   }
-  assert.equal(Object.keys(parseManaged(managedCopySchema, copy, 'copy')).length, 29);
-  assert.equal(parseManaged(doctorProfileSchema, doctor, 'doctor').credentials.length, 0);
-  assert.equal(parseManaged(contactFactsSchema, contact, 'contact').landline, '04-884-8891');
+  assert.deepEqual(Object.keys(parseManaged(managedCopySchema, copy, 'copy')).sort(), [...editableCopyKeys].sort());
+  assert.ok(Array.isArray(parseManaged(doctorProfileSchema, doctor, 'doctor').credentials));
+  assert.match(parseManaged(contactFactsSchema, contact, 'contact').landline, /^0[2-9]-\d{3}-\d{4}$/);
 });
 
 test('Worker write targets are fixed and cannot address source, the developer manifest or workflows', () => {

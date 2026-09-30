@@ -28,17 +28,25 @@ import {
   LOCALES,
 } from '../../src/data/clinic.ts';
 
+// INVARIANTS, not today's values: the owner edits phone numbers, hours and the
+// Google profile link in Edit Mode, and every such save runs this suite before
+// it can publish. A pinned value here turns an ordinary edit into a failed
+// deploy (scripts/check-content-independence.mjs finds these).
+const digitsOf = (s: string) => s.replace(/\D/g, '');
+
 describe('phone numbers', () => {
-  test('the two verified numbers are the ones from the flyer and Instagram', () => {
-    // Both confirmed by two independent sources. If either changes, it was
-    // either verified with the owner or it is a mistake.
-    assert.equal(clinic.phone.landline.display, '04-884-8891');
-    assert.equal(clinic.phone.mobile.display, '052-288-5179');
+  test('a number is "verified" only while it is the flyer/Instagram number; a CMS change is owner-confirmed', () => {
+    // Both originals were confirmed by two independent sources. A different
+    // number can only arrive through an owner-confirmed CMS save.
+    assert.equal(VERIFICATION['phone.landline'].tier, clinic.phone.landline.display === '04-884-8891' ? 'verified' : 'owner');
+    assert.equal(VERIFICATION['phone.mobile'].tier, clinic.phone.mobile.display === '052-288-5179' ? 'verified' : 'owner');
+    assert.match(clinic.phone.landline.display, /^0[2-9]-\d{3}-\d{4}$/);
+    assert.match(clinic.phone.mobile.display, /^05\d-\d{3}-\d{4}$/);
   });
 
   test('tel: links are international with no leading zero', () => {
-    assert.equal(telUrl('landline'), 'tel:+97248848891');
-    assert.equal(telUrl('mobile'), 'tel:+972522885179');
+    assert.equal(telUrl('landline'), `tel:+972${digitsOf(clinic.phone.landline.display).slice(1)}`);
+    assert.equal(telUrl('mobile'), `tel:+972${digitsOf(clinic.phone.mobile.display).slice(1)}`);
     for (const which of ['landline', 'mobile'] as const) {
       assert.match(telUrl(which), /^tel:\+972\d+$/, `${which} must be +972 form`);
       assert.doesNotMatch(telUrl(which), /\+9720/, 'must not keep the national leading zero');
@@ -47,7 +55,7 @@ describe('phone numbers', () => {
 
   test('WhatsApp number has no plus and no leading zero', () => {
     // wa.me rejects both. This is the single most breakable contact path.
-    assert.equal(clinic.phone.mobile.whatsapp, '972522885179');
+    assert.equal(clinic.phone.mobile.whatsapp, `972${digitsOf(clinic.phone.mobile.display).slice(1)}`);
     assert.doesNotMatch(clinic.phone.mobile.whatsapp, /[+\s-]/);
   });
 
@@ -68,7 +76,7 @@ describe('phone numbers', () => {
 describe('whatsappUrl', () => {
   test('targets the verified mobile and encodes the message', () => {
     const url = whatsappUrl('שלום, אשמח לקבוע תור');
-    assert.ok(url.startsWith('https://wa.me/972522885179?text='));
+    assert.ok(url.startsWith(`https://wa.me/${clinic.phone.mobile.whatsapp}?text=`));
     assert.ok(!url.includes(' '), 'spaces must be percent-encoded');
     assert.equal(decodeURIComponent(url.split('text=')[1]), 'שלום, אשמח לקבוע תור');
   });
@@ -101,16 +109,17 @@ describe('location guards — never publish a guessed location', () => {
   test('the supplied street is available in every locale', () => {
     for (const locale of LOCALES) {
       assert.equal(hasAddress(locale), true);
-      assert.match(clinic.address.street[locale], /1003/);
+      assert.ok(clinic.address.street[locale].trim().length > 0);
     }
   });
 
-  test('hours are not published while unset', () => {
-    assert.equal(hasHours(), false);
+  test('hours are published exactly when a day has both times', () => {
+    const complete = clinic.hours.some((h) => !h.closed && h.opens !== '' && h.closes !== '');
+    assert.equal(hasHours(), complete);
   });
 
-  test('Google profile link hidden until a URL exists', () => {
-    assert.equal(hasGoogleProfile(), false);
+  test('Google profile link shows exactly when a URL exists', () => {
+    assert.equal(hasGoogleProfile(), clinic.social.googleBusiness.trim() !== '');
   });
 });
 
@@ -163,21 +172,23 @@ describe('verification manifest', () => {
     // false after the owner filled the hours in, so the launch gate would
     // call them hidden while they were on screen — exactly the drift this
     // replaces.
-    assert.equal(hasHours(), false);
-    assert.equal(VERIFICATION.hours.published, false);
+    assert.equal(VERIFICATION.hours.published, hasHours());
 
-    const before = clinic.hours[0];
+    // Temporary, restored below: nothing else can observe a value derived
+    // from data without briefly changing that data. Both directions are
+    // proven whatever the real hours are today.
+    const before = clinic.hours.map((h) => ({ ...h }));
     try {
-      // Temporary, restored below: nothing else can observe a value derived
-      // from data without briefly changing that data.
+      clinic.hours.forEach((h, i) => { clinic.hours[i] = { ...h, opens: '', closes: '', closed: true }; });
+      assert.equal(hasHours(), false);
+      assert.equal(VERIFICATION.hours.published, false, 'no hours: hidden');
       clinic.hours[0] = { day: 'Sunday', opens: '08:00', closes: '17:00', closed: false };
       assert.equal(hasHours(), true);
       assert.equal(VERIFICATION.hours.published, true, 'published must follow the hours');
     } finally {
-      clinic.hours[0] = before;
+      before.forEach((h, i) => { clinic.hours[i] = h; });
     }
-
-    assert.equal(VERIFICATION.hours.published, false, 'and follow them back');
+    assert.equal(VERIFICATION.hours.published, hasHours(), 'and follow them back');
   });
 
   test('a field defaults to published unless it opts out', () => {

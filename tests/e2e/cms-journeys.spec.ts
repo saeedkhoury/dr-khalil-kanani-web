@@ -16,12 +16,22 @@ import { test, expect, type Page, type Locator } from '@playwright/test';
 import services from '../../src/data/services.json' with { type: 'json' };
 import builtWork from '../../src/data/treatment-work.json' with { type: 'json' };
 import { noisePng } from '../helpers/png.ts';
+import { solidJpeg } from '../helpers/jpeg.ts';
 
 const ADMIN = 'http://127.0.0.1:4332';
 test.use({ baseURL: ADMIN, reducedMotion: 'reduce' });
 // One in-memory repository behind all of these; they build on each other.
 test.describe.configure({ mode: 'serial' });
 
+// Treatments are chosen from the data, never by name: the doctor may hide or
+// remove any of them, and this suite gates every one of his saves.
+// In DISPLAY order (src/lib/content.ts), so FIRST and SECOND are the cards the
+// home page actually shows, whatever order the doctor has set.
+const PUBLISHED = services.filter((s) => s.status === 'published')
+  .sort((a, b) => a.order - b.order || a.tier - b.tier || a.id.localeCompare(b.id))
+  .map((s) => s.slug);
+const FIRST = PUBLISHED[0];
+const SECOND = PUBLISHED[1] ?? PUBLISHED[0];
 const heTitle = (slug: string) => services.find((s) => s.slug === slug)!.locales.he.title;
 const heCard = (slug: string) => services.find((s) => s.slug === slug)!.locales.he.cardTitle;
 const dialogOf = (page: Page) => page.locator('dialog.visual-dialog');
@@ -61,17 +71,17 @@ test.beforeEach(async ({ page }) => { await acceptConfirms(page); });
 
 test('a treatment card pencil opens THAT treatment, on screen, with its data', async ({ page }) => {
   await page.goto('/he/');
-  await page.getByRole('button', { name: `עריכה: ${heCard('dental-implants')}`, exact: true }).click();
+  await page.getByRole('button', { name: `עריכה: ${heCard(FIRST)}`, exact: true }).click();
   const dialog = dialogOf(page);
-  const heading = dialog.getByRole('heading', { name: `עריכת טיפול: ${heTitle('dental-implants')}` });
+  const heading = dialog.getByRole('heading', { name: `עריכת טיפול: ${heTitle(FIRST)}` });
   await expectInView(dialog, heading);
   await expect(heading).toBeFocused();
-  await expect(dialog.locator('[data-path$=".locales.he.title"]')).toHaveValue(heTitle('dental-implants'));
+  await expect(dialog.locator('[data-path$=".locales.he.title"]')).toHaveValue(heTitle(FIRST));
 });
 
 test('editing a treatment saves, saves again, and says when nothing changed', async ({ page }) => {
   await page.goto('/he/');
-  await page.getByRole('button', { name: `עריכה: ${heCard('dental-implants')}`, exact: true }).click();
+  await page.getByRole('button', { name: `עריכה: ${heCard(FIRST)}`, exact: true }).click();
   const dialog = dialogOf(page);
   const summary = dialog.locator('[data-path$=".locales.he.summary"]');
   await summary.fill('תקציר שעודכן בבדיקה.');
@@ -89,15 +99,15 @@ test('editing a treatment saves, saves again, and says when nothing changed', as
 
   // Persisted: close, reopen from the page, the value is there.
   await dialog.getByRole('button', { name: 'סגירה' }).click();
-  await page.getByRole('button', { name: `עריכה: ${heCard('dental-implants')}`, exact: true }).click();
+  await page.getByRole('button', { name: `עריכה: ${heCard(FIRST)}`, exact: true }).click();
   await expect(dialog.locator('[data-path$=".locales.he.summary"]')).toHaveValue('תקציר שעודכן פעם שנייה.');
 });
 
 test('"Edit this treatment" on a treatment page opens that treatment', async ({ page }) => {
-  await page.goto('/he/treatments/veneers/');
+  await page.goto(`/he/treatments/${SECOND}/`);
   await page.getByRole('button', { name: 'עריכת הטיפול הזה' }).click();
   const dialog = dialogOf(page);
-  await expectInView(dialog, dialog.getByRole('heading', { name: `עריכת טיפול: ${heTitle('veneers')}` }));
+  await expectInView(dialog, dialog.getByRole('heading', { name: `עריכת טיפול: ${heTitle(SECOND)}` }));
 });
 
 test('a new treatment saves as a draft; publishing it incomplete names what is missing', async ({ page }) => {
@@ -116,6 +126,11 @@ test('a new treatment saves as a draft; publishing it incomplete names what is m
   const issue = dialog.locator('.visual-errors button').filter({ hasText: 'שם קצר לכרטיס (עברית)' });
   await expect(issue).toBeVisible();
   await expect(dialog.locator('.visual-errors')).not.toContainText('too_small');
+  // Each line says WHICH step or item (staging 2026-09-30: four identical
+  // "Treatment steps (Hebrew): missing" lines, indistinguishable).
+  const lines = await dialog.locator('.visual-errors button').allInnerTexts();
+  expect(new Set(lines).size).toBe(lines.length);
+  await expect(dialog.locator('.visual-errors button').filter({ hasText: 'מהלך הטיפול 1 · שלב (עברית)' })).toBeVisible();
   await issue.click();
   await expect(dialog.locator('[data-path$=".locales.he.cardTitle"]')).toBeFocused();
   // An error is not overwritten by a background status check.
@@ -279,10 +294,11 @@ test('photos: add several, see what is missing, describe and frame them, publish
   expect(staged).toEqual([]);
   await pm.locator('#pm-confirm').check();
   await pm.locator('.pm-save').click();
-  // Both images (~6 MB each) are staged BEFORE the server can say what is
-  // missing, which takes longer than the default 5 s on a loaded CI runner —
-  // this failed a production deploy twice (2026-09-27).
-  await expect(pm.locator('.pm-issues')).toContainText(`תמונה ${before + 1}: חסר תיאור בעברית.`, { timeout: 30_000 });
+  // Missing descriptions are reported at once, from the browser — nothing is
+  // uploaded first. (It used to stage every photo before the server said so:
+  // minutes on a phone, and a flaky deploy gate on 2026-09-27.)
+  await expect(pm.locator('.pm-issues')).toContainText(`תמונה ${before + 1}: חסר תיאור בעברית.`);
+  expect(staged).toEqual([]);
   await expect(tiles).toHaveCount(before + 2);
 
   // Describe both; publish and frame the first.
@@ -445,6 +461,64 @@ test('a phone photo over the send limit is resized before upload, never enlarged
   await expect(pmStatus(page)).toContainText('עודכן בתצוגת הבדיקה ✓', { timeout: 30_000 });
   // Resized to 1600px on the long side — smaller, never enlarged.
   await expect.poll(() => tilesOf(page).last().locator('img').evaluate((i: HTMLImageElement) => i.naturalWidth)).toBe(1600);
+});
+
+test('an iPhone photo (4032 px, several MB) is sent scaled to 2560 px, and a passing upload failure is retried, not shown', async ({ page }) => {
+  test.setTimeout(90_000);
+  await openManager(page);
+  const pm = managerOf(page);
+  // The first staging attempt fails as the real Worker did (503) — the doctor
+  // must not see it; the retry succeeds.
+  let attempts = 0;
+  const sent: Array<{ width: number; bytes: number }> = [];
+  await page.route('**/api/photos/stage', async (route) => {
+    attempts += 1;
+    const body = JSON.parse(route.request().postData() ?? '{}') as { contentBase64: string };
+    const bytes = Buffer.from(body.contentBase64, 'base64');
+    // JPEG SOF0: width is at offset +7 of the FFC0 marker.
+    const sof = bytes.indexOf(Buffer.from([0xff, 0xc0]));
+    sent.push({ width: sof > 0 ? bytes.readUInt16BE(sof + 7) : 0, bytes: bytes.length });
+    if (attempts === 1) return route.fulfill({ status: 503, body: 'Service Unavailable' });
+    return route.continue();
+  });
+  await pm.locator('#pm-add-input').setInputFiles({ name: 'IMG_4501.JPG', mimeType: 'image/jpeg', buffer: solidJpeg(4032, 3024) });
+  const added = tilesOf(page).last();
+  await added.locator('.pm-edit').click();
+  const sheet = pm.locator('.pe');
+  for (const [lang, text] of [['he', 'חדר המתנה'], ['ar', 'غرفة الانتظار'], ['en', 'Waiting room']] as const) await sheet.locator(`textarea[data-alt="${lang}"]`).fill(text);
+  await sheet.getByRole('button', { name: 'סיום' }).click();
+  await pm.locator('.pm-save').click(); // asks for the confirmation first
+  await pm.locator('#pm-confirm').check();
+  await pm.locator('.pm-save').click();
+  await expect(pmStatus(page)).toContainText('מעדכן את האתר…', { timeout: 30_000 });
+  expect(attempts).toBe(2);
+  expect(sent.every((s) => s.width === 2560)).toBe(true);
+  await expect(pmStatus(page)).not.toContainText('נכשל');
+});
+
+test('Save pressed while a photo is still being prepared waits for it, asks for the confirmation, and sends the file', async ({ page }) => {
+  // 2026-09-30: under load, Save pressed before a 4032 px photo finished
+  // preparing skipped the "no patient" confirmation (the photo was not yet
+  // "new") and sent it without its file — "Photo 5: no file chosen".
+  test.setTimeout(60_000);
+  await page.addInitScript(() => {
+    const original = window.createImageBitmap.bind(window);
+    // A phone decoding a 12-megapixel photo: seconds, not milliseconds.
+    (window as unknown as { createImageBitmap: typeof createImageBitmap }).createImageBitmap =
+      ((...args: Parameters<typeof createImageBitmap>) =>
+        new Promise((resolve) => setTimeout(resolve, 2500)).then(() => original(...args))) as typeof createImageBitmap;
+  });
+  await openManager(page);
+  const pm = managerOf(page);
+  const saves: unknown[] = [];
+  await page.route('**/api/photos/save', async (route) => { saves.push(route.request().postDataJSON()); return route.continue(); });
+  await pm.locator('#pm-add-input').setInputFiles({ name: 'IMG_4502.JPG', mimeType: 'image/jpeg', buffer: solidJpeg(4032, 3024) });
+  await pm.locator('.pm-save').click(); // at once, while the photo is still being prepared
+
+  await expect(pmStatus(page)).toContainText('מכין את התמונות');
+  // Then the ordinary path: the confirmation is asked for, nothing was sent.
+  await expect(pm.locator('#pm-confirm')).toBeFocused({ timeout: 15_000 });
+  expect(saves).toHaveLength(0);
 });
 
 test('an Instagram-sized 1080px photo is accepted and saved as it is — there is no minimum size', async ({ page, request }) => {
@@ -646,7 +720,10 @@ test.describe('on a 390px touch phone', () => {
     expect(corner.x + corner.width).toBeLessThanOrEqual(t0.x + t0.width);
   });
 
-  test('long-press lifts a photo and dragging rearranges; a quick swipe only scrolls', async ({ page }) => {
+  test('long-press lifts a photo and dragging rearranges; a quick swipe only scrolls', async ({ page, browserName }) => {
+    // Real multi-step touch sequences need the Chrome DevTools Protocol, which
+    // only Chromium has; WebKit covers the same manager through the other tests.
+    test.skip(browserName !== 'chromium', 'raw touch input needs CDP (Chromium only)');
     await openManager(page);
     const cdp = await page.context().newCDPSession(page);
     const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', x = 0, y = 0) =>
@@ -666,13 +743,21 @@ test.describe('on a 390px touch phone', () => {
     // still-moving list only stops the scroll (the browser's rule), so under a
     // loaded CI runner the long-press below never began.
     const body = managerOf(page).locator('.pm-body');
-    let last = Number.NaN;
-    await expect.poll(async () => {
-      const now = await body.evaluate((b) => b.scrollTop);
-      const settled = now === last;
-      last = now;
-      return settled;
-    }, { intervals: [200] }).toBe(true);
+    const settle = async () => {
+      let last = Number.NaN;
+      await expect.poll(async () => {
+        const now = await body.evaluate((b) => b.scrollTop);
+        const settled = now === last;
+        last = now;
+        return settled;
+      }, { intervals: [200] }).toBe(true);
+    };
+    await settle();
+    // The swipe scrolled the list; with more photos the first one can sit
+    // partly under the header. A finger presses what it can see: bring it
+    // fully into view first, then let that scroll settle too.
+    await tiles.nth(0).evaluate((el) => el.scrollIntoView({ block: 'center' }));
+    await settle();
 
     // Long-press, then carry it onto its neighbour.
     const from = (await tiles.nth(0).boundingBox())!;
@@ -805,7 +890,7 @@ test('preview hides the gallery Edit control and card pencils, and brings them b
 test('on a 390px phone the editor fills the screen and Save is always reachable', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/he/');
-  await page.getByRole('button', { name: `עריכה: ${heCard('veneers')}`, exact: true }).click();
+  await page.getByRole('button', { name: `עריכה: ${heCard(SECOND)}`, exact: true }).click();
   const dialog = dialogOf(page);
   const box = (await dialog.boundingBox())!;
   expect(box.width).toBeLessThanOrEqual(390);
@@ -903,6 +988,42 @@ test('after a save the editor waits for the rebuild, then reloads into it', asyn
   await expect(page.locator('.visual-bar-status')).toContainText('הדף מציג את השינוי האחרון שנשמר');
 
   // Restore.
+  await page.getByRole('button', { name: 'עריכת הכותרת הראשית' }).click();
+  await dialog.locator('[data-path="hero.eyebrow.he"]').fill(original);
+  await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
+  await expect(statusOf(page)).toContainText('נשמר');
+});
+
+test('the automatic reload never closes a different editor the doctor has opened since', async ({ page, request }) => {
+  // 2026-09-30, staging: hours were saved, then the contact editor opened;
+  // when the hours rebuild finished the page reloaded under the contact
+  // editor. Anything typed in the second before the reload was lost.
+  test.setTimeout(60_000);
+  await page.goto('/he/');
+  await page.getByRole('button', { name: 'עריכת הכותרת הראשית' }).click();
+  const dialog = dialogOf(page);
+  const eyebrow = dialog.locator('[data-path="hero.eyebrow.he"]');
+  const original = await eyebrow.inputValue();
+  await eyebrow.fill(`${original} ·`);
+  await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();
+  await expect(statusOf(page)).toContainText('נשמר');
+
+  // A different editor, opened before the rebuild is served.
+  await dialog.getByRole('button', { name: 'סגירה', exact: true }).click();
+  await page.locator('[data-edit-kind="doctor"]').first().click();
+  await expect(dialog.locator('input[lang="en"], textarea[lang="en"]').first()).toBeVisible();
+  let reloaded = false;
+  page.on('load', () => { reloaded = true; });
+  await request.post('/__fixture/deploy');
+  await page.waitForTimeout(8000); // status polls every few seconds, then 1.2 s
+  expect(reloaded).toBe(false);
+  await expect(dialog).toBeVisible();
+
+  // Closing it lets the page catch up.
+  const load = page.waitForEvent('load', { timeout: 15_000 });
+  await dialog.getByRole('button', { name: 'סגירה', exact: true }).click();
+  await load;
+
   await page.getByRole('button', { name: 'עריכת הכותרת הראשית' }).click();
   await dialog.locator('[data-path="hero.eyebrow.he"]').fill(original);
   await dialog.getByRole('button', { name: 'שמירה', exact: true }).click();

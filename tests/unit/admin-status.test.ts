@@ -20,9 +20,46 @@ const SHA = 'a'.repeat(40);
 const run = (status: string, conclusion: string | null, updated = '2026-09-23T10:00:00Z') =>
   ({ status, conclusion, updated_at: updated, head_sha: SHA });
 
+describe('a failed deploy whose change is live anyway', () => {
+  test('is reported as published: a later save carried it to the site', async () => {
+    // Save A's deploy failed; save B (built on A) deployed. The site serves B,
+    // which contains A — telling the doctor A "failed" would be false.
+    const later = 'b'.repeat(40);
+    const { response } = await callAdmin(
+      await adminRequest(`/api/status?sha=${SHA}`),
+      [
+        { status: 200, body: { workflow_runs: [{ ...run('completed', 'failure'), run_attempt: 2 }] } },
+        { status: 200, body: { status: 'ahead' } },
+      ],
+      { ...adminEnv, CONTENT_BRANCH: 'main', ADMIN_REBUILD: 'on' } as Env,
+      later,
+    );
+    const body = await response.json() as { data: { state: string; live: boolean; reason: string | null } };
+    assert.equal(body.data.live, true);
+    assert.equal(body.data.state, 'published');
+    assert.equal(body.data.reason, null);
+  });
+
+  test('stays failed when the site does not contain it', async () => {
+    const other = 'c'.repeat(40);
+    const { response } = await callAdmin(
+      await adminRequest(`/api/status?sha=${SHA}`),
+      [
+        { status: 200, body: { workflow_runs: [{ ...run('completed', 'failure'), run_attempt: 2 }] } },
+        { status: 200, body: { status: 'diverged' } },
+      ],
+      { ...adminEnv, CONTENT_BRANCH: 'main', ADMIN_REBUILD: 'on' } as Env,
+      other,
+    );
+    const body = await response.json() as { data: { state: string; live: boolean } };
+    assert.equal(body.data.state, 'failed');
+    assert.equal(body.data.live, false);
+  });
+});
+
 describe('a commit is not a publication', () => {
   test('no run yet is committed, never published or failed', () => {
-    assert.deepEqual(classifyRuns([]), { state: 'committed', completedAt: null, reason: null });
+    assert.deepEqual(classifyRuns([]), { state: 'committed', completedAt: null, reason: null, attempt: 0 });
   });
 
   test('a queued or running workflow is committed', () => {
@@ -63,6 +100,16 @@ describe('a commit is not a publication', () => {
       const reason = classifyRuns([run('completed', conclusion)]).reason;
       assert.match(reason ?? '', /^[a-z_]+$/, `"${reason}" is not a machine key`);
     }
+  });
+
+  test('the attempt says whether an automatic retry has already run', () => {
+    // A first failed attempt is retried once by retry-deploy.yml; the editor
+    // says "retrying" then, and "failed" only when attempt 2 fails too.
+    const attempt = (n: number, conclusion: string | null, status = 'completed') => ({ ...run(status, conclusion), run_attempt: n });
+    assert.equal(classifyRuns([attempt(1, 'failure')]).attempt, 1);
+    assert.equal(classifyRuns([attempt(2, 'failure')]).attempt, 2);
+    assert.equal(classifyRuns([attempt(2, null, 'in_progress')]).state, 'committed', 'a running retry is not a failure');
+    assert.equal(classifyRuns([run('completed', 'failure')]).attempt, 1, 'a run without the field is its first attempt');
   });
 
   test('success and in-progress carry no reason', () => {
@@ -122,7 +169,7 @@ describe('GET /api/status', () => {
       ok: true,
       // `preview` is Edit Mode's own rebuild, reported separately from the
       // public deployment so neither is ever mistaken for the other.
-      data: { state: 'published', completedAt: '2026-09-23T10:00:00Z', reason: null, preview: 'none', live: false },
+      data: { state: 'published', completedAt: '2026-09-23T10:00:00Z', reason: null, attempt: 1, preview: 'none', live: false },
     });
     assert.equal(calls[0].url, `${RUNS}?head_sha=${SHA}&branch=cms-test-branch&per_page=100`);
     assert.equal(calls[0].method, 'GET');
@@ -242,7 +289,7 @@ describe('GET /api/status/latest', () => {
       ok: true,
       data: {
         sha: SHA, committedAt: '2026-09-23T09:00:00Z',
-        state: 'failed', completedAt: '2026-09-23T10:00:00Z', reason: 'checks_failed',
+        state: 'failed', completedAt: '2026-09-23T10:00:00Z', reason: 'checks_failed', attempt: 1,
       },
     });
     assert.equal(calls[0].url, `${COMMITS}?sha=cms-test-branch&path=src%2Fdata&per_page=100&page=1`);

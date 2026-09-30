@@ -32,6 +32,12 @@ export interface PublishStatus {
    * not render.
    */
   reason: string | null;
+  /**
+   * The highest attempt among the commit's deploy runs (0 = none yet). A
+   * failed first attempt is re-run once by .github/workflows/retry-deploy.yml,
+   * so the editor reports "retrying" for attempt 1 and "failed" only after 2.
+   */
+  attempt: number;
 }
 
 interface WorkflowRun {
@@ -39,6 +45,7 @@ interface WorkflowRun {
   conclusion?: string | null;
   updated_at?: string;
   head_sha?: string;
+  run_attempt?: number;
 }
 
 /** Conclusions that mean the change did not reach the site. */
@@ -64,8 +71,9 @@ export function classifyRuns(runs: readonly WorkflowRun[]): PublishStatus {
   if (runs.length === 0) {
     // No run yet. The commit exists and the workflow has not been observed —
     // which is `committed`, not `failed` and certainly not `published`.
-    return { state: 'committed', completedAt: null, reason: null };
+    return { state: 'committed', completedAt: null, reason: null, attempt: 0 };
   }
+  const attempt = Math.max(...runs.map((run) => (Number.isInteger(run.run_attempt) && run.run_attempt! > 0 ? run.run_attempt! : 1)));
 
   const completedAt = runs
     .map((run) => run.updated_at)
@@ -80,14 +88,15 @@ export function classifyRuns(runs: readonly WorkflowRun[]): PublishStatus {
         state: 'failed',
         completedAt,
         reason: FAILURE_REASON[conclusion] ?? 'checks_failed',
+        attempt,
       };
     }
   }
 
   const allDone = runs.every((run) => run.status === 'completed' && run.conclusion === 'success');
   return allDone
-    ? { state: 'published', completedAt, reason: null }
-    : { state: 'committed', completedAt: null, reason: null };
+    ? { state: 'published', completedAt, reason: null, attempt }
+    : { state: 'committed', completedAt: null, reason: null, attempt };
 }
 
 /** Status for one commit. */

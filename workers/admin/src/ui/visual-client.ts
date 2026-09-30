@@ -77,7 +77,8 @@ const SOURCE = String.raw`
      here by accident — nothing is committed until Save. */
   const close = button(t('close'), () => {
     if (dirty && !confirm(t('unsavedClose'))) return;
-    dirty = false; dialog.close();
+    if (dirty) dropDraft();
+    dirty = false; dialog.close(); afterClose();
   });
   head.append(close);
   const main = add(dialog,'div'); main.className='visual-dialog-main';
@@ -91,12 +92,25 @@ const SOURCE = String.raw`
   const saveButton = button(t('save'), () => void save(), 'primary');
   footActions.append(saveButton);
   document.body.append(dialog);
-  dialog.addEventListener('cancel',(event)=>{ if (dirty && !confirm(t('unsavedClose'))) event.preventDefault(); else dirty=false; });
+  dialog.addEventListener('cancel',(event)=>{ if (dirty && !confirm(t('unsavedClose'))) event.preventDefault(); else { if(dirty) dropDraft(); dirty=false; setTimeout(afterClose,0); } });
 
   let kind='', sha='', draft=null, original=null, focus='', busy=false, dirty=false, publishing='test';
   let view={mode:'list',id:'',lang:locale}, expanded=new Set(), sent=null;
   /** Marked on every field change, cleared on save. Guards the close. */
-  function touch(){ dirty=true; }
+  function touch(){ dirty=true; clearTimeout(keepTimer); keepTimer=setTimeout(keepDraft,400); }
+  /* Unsaved work survives a lost session. The Access session can end while
+     the doctor is typing; the page then has to reload to sign in, and before
+     this everything unsaved was gone. A copy is kept on THIS device until it
+     is saved, deliberately discarded, or restored. Text only — photographs
+     are far too large for browser storage. */
+  const RESCUE='visual-unsaved-'; let keepTimer=0;
+  // The version the draft was edited from travels with it: restored on top of
+  // newer content, it must meet the stale-edit check, not overwrite silently.
+  function keepDraft(){ if(!kind||!draft||!dirty) return; try{ localStorage.setItem(RESCUE+kind,JSON.stringify({at:Date.now(),draft,sha})); }catch{} }
+  function dropDraft(which){ try{ localStorage.removeItem(RESCUE+(which||kind)); }catch{} }
+  /** The doctor chose to throw unsaved work away: nothing may offer it back. */
+  function discard(){ clearTimeout(keepTimer); dropDraft(); dirty=false; }
+  function rescued(which){ try{ const v=JSON.parse(localStorage.getItem(RESCUE+which)||'null'); return v&&v.draft&&typeof v.at==='number'?v:null; }catch{ return null; } }
 
   function tell(text,state){message.textContent=text;message.setAttribute('data-state',state||'');message.classList.remove('visual-loading');barTell(text,state);}
   function setBusy(on){busy=on;saveButton.disabled=on;main.inert=on;if(on)main.setAttribute('aria-busy','true');else main.removeAttribute('aria-busy');}
@@ -133,8 +147,13 @@ const SOURCE = String.raw`
     const at=issue.lastIndexOf(':'); if(at<0) return t('invalidValue');
     const path=issue.slice(0,at).split('.'), reason=reasonOf(issue.slice(at+1));
     if (kind==='services'||kind==='faq') {
-      const lang=path.find(p=>LANGS.includes(p)); const key=path.slice(1).find(p=>SERVICE_FIELDS[p]);
-      return itemName(path[0])+' · '+(key?SERVICE_FIELDS[key]:t('field'))+(lang?' ('+names[lang]+')':'')+': '+reason;
+      // "Treatment steps 2 · Detail", not "Treatment steps" four times over.
+      const lang=path.find(p=>LANGS.includes(p)); const parts=[];
+      for (const p of path.slice(1)) {
+        if (/^\d+$/.test(p)) { if (parts.length) parts[parts.length-1]+=' '+(Number(p)+1); }
+        else if (SERVICE_FIELDS[p]) parts.push(SERVICE_FIELDS[p]);
+      }
+      return itemName(path[0])+' · '+(parts.length?parts.join(' · '):t('field'))+(lang?' ('+names[lang]+')':'')+': '+reason;
     }
     if (kind==='copy') { const lang=path[path.length-1]; const key=path.slice(0,-1).join('.'); return (COPY_LABELS[key]||key)+(names[lang]?' ('+names[lang]+')':'')+': '+reason; }
     if (kind==='contact') { const lang=path.find(p=>LANGS.includes(p)); return (CONTACT_LABELS[path[0]]||path[0])+(lang?' ('+names[lang]+')':'')+': '+reason; }
@@ -183,7 +202,7 @@ const SOURCE = String.raw`
       if(error.issues.length>=20) add(errorBox,'p',t('moreIssues')).className='visual-hint';
       errorBox.hidden=false;
     } else if (code==='CONFLICT' || code==='NOT_FOUND') {
-      errorBox.append(button(t('reloadLatest'),()=>{ if(dirty&&!confirm(t('unsavedReload')))return; dirty=false; void open(kind,focus,true); },'primary'));
+      errorBox.append(button(t('reloadLatest'),()=>{ if(dirty&&!confirm(t('unsavedReload')))return; discard(); void open(kind,focus,true); },'primary'));
       errorBox.hidden=false;
     } else if (code==='AUTH_REQUIRED' || code==='AUTH_INVALID') {
       errorBox.append(button(t('refreshSignIn'),()=>location.reload(),'primary'));
@@ -193,6 +212,11 @@ const SOURCE = String.raw`
 
   /* ── Publication: ONE tracker; it never touches the dialog's result line ─ */
   let trackToken=0;
+  /* A failed FIRST deploy attempt is re-run once by retry-deploy.yml, which
+     takes a minute to start; until attempt 2 has also failed, the change is
+     "being retried", not "failed". About four minutes of patience at most. */
+  const RETRY_POLLS=40;
+  function retryPending(data){ return !(data && data.attempt>=2); }
   function pubTell(text,state){ pubLine.textContent=text; pubLine.hidden=!text; pubLine.setAttribute('data-state',state||''); barTell(text,state); }
   /*
    * After a save the doctor sees, in order: Saved → Updating the website view
@@ -204,18 +228,21 @@ const SOURCE = String.raw`
    */
   async function track(commit){
     if(!commit) return;
-    const token=++trackToken; let announced=false;
+    const token=++trackToken, from=kind; let announced=false, retryPolls=0;
     pubTell(publishing==='test'?t('updating'):t('waitingPublish',{sha:short(commit)}),'working');
     for (let attempt=0; attempt<150; attempt++) {
       await sleep(attempt<6?4000:6000);
       if (token!==trackToken) return;
       let data; try { data=await api('/api/status?sha='+encodeURIComponent(commit),'GET'); } catch { continue; }
       if (token!==trackToken) return;
-      if (data.preview==='ready') { reloadWhenSafe(commit); return; }
+      if (data.preview==='ready') { reloadWhenSafe(commit, from); return; }
       if (data.preview==='failed') { pubTell(t('updateFailed'),'failed'); return; }
       if (data.preview==='none' && attempt>=8 && !announced) { announced=true; pubTell(t('updateNotConfigured'),'info'); }
       if (publishing==='production') {
-        if (data.state==='failed') { pubTell(t('publishFailed'),'failed'); return; }
+        if (data.state==='failed') {
+          if (retryPending(data) && retryPolls++<RETRY_POLLS) { pubTell(t('publishRetrying'),'working'); continue; }
+          pubTell(t('publishFailed'),'failed'); return;
+        }
         if (data.state==='published') { barTell(t('publishedSite'),'published'); }
       }
       if (data.preview==='building' && !announced) pubTell(t('updating'),'working');
@@ -223,27 +250,42 @@ const SOURCE = String.raw`
       if (data.preview==='building' && attempt===60) { announced=true; pubTell(t('updateSlow'),'info'); }
     }
   }
-  /** The page now contains the change: reload into it, unless that would lose work. */
-  function reloadWhenSafe(commit){
-    if(!dirty && !busy && !(pm.el&&pm.el.open&&pmDirty())){
+  /*
+   * The page now contains the change: reload into it — but only into the
+   * editor that saved it, with nothing unsaved. Checked again at the moment
+   * of reloading (2026-09-30, staging: the page reloaded under a DIFFERENT
+   * editor opened in the meantime, taking what had just been typed).
+   */
+  let pendingReload='';
+  function idle(from){ return !dirty && !busy && !(pm.el&&pm.el.open) && (!dialog.open || kind===from); }
+  function reloadNow(commit){ try{ sessionStorage.setItem('visual-updated',commit); }catch{} location.reload(); }
+  function reloadWhenSafe(commit, from){
+    if(idle(from)){
       pubTell(t('updated'),'published');
-      try{ sessionStorage.setItem('visual-updated',commit); }catch{}
-      setTimeout(()=>location.reload(),1200);
+      setTimeout(()=>{ if(idle(from)) reloadNow(commit); else deferReload(commit); },1200);
       return;
     }
-    reloadSlot.replaceChildren();
-    reloadSlot.append(button(t('refreshNow'),()=>{ if(dirty&&!confirm(t('unsavedRefresh')))return; dirty=false; location.reload(); }));
-    reloadSlot.hidden=false;
-    pubTell(t('updatedDirty'),'published');
+    deferReload(commit);
   }
+  /** Reload when the open window closes; until then, a button. */
+  function deferReload(commit){
+    pendingReload=commit;
+    reloadSlot.replaceChildren();
+    reloadSlot.append(button(t('refreshNow'),()=>{ if(dirty&&!confirm(t('unsavedRefresh')))return; discard(); location.reload(); }));
+    reloadSlot.hidden=false;
+    pubTell(t(dirty||(pm.el&&pm.el.open&&pmDirty())?'updatedDirty':'updatedLater'),'published');
+  }
+  // Called from the ways the doctor closes the editor, not from the dialog's
+  // 'close' event: Chrome does not deliver that to a page in a background tab.
+  function afterClose(){ if(pendingReload && !dirty && !busy && !dialog.open && !(pm.el&&pm.el.open)) reloadNow(pendingReload); }
 
   /* ── Opening, loading, saving ───────────────────────────────────────── */
   function loading(on){message.classList.toggle('visual-loading',on);if(on){message.textContent=t('loading');message.setAttribute('data-state','working');const sk=document.createElement('div');sk.className='visual-skeleton';sk.setAttribute('aria-hidden','true');for(let i=0;i<6;i++)sk.append(document.createElement('span'));body.replaceChildren(sk);body.setAttribute('aria-busy','true');}else{body.replaceChildren();body.removeAttribute('aria-busy');}}
   async function open(next,which='',reload=false){
     // Each managed gallery opens the shared manager, named for THAT gallery:
     // 'photos' is clinic photography, 'work' is the doctor's work.
-    if(next==='photos'||next==='work'){ if(dialog.open && dirty && !confirm(t('unsavedSwitch'))) return; dirty=false; if(dialog.open) dialog.close(); return openPhotoManager(next==='work'?'work':'clinic'); }
-    if(dialog.open && dirty && !reload && !confirm(t('unsavedSwitch'))) return;
+    if(next==='photos'||next==='work'){ if(dialog.open && dirty){ if(!confirm(t('unsavedSwitch'))) return; discard(); } if(dialog.open) dialog.close(); return openPhotoManager(next==='work'?'work':'clinic'); }
+    if(dialog.open && dirty && !reload){ if(!confirm(t('unsavedSwitch'))) return; discard(); }
     kind=next;focus=which;sha='';draft=null;original=null;dirty=false;expanded=new Set();sent=null;
     view={mode:'list',id:'',lang:locale};
     title.textContent=S.titles[kind]||kind; clearErrors(); pubLine.hidden=true;
@@ -253,6 +295,13 @@ const SOURCE = String.raw`
       sha=data.sha;
       draft=structuredClone(kind==='hours'?data.rows:data.value);
       original=structuredClone(draft);
+      // Unsaved work from a session that ended: offer it back, once.
+      const kept=rescued(kind);
+      if (kept && JSON.stringify(kept.draft)!==JSON.stringify(draft)) {
+        const when=new Date(kept.at).toLocaleString(locale==='en'?'en-GB':locale==='ar'?'ar':'he-IL',{dateStyle:'short',timeStyle:'short'});
+        if (confirm(t('restoreDraft',{time:when}))) { draft=structuredClone(kept.draft); dirty=true; if(typeof kept.sha==='string'&&kept.sha) sha=kept.sha; }
+        else dropDraft();
+      } else if (kept) dropDraft();
       if (kind==='services' && focus==='new') { const created=newService(); draft.push(created); dirty=true; view={mode:'item',id:created.id,lang:locale}; focus=''; }
       else if (kind==='services' && focus) { const item=draft.find(x=>x.slug===focus); if(item) view={mode:'item',id:item.id,lang:locale}; }
       loading(false); tell(''); render(); main.scrollTop=0;
@@ -265,13 +314,15 @@ const SOURCE = String.raw`
   }
   async function save(){
     if(busy) return;
+    clearTimeout(keepTimer); keepDraft(); // kept before the request, in case the session has ended
     clearErrors(); sent=structuredClone(draft);
     setBusy(true); tell(t('saving'),'working');
     try {
       const data=await api(urls[kind],'PUT',payloadFor());
       if (data.blob) sha=data.blob;
-      if (data.unchanged) { dirty=false; tell(t('nothingToSave'),'info'); return; }
+      if (data.unchanged) { dirty=false; dropDraft(); tell(t('nothingToSave'),'info'); return; }
       original=structuredClone(draft);
+      clearTimeout(keepTimer); dropDraft();
       dirty=false;tell(t(publishing==='test'?'savedTest':'savedProd',{sha:short(data.sha)}),'ok');
       render(); void track(data.sha);
     } catch (error) { fail(error); } finally { setBusy(false); }
@@ -505,7 +556,11 @@ const SOURCE = String.raw`
     let bitmap; try{ bitmap=await createImageBitmap(file); }catch{ throw new Error(t('unreadable',{name:file.name})); }
     const w=bitmap.width,h=bitmap.height,long=Math.max(w,h);
     const target=mustType||type;
-    if(file.size<=SEND_LIMIT && target===type){bitmap.close();return {blob:file,width:w,height:h,type};}
+    // Sent as-is only when it is already small in BOTH senses. A 12 MP iPhone
+    // photo (4032 px, ~5.6 MB) used to go up whole: seconds of upload on a
+    // phone, and megabytes of base64 in the Worker, which on 2026-09-30 ran it
+    // out of resources mid-batch. The site never shows more than 1536 px.
+    if(file.size<=SEND_LIMIT && long<=SEND_EDGE && target===type){bitmap.close();return {blob:file,width:w,height:h,type};}
     // Largest first, and never larger than the original.
     for(const edge of [SEND_EDGE,2048,1600,1200].map(e=>Math.min(e,long)).filter((e,i,all)=>all.indexOf(e)===i)){
       const scale=edge/long; const canvas=document.createElement('canvas'); canvas.width=Math.round(w*scale); canvas.height=Math.round(h*scale);

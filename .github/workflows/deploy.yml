@@ -51,8 +51,10 @@ jobs:
       - name: Unit tests
         run: npm test
 
+  # verify, build and the browser QA run IN PARALLEL; deploy waits for all
+  # three. Every gate still blocks the deploy — only the waiting in between
+  # is gone. (Serially this took ~4.3 min per doctor save; 2026-09-30.)
   build:
-    needs: verify
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -93,19 +95,6 @@ jobs:
       - name: SEO crawl (built site)
         run: npm run lint:seo
 
-      - name: Install browser for QA
-        run: npx playwright install --with-deps chromium
-      - name: Browser QA (three locales, responsive layouts, axe and contact flow)
-        run: npm run test:e2e
-      - uses: actions/upload-artifact@v4
-        if: failure()
-        with:
-          name: production-browser-qa
-          path: |
-            playwright-report/
-            test-results/
-          retention-days: 7
-
       # Before the deploy, the live site still shows the previous build, so
       # this is the one moment "what changed" can be computed exactly.
       # Never blocks a deploy: search notification is a courtesy, not a gate.
@@ -132,8 +121,44 @@ jobs:
         with:
           path: ./dist
 
+  # The Playwright suite, split across two machines. It builds the same
+  # commit itself (the preview server serves dist/); a shard failing blocks
+  # the deploy exactly as the single job did.
+  e2e:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci
+      - name: Build (strict launch gate)
+        env:
+          NODE_ENV: production
+          ASTRO_SITE: https://www.drkhalilkanani.com
+          ASTRO_BASE: /
+          ACK_UNVERIFIED: 'doctor.ar,doctor.en,tagline.ar'
+        run: npm run build
+      - name: Install browser for QA
+        run: npx playwright install --with-deps chromium
+      - name: Browser QA (three locales, responsive layouts, axe and contact flow)
+        run: npx playwright test --shard=${{ matrix.shard }}/2
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: production-browser-qa-${{ matrix.shard }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
   deploy:
-    needs: build
+    needs: [verify, build, e2e]
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

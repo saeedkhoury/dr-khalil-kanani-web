@@ -22,24 +22,9 @@ const ROOT = new URL('..', import.meta.url).pathname;
 const SCAN_DIRS = ['src'];
 const SCAN_EXT = new Set(['.md', '.mdx', '.ts', '.tsx', '.astro', '.json']);
 
-/** Scripts that should never appear in this project's content. */
-const FORBIDDEN_RANGES = [
-  { name: 'Cyrillic', test: (c) => c >= 0x0400 && c <= 0x04ff },
-  { name: 'Greek', test: (c) => c >= 0x0370 && c <= 0x03ff },
-  { name: 'Armenian', test: (c) => c >= 0x0530 && c <= 0x058f },
-];
-
-/** Invisible characters that corrupt bidi text and are almost always a mistake. */
-const SUSPECT_INVISIBLES = new Map([
-  [0x200b, 'ZERO WIDTH SPACE'],
-  [0x200e, 'LEFT-TO-RIGHT MARK'],
-  [0x200f, 'RIGHT-TO-LEFT MARK'],
-  [0x202a, 'LEFT-TO-RIGHT EMBEDDING'],
-  [0x202b, 'RIGHT-TO-LEFT EMBEDDING'],
-  [0x202d, 'LEFT-TO-RIGHT OVERRIDE'],
-  [0x202e, 'RIGHT-TO-LEFT OVERRIDE'],
-  [0xfeff, 'ZERO WIDTH NO-BREAK SPACE'],
-]);
+// The SAME rule the admin Worker applies to every CMS write (readJson), so the
+// CMS can never commit text this linter will refuse. Defined once:
+import { FORBIDDEN_RANGES, SUSPECT_INVISIBLES } from '../src/lib/text-hygiene.ts';
 
 function walk(dir, out = []) {
   let entries;

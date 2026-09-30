@@ -20,7 +20,14 @@ export const PHOTOS_SOURCE = String.raw`
   /* ── Photo manager ─────────────────────────────────────────────────── */
   const LONG_PRESS_MS = 450, HOLD_MS = 180, MOVE_CANCEL_PX = 10, MOUSE_START_PX = 6;
   const pm = { el:null, grid:null, status:null, statusText:null, retry:null, summary:null, saveBtn:null, confirmWrap:null, confirmBox:null,
-    gallery:'clinic', sha:'', versions:{}, photos:[], original:'', deletes:[], busy:false, saveToken:0, lastSave:null };
+    gallery:'clinic', sha:'', versions:{}, photos:[], original:'', deletes:[], busy:false, saveToken:0, lastSave:null, pending:new Set() };
+  /*
+   * A chosen photo is prepared (decoded, scaled, re-encoded) in the browser
+   * before it counts as new. Save waits for that — 2026-09-30: pressed while
+   * a 4032 px photo was still being prepared, it skipped the "no patient"
+   * confirmation and sent the photo without its file ("no file chosen").
+   */
+  function preparing(work){ pm.pending.add(work); work.catch(()=>{}).finally(()=>pm.pending.delete(work)); return work; }
   const isWork = () => pm.gallery==='work';
   let pmKey = 0;
   const frameOf = (p) => p.frame || { x: 50, y: 50, zoom: 1 };
@@ -121,7 +128,7 @@ export const PHOTOS_SOURCE = String.raw`
   function closeManager(){
     if(pmDirty() && !confirm(t('pmCloseUnsaved'))) return;
     pm.el.close();
-    if(pm.reloadOnClose){ try{ sessionStorage.setItem('visual-updated','1'); }catch{} location.reload(); }
+    if(pm.reloadOnClose||pendingReload) reloadNow(pendingReload||'1');
   }
 
   function updateSummary(){
@@ -139,7 +146,7 @@ export const PHOTOS_SOURCE = String.raw`
     const addBtn=document.createElement('button'); addBtn.type='button'; addBtn.className='pm-add-button';
     addBtn.append(icon(ICON_PLUS)); add(addBtn,'span',t('pmAdd')).className='pm-add-label'; add(addBtn,'span',t('pmAddHint')).className='pm-add-hint';
     addBtn.addEventListener('click',()=>input.click());
-    input.addEventListener('change',()=>{ void addPhotos([...(input.files||[])]); input.value=''; });
+    input.addEventListener('change',()=>{ void preparing(addPhotos([...(input.files||[])])); input.value=''; });
     addTile.append(addBtn,input); pm.grid.append(addTile);
     pm.hint.hidden=pm.photos.length<2;
     if(!pm.photos.length){
@@ -175,7 +182,7 @@ export const PHOTOS_SOURCE = String.raw`
     const eye=iconButton(t('named',{action:shown?t('pmHide'):t('pmShow'),name:photoLabel(p,i)}),shown?ICON_EYE:ICON_EYE_OFF,'pm-tool pm-eye',()=>{ p.status=shown?'unpublished':'published'; renderGrid(); const again=pm.grid.querySelector('[data-key="'+p.key+'"] .pm-eye'); if(again) again.focus(); });
     eye.setAttribute('aria-pressed',String(shown));
     const pick=document.createElement('input'); pick.type='file'; pick.accept='image/jpeg,image/png'; pick.hidden=true;
-    pick.addEventListener('change',()=>{ const f=pick.files&&pick.files[0]; pick.value=''; if(f) void replaceLocally(p,f); });
+    pick.addEventListener('change',()=>{ const f=pick.files&&pick.files[0]; pick.value=''; if(f) void preparing(replaceLocally(p,f)); });
     const swap=iconButton(t('named',{action:t('pmReplacePhoto'),name:photoLabel(p,i)}),ICON_SWAP,'pm-tool pm-swap',()=>pick.click());
     bar_.append(grip,eye,swap,pick);
     if(p.error&&!p.invalid) add(badges,'span',p.error).className='pm-badge pm-badge-warn';
@@ -233,7 +240,20 @@ export const PHOTOS_SOURCE = String.raw`
   /** Upload one photograph's bytes as a git blob (no commit). Only from Save. */
   async function stageImage(p){
     if(!p.image||p.image.blob||!p.image.local) return;
-    const data=await api('/api/photos/stage','POST',{contentBase64:await encode(p.image.local),confirmed:true});
+    const payload={contentBase64:await encode(p.image.local),confirmed:true};
+    // Staging only stores the bytes as a blob, addressed by their content: the
+    // same photo sent twice is the same blob, never a duplicate. So a passing
+    // failure (the network, GitHub, the Worker's own limits) is retried here
+    // instead of being handed to the doctor as an error.
+    let data;
+    for(let attempt=0;;attempt++){
+      try{ data=await api('/api/photos/stage','POST',payload); break; }
+      catch(error){
+        const passing=error instanceof ApiError && ['NETWORK','SERVER_ERROR','UPSTREAM_UNAVAILABLE','RATE_LIMITED'].includes(error.code);
+        if(!passing||attempt>=2) throw error;
+        await sleep(1500*(attempt+1));
+      }
+    }
     p.image={ ...p.image, blob:data.blob, width:data.width, height:data.height };
   }
 
@@ -413,8 +433,11 @@ export const PHOTOS_SOURCE = String.raw`
     const replaceInput=document.createElement('input'); replaceInput.type='file'; replaceInput.accept='image/jpeg,image/png'; replaceInput.hidden=true;
     const replaceBtn=button(t('peReplace'),()=>replaceInput.click(),'pm-mini'); form.append(replaceBtn,replaceInput);
     const replaceNote=add(form,'p'); replaceNote.className='pm-hint';
-    replaceInput.addEventListener('change',async()=>{
+    replaceInput.addEventListener('change',()=>{
       const file=replaceInput.files&&replaceInput.files[0]; replaceInput.value=''; if(!file) return;
+      void preparing(replaceInSheet(file));
+    });
+    async function replaceInSheet(file){
       replaceNote.textContent=t('checkingImage');
       try{
         const target=p.file?(p.file.toLowerCase().endsWith('.png')?'image/png':'image/jpeg'):null;
@@ -423,7 +446,7 @@ export const PHOTOS_SOURCE = String.raw`
         work.image={ local:ready.blob, width:ready.width, height:ready.height, url:URL.createObjectURL(ready.blob) };
         img.src=work.image.url; smallImg.src=work.image.url; work.frame={x:50,y:50,zoom:1}; paint(); replaceNote.textContent=t('peReplaced');
       }catch(error){ replaceNote.textContent=error.message; }
-    });
+    }
     if(isWork()){
       // The title: optional, shown under the photo; all three or none.
       const tfs=add(form,'fieldset'); tfs.className='pe-title-group'; add(tfs,'legend',t('peTitleGroup'));
@@ -471,9 +494,20 @@ export const PHOTOS_SOURCE = String.raw`
   }
   async function savePhotos(){
     if(pm.busy||changeCount()===0) return;
+    if(pm.pending.size){
+      pm.busy=true; updateSummary(); pmTell(t('pmPreparing'),'working');
+      while(pm.pending.size) await Promise.allSettled([...pm.pending]);
+      pm.busy=false; updateSummary();
+    }
     for(const p of pm.photos) if(!p.invalid) p.error='';
     const needsConfirm=pm.photos.some(hasNewImage);
     if(needsConfirm&&!pm.confirmBox.checked){ pmTell(ISSUES.confirmation_required,'failed',false); pm.confirmBox.focus(); return; }
+    // Missing descriptions are known here, before a single byte is uploaded.
+    // The server says the same (same keys, same sentences), but only after
+    // every photo has gone up — minutes on a phone connection.
+    const missing=[];
+    pm.photos.forEach((p,i)=>{ for(const lang of ['he','ar','en']) if(!String(p.alt&&p.alt[lang]||'').trim()) missing.push('photo_'+i+':alt_'+lang+'_required'); });
+    if(missing.length){ pmFail(new ApiError('INVALID',missing),false); return; }
     pm.busy=true; pm.lastSave=null; ++pm.saveToken; updateSummary(); pm.issues.hidden=true;
     // First the photographs, one at a time — only now, with the confirmation.
     const queue=pm.photos.filter(p=>p.image&&p.image.local&&!p.image.blob);
@@ -507,13 +541,18 @@ export const PHOTOS_SOURCE = String.raw`
   async function trackPhotos(commit){
     const token=++pm.saveToken;
     pmTell(publishing==='production'?t('pmPublishing'):t('pmUpdating'),'working');
+    let retryPolls=0;
     for(let attempt=0; attempt<150; attempt++){
       await sleep(attempt<6?4000:6000);
       if(token!==pm.saveToken) return;
       let data; try{ data=await api('/api/status?sha='+encodeURIComponent(commit),'GET'); }catch{ continue; }
       if(token!==pm.saveToken) return;
       if(publishing==='production'){
-        if(data.state==='failed'){ pmTell(t('pmFailed')+' — '+t('publishFailed'),'failed',true); return; }
+        if(data.state==='failed'){
+          // A first failure is retried automatically (retry-deploy.yml): say so and keep watching.
+          if(retryPending(data) && retryPolls++<RETRY_POLLS){ pmTell(t('publishRetrying'),'working'); continue; }
+          pmTell(t('pmFailed')+' — '+t('publishFailed'),'failed',true); return;
+        }
         if(data.live===true){ pmTell(t('pmLive'),'published'); offerView(); return; }
         pmTell(data.state==='published'?t('pmUpdating'):t('pmPublishing'),'working');
       } else {
@@ -529,6 +568,7 @@ export const PHOTOS_SOURCE = String.raw`
     pm.reloadOnClose=true;
     if(!pm.viewBtn){ pm.viewBtn=button(t('pmViewPage'),()=>{ pm.el.close(); try{ sessionStorage.setItem('visual-updated','1'); }catch{} location.reload(); },'pm-view'); }
     pm.status.append(pm.viewBtn);
-    if(!pm.el.open){ try{ sessionStorage.setItem('visual-updated','1'); }catch{} location.reload(); }
+    // Closed meanwhile: reload now, unless a text editor is open — then when it closes.
+    if(!pm.el.open){ if(dialog.open||dirty) deferReload('1'); else reloadNow('1'); }
   }
 `;

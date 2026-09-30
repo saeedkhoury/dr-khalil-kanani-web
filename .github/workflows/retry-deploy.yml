@@ -1,0 +1,43 @@
+name: Retry a failed production deploy once
+
+# A doctor's save is committed first and published by "Deploy to Production".
+# When that deploy fails for a passing reason (a runner hiccup, a GitHub
+# outage, a flaky browser test), nobody should have to press anything: this
+# re-runs the failed jobs ONCE. A real content or code problem fails again and
+# the editor then says so (it reports "retrying" while attempt 1 is being
+# retried, and "failed" only after attempt 2).
+#
+# Guard: only the NEWEST commit on main is ever retried. Re-running an older
+# deploy after a newer one had succeeded would put older content back on the
+# live site.
+
+on:
+  workflow_run:
+    workflows: ['Deploy to Production']
+    types: [completed]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  retry:
+    if: >-
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.run_attempt == 1 &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Re-run failed jobs if this is still the newest commit on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          tip=$(gh api "repos/${GITHUB_REPOSITORY}/commits/main" --jq .sha)
+          if [ "$tip" != "$RUN_SHA" ]; then
+            echo "main has moved on ($tip); the newer commit's own deploy carries this change. Not retrying."
+            exit 0
+          fi
+          echo "Retrying deploy run $RUN_ID for $RUN_SHA."
+          gh run rerun "$RUN_ID" --failed --repo "$GITHUB_REPOSITORY"

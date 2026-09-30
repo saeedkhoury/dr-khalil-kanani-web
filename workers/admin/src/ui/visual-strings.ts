@@ -11,7 +11,7 @@
 type Dict = Record<string, string | Record<string, string> | string[]>;
 
 const he: Dict = {
-  pmTitle: "תמונות המרפאה", pmCount: "{n} תמונות", pmAdd: "הוספת תמונה", pmAddHint: "JPG או PNG · אפשר כמה יחד", pmSave: "שמירה", pmSavePublish: "שמירה ופרסום", pmClose: "סגירה", pmNoChanges: "אין שינויים", pmChanges: "{n} שינויים שלא נשמרו", pmEditPhoto: "עריכת תמונה", pmDeletePhoto: "מחיקת תמונה", pmMoveEarlier: "הזזה קדימה", pmMoveLater: "הזזה אחורה", pmHidden: "מוסתרת", pmNew: "חדשה", pmReplaced: "הוחלפה", pmNeedsText: "חסר תיאור", pmUploading: "מעלה…", pmUploadingN: "מעלה תמונה {n} מתוך {m}…", pmFailedUpload: "ההעלאה נכשלה", pmRetry: "נסו שוב", pmRemove: "הסרה", pmDeleteConfirm: "למחוק את התמונה? היא תימחק מהאתר בשמירה, וההיסטוריה נשמרת במאגר.", pmDeletePublished: "התמונה מוצגת כרגע באתר, ולכן אי אפשר למחוק אותה ישירות. להסתיר אותה עכשיו? אחרי השמירה אפשר יהיה למחוק אותה.", pmDragHint: "לשינוי הסדר: לחיצה ארוכה על תמונה (או לחיצה והחזקה בעכבר) וגרירה למקום החדש.", pmEmpty: "עדיין אין תמונות. אפשר להוסיף תמונות באריח \"הוספת תמונה\".", pmConfirmPatients: "אני מאשר/ת שבאף תמונה חדשה או מוחלפת אין מטופל, חלק ממטופל או תמונת לפני/אחרי.", pmSaving: "שומר…", pmPublishing: "מפרסם את התמונות…", pmUpdating: "מעדכן את האתר…", pmLive: "באוויר ✓ — האתר הרשמי מציג את השינוי", pmUpdatedTest: "עודכן בתצוגת הבדיקה ✓ — האתר הציבורי לא משתנה במצב בדיקה", pmFailed: "נכשל", pmSlow: "העדכון לוקח יותר זמן מהרגיל; ממשיך לבדוק…", pmViewPage: "הצגת הדף המעודכן", pmCloseUnsaved: "יש שינויים שלא נשמרו. לסגור ולבטל אותם?", peTitle: "עריכת תמונה", peDone: "סיום", peCancel: "ביטול", peFraming: "מסגור התמונה", peFramingHint: "גררו את התמונה כדי למקם אותה במסגרת. כך בדיוק היא תופיע בגלריה באתר, במחשב ובטלפון.", peZoom: "רמת הגדלה", peZoomIn: "הגדלה", peZoomOut: "הקטנה", peReset: "איפוס המסגור", pePreview: "תצוגה מקדימה בגודל טלפון", peReplace: "החלפת התמונה", peVisibility: "מוצגת באתר", peCategory: "סוג התמונה", peDescriptions: "תיאור התמונה (לקוראי מסך ולגוגל)", peFramePos: "מיקום במסגרת: {x}% · {y}%, הגדלה ×{z}", issuePublishedDelete: "אי אפשר למחוק תמונה שמוצגת באתר. יש להסתיר אותה, לשמור, ואז למחוק.", issueFrame: "המסגור אינו תקין — יש לאפס אותו.", issueTooMany: "אפשר להוסיף או להחליף עד 20 תמונות בשמירה אחת.", issuePhotoN: "תמונה {n}: {text}",
+  pmTitle: "תמונות המרפאה", pmPreparing: "מכין את התמונות…", pmCount: "{n} תמונות", pmAdd: "הוספת תמונה", pmAddHint: "JPG או PNG · אפשר כמה יחד", pmSave: "שמירה", pmSavePublish: "שמירה ופרסום", pmClose: "סגירה", pmNoChanges: "אין שינויים", pmChanges: "{n} שינויים שלא נשמרו", pmEditPhoto: "עריכת תמונה", pmDeletePhoto: "מחיקת תמונה", pmMoveEarlier: "הזזה קדימה", pmMoveLater: "הזזה אחורה", pmHidden: "מוסתרת", pmNew: "חדשה", pmReplaced: "הוחלפה", pmNeedsText: "חסר תיאור", pmUploading: "מעלה…", pmUploadingN: "מעלה תמונה {n} מתוך {m}…", pmFailedUpload: "ההעלאה נכשלה", pmRetry: "נסו שוב", pmRemove: "הסרה", pmDeleteConfirm: "למחוק את התמונה? היא תימחק מהאתר בשמירה, וההיסטוריה נשמרת במאגר.", pmDeletePublished: "התמונה מוצגת כרגע באתר, ולכן אי אפשר למחוק אותה ישירות. להסתיר אותה עכשיו? אחרי השמירה אפשר יהיה למחוק אותה.", pmDragHint: "לשינוי הסדר: לחיצה ארוכה על תמונה (או לחיצה והחזקה בעכבר) וגרירה למקום החדש.", pmEmpty: "עדיין אין תמונות. אפשר להוסיף תמונות באריח \"הוספת תמונה\".", pmConfirmPatients: "אני מאשר/ת שבאף תמונה חדשה או מוחלפת אין מטופל, חלק ממטופל או תמונת לפני/אחרי.", pmSaving: "שומר…", pmPublishing: "מפרסם את התמונות…", pmUpdating: "מעדכן את האתר…", pmLive: "באוויר ✓ — האתר הרשמי מציג את השינוי", pmUpdatedTest: "עודכן בתצוגת הבדיקה ✓ — האתר הציבורי לא משתנה במצב בדיקה", pmFailed: "נכשל", pmSlow: "העדכון לוקח יותר זמן מהרגיל; ממשיך לבדוק…", pmViewPage: "הצגת הדף המעודכן", pmCloseUnsaved: "יש שינויים שלא נשמרו. לסגור ולבטל אותם?", peTitle: "עריכת תמונה", peDone: "סיום", peCancel: "ביטול", peFraming: "מסגור התמונה", peFramingHint: "גררו את התמונה כדי למקם אותה במסגרת. כך בדיוק היא תופיע בגלריה באתר, במחשב ובטלפון.", peZoom: "רמת הגדלה", peZoomIn: "הגדלה", peZoomOut: "הקטנה", peReset: "איפוס המסגור", pePreview: "תצוגה מקדימה בגודל טלפון", peReplace: "החלפת התמונה", peVisibility: "מוצגת באתר", peCategory: "סוג התמונה", peDescriptions: "תיאור התמונה (לקוראי מסך ולגוגל)", peFramePos: "מיקום במסגרת: {x}% · {y}%, הגדלה ×{z}", issuePublishedDelete: "אי אפשר למחוק תמונה שמוצגת באתר. יש להסתיר אותה, לשמור, ואז למחוק.", issueFrame: "המסגור אינו תקין — יש לאפס אותו.", issueTooMany: "אפשר להוסיף או להחליף עד 20 תמונות בשמירה אחת.", issuePhotoN: "תמונה {n}: {text}",
   langName: 'עברית',
   close: 'סגירה', save: 'שמירה', cancel: 'ביטול', edit: 'עריכה', closeEdit: 'סגירת העריכה', remove: 'הסרה', delete: 'מחיקה',
   up: 'למעלה', down: 'למטה', upNamed: 'למעלה: {name}', downNamed: 'למטה: {name}', named: '{action}: {name}', grip: 'גרירה',
@@ -27,9 +27,11 @@ const he: Dict = {
   savedProd: 'נשמר (commit {sha}); עדיין לא פורסם באתר.',
   doneTest: '{what} (commit {sha}, ענף בדיקה).', doneProd: '{what} (commit {sha}); עדיין לא פורסם באתר.',
   noChange: 'אין שינוי לשמירה.',
+  restoreDraft: 'נמצאו במכשיר הזה שינויים שלא נשמרו מ-{time}. לשחזר אותם? (ביטול ימחק אותם)',
   updating: 'מעדכן את תצוגת האתר…',
   updated: 'עודכן — הדף נטען מחדש…',
   updatedDirty: 'התצוגה עודכנה. שמרו או בטלו את השינויים הפתוחים ואז רעננו.',
+  updatedLater: 'התצוגה עודכנה — הדף ייטען מחדש כשתסגרו את החלון הפתוח.',
   updatedAfterReload: 'הדף מציג את השינוי האחרון שנשמר.',
   refreshNow: 'רענון הדף',
   updateFailed: 'השינוי נשמר, אך עדכון תצוגת האתר נכשל. אפשר לנסות שוב בשמירה נוספת; אם זה חוזר, יש לפנות למפתח.',
@@ -37,7 +39,8 @@ const he: Dict = {
   updateSlow: 'השינוי נשמר. עדכון תצוגת האתר לוקח יותר זמן מהרגיל; הדף יתעדכן כשיסתיים. אם זה לא קורה תוך כמה דקות, יש לפנות למפתח.',
   waitingPublish: 'נשמר (commit {sha}). ממתין לפרסום באתר…',
   publishedSite: 'פורסם באתר',
-  publishFailed: 'נשמר, אך הפרסום נכשל. האתר מציג את הגרסה הקודמת. יש לפנות למפתח.',
+  publishFailed: 'השינוי נשמר ולא אבד, אך האתר לא התעדכן גם בניסיון החוזר האוטומטי. האתר ממשיך להציג את הגרסה הקודמת. אין צורך לשמור שוב — יש לפנות למפתח.',
+  publishRetrying: 'השינוי נשמר. העלאתו לאתר נתקלה בתקלה זמנית ומתבצעת שוב אוטומטית — אין צורך לעשות דבר.',
   testMode: 'מצב בדיקה: שמירות לא משנות את האתר הציבורי',
   claim: 'ניסוח אסור לפי כללי הפרסום הרפואי (למשל הבטחת תוצאה או "הכי טוב")',
   moreIssues: 'ייתכן שיש בעיות נוספות; הן יוצגו אחרי תיקון אלה ושמירה חוזרת.',
@@ -105,7 +108,7 @@ const he: Dict = {
   icons: { implant: 'שתל', crown: 'כתר', whitening: 'הלבנה', filling: 'סתימה', veneer: 'ציפוי', aligner: 'יישור שיניים', 'root-canal': 'טיפול שורש', extraction: 'עקירה', cleaning: 'ניקוי', emergency: 'חירום', aesthetic: 'אסתטיקה' },
   serviceFields: { title: 'שם הטיפול (כותרת העמוד)', cardTitle: 'שם קצר לכרטיס', summary: 'תקציר', candidacy: 'למי מתאים', process: 'מהלך הטיפול', expect: 'למה לצפות', faq: 'שאלות על הטיפול', seoTitle: 'כותרת לגוגל (לא חובה)', seoDescription: 'תיאור קצר לגוגל', reviewedOn: 'תאריך בדיקה רפואית', step: 'שלב', detail: 'פירוט', q: 'שאלה', a: 'תשובה', slug: 'כתובת העמוד', status: 'מצב', icon: 'סמל' },
   errors: {
-    AUTH_REQUIRED: 'החיבור למערכת פג. יש לרענן את הדף ולהתחבר שוב. השינויים שלא נשמרו יאבדו — כדאי להעתיק אותם קודם.',
+    AUTH_REQUIRED: 'החיבור למערכת פג. השינויים שלא נשמרו שמורים במכשיר הזה: יש לרענן את הדף, להתחבר, ולפתוח שוב את אותו חלון עריכה — הם יוצעו לשחזור.',
     AUTH_INVALID: 'החיבור למערכת פג. יש לרענן את הדף ולהתחבר שוב.',
     FORBIDDEN: 'הפעולה נחסמה מטעמי אבטחה. יש לרענן את הדף ולנסות שוב.',
     NOT_FOUND: 'הפריט לא נמצא — ייתכן שנמחק. יש לטעון מחדש.',
@@ -122,6 +125,7 @@ const he: Dict = {
   issues: {
     caption_he_required: "חסרה כותרת בעברית — יש למלא את הכותרת בכל השפות, או להשאיר את כולן ריקות.", caption_ar_required: "חסרה כותרת בערבית — יש למלא את הכותרת בכל השפות, או להשאיר את כולן ריקות.", caption_en_required: "חסרה כותרת באנגלית — יש למלא את הכותרת בכל השפות, או להשאיר את כולן ריקות.", caption_invalid: "הכותרת אינה תקינה.", frame_not_allowed: "בגלריה הזו אין מסגור — התמונה מוצגת בשלמותה.", gallery_invalid: "הגלריה אינה מוכרת. יש לרענן את הדף.",
     confirmation_required: 'יש לאשר שבתמונה אין מטופל, חלק ממטופל או תמונת לפני/אחרי.',
+    mixed_script: 'בטקסט יש אות מאלפבית אחר (למשל רוסית או יוונית) שנראית כמו אות רגילה, כנראה מהעתקה. יש להקליד מחדש את המילה ולשמור שוב.',
     category_not_allowed: 'יש לבחור סוג תמונה מהרשימה.',
     alt_he_required: 'חסר תיאור בעברית.', alt_ar_required: 'חסר תיאור בערבית.', alt_en_required: 'חסר תיאור באנגלית.',
     alt_en_not_english: 'התיאור באנגלית צריך להיות כתוב באנגלית.',
@@ -135,11 +139,11 @@ const he: Dict = {
     published_item_or_url_locked: 'אי אפשר למחוק פריט שמוצג באתר, או לשנות כתובת של טיפול שכבר נשמר. יש להסתיר אותו, לשמור, ורק אז למחוק.',
     content_invalid: 'התוכן אינו תקין.', wrong_row_count: 'רשימת הימים לא שלמה. יש לטעון מחדש.', not_an_array: 'רשימת הימים לא תקינה. יש לטעון מחדש.',
   },
-  reasons: { too_small: 'חסר', too_big: 'ארוך מדי', invalid_format: 'בפורמט לא תקין', invalid_string: 'בפורמט לא תקין', invalid_type: 'חסר או לא תקין', custom: 'כפול — כבר קיים פריט עם אותה כתובת', invalid_union: 'לא תקין', invalid_union_discriminator: 'לא תקין', unrecognized_keys: 'מכיל שדה לא מוכר', invalid_value: 'לא תקין' },
+  reasons: { too_small: 'חסר', too_big: 'ארוך מדי', invalid_format: 'בפורמט לא תקין', invalid_string: 'בפורמט לא תקין', invalid_type: 'חסר או לא תקין', custom: 'כפול — כבר קיים פריט עם אותה כתובת', invalid_union: 'לא תקין', invalid_union_discriminator: 'לא תקין', unrecognized_keys: 'מכיל שדה לא מוכר', invalid_value: 'לא תקין', mixed_script: 'יש בו אות מאלפבית אחר (למשל רוסית או יוונית) שנראית כמו אות רגילה — יש להקליד מחדש את המילה' },
 };
 
 const ar: Dict = {
-  pmTitle: "صور العيادة", pmCount: "{n} صور", pmAdd: "إضافة صورة", pmAddHint: "JPG أو PNG · يمكن عدة صور معًا", pmSave: "حفظ", pmSavePublish: "حفظ ونشر", pmClose: "إغلاق", pmNoChanges: "لا توجد تغييرات", pmChanges: "{n} تغييرات غير محفوظة", pmEditPhoto: "تعديل الصورة", pmDeletePhoto: "حذف الصورة", pmMoveEarlier: "تقديم", pmMoveLater: "تأخير", pmHidden: "مخفية", pmNew: "جديدة", pmReplaced: "مُستبدلة", pmNeedsText: "الوصف ناقص", pmUploading: "جارٍ الرفع…", pmUploadingN: "جارٍ رفع الصورة {n} من {m}…", pmFailedUpload: "فشل الرفع", pmRetry: "إعادة المحاولة", pmRemove: "إزالة", pmDeleteConfirm: "حذف الصورة؟ ستُحذف من الموقع عند الحفظ، ويبقى السجل في المستودع.", pmDeletePublished: "هذه الصورة معروضة حاليًا في الموقع، لذلك لا يمكن حذفها مباشرة. هل تريد إخفاءها الآن؟ بعد الحفظ يمكن حذفها.", pmDragHint: "لتغيير الترتيب: اضغطوا مطولًا على صورة (أو اضغطوا مع الاستمرار بالفأرة) واسحبوها إلى المكان الجديد.", pmEmpty: "لا توجد صور بعد. يمكن إضافة صور من مربع \"إضافة صورة\".", pmConfirmPatients: "أؤكد أن أيًّا من الصور الجديدة أو المُستبدلة لا تُظهر مريضًا أو جزءًا من مريض أو صورة قبل/بعد.", pmSaving: "جارٍ الحفظ…", pmPublishing: "جارٍ نشر الصور…", pmUpdating: "جارٍ تحديث الموقع…", pmLive: "منشور ✓ — الموقع الرسمي يعرض التغيير", pmUpdatedTest: "تم التحديث في عرض الاختبار ✓ — الموقع العام لا يتغير في وضع الاختبار", pmFailed: "فشل", pmSlow: "التحديث يستغرق وقتًا أطول من المعتاد؛ ما زلنا نتحقق…", pmViewPage: "عرض الصفحة المحدَّثة", pmCloseUnsaved: "هناك تغييرات غير محفوظة. هل تريد الإغلاق وإلغاءها؟", peTitle: "تعديل الصورة", peDone: "تم", peCancel: "إلغاء", peFraming: "تأطير الصورة", peFramingHint: "اسحبوا الصورة لوضعها داخل الإطار. هكذا تمامًا ستظهر في معرض الموقع، على الحاسوب والهاتف.", peZoom: "مستوى التكبير", peZoomIn: "تكبير", peZoomOut: "تصغير", peReset: "إعادة ضبط التأطير", pePreview: "معاينة بحجم الهاتف", peReplace: "استبدال الصورة", peVisibility: "معروضة في الموقع", peCategory: "نوع الصورة", peDescriptions: "وصف الصورة (لقارئات الشاشة ولـ Google)", peFramePos: "الموضع في الإطار: {x}% · {y}%، تكبير ×{z}", issuePublishedDelete: "لا يمكن حذف صورة معروضة في الموقع. يجب إخفاؤها والحفظ، ثم الحذف.", issueFrame: "التأطير غير صالح — يجب إعادة ضبطه.", issueTooMany: "يمكن إضافة أو استبدال 20 صورة كحد أقصى في حفظ واحد.", issuePhotoN: "الصورة {n}: {text}",
+  pmTitle: "صور العيادة", pmPreparing: "جارٍ تجهيز الصور…", pmCount: "{n} صور", pmAdd: "إضافة صورة", pmAddHint: "JPG أو PNG · يمكن عدة صور معًا", pmSave: "حفظ", pmSavePublish: "حفظ ونشر", pmClose: "إغلاق", pmNoChanges: "لا توجد تغييرات", pmChanges: "{n} تغييرات غير محفوظة", pmEditPhoto: "تعديل الصورة", pmDeletePhoto: "حذف الصورة", pmMoveEarlier: "تقديم", pmMoveLater: "تأخير", pmHidden: "مخفية", pmNew: "جديدة", pmReplaced: "مُستبدلة", pmNeedsText: "الوصف ناقص", pmUploading: "جارٍ الرفع…", pmUploadingN: "جارٍ رفع الصورة {n} من {m}…", pmFailedUpload: "فشل الرفع", pmRetry: "إعادة المحاولة", pmRemove: "إزالة", pmDeleteConfirm: "حذف الصورة؟ ستُحذف من الموقع عند الحفظ، ويبقى السجل في المستودع.", pmDeletePublished: "هذه الصورة معروضة حاليًا في الموقع، لذلك لا يمكن حذفها مباشرة. هل تريد إخفاءها الآن؟ بعد الحفظ يمكن حذفها.", pmDragHint: "لتغيير الترتيب: اضغطوا مطولًا على صورة (أو اضغطوا مع الاستمرار بالفأرة) واسحبوها إلى المكان الجديد.", pmEmpty: "لا توجد صور بعد. يمكن إضافة صور من مربع \"إضافة صورة\".", pmConfirmPatients: "أؤكد أن أيًّا من الصور الجديدة أو المُستبدلة لا تُظهر مريضًا أو جزءًا من مريض أو صورة قبل/بعد.", pmSaving: "جارٍ الحفظ…", pmPublishing: "جارٍ نشر الصور…", pmUpdating: "جارٍ تحديث الموقع…", pmLive: "منشور ✓ — الموقع الرسمي يعرض التغيير", pmUpdatedTest: "تم التحديث في عرض الاختبار ✓ — الموقع العام لا يتغير في وضع الاختبار", pmFailed: "فشل", pmSlow: "التحديث يستغرق وقتًا أطول من المعتاد؛ ما زلنا نتحقق…", pmViewPage: "عرض الصفحة المحدَّثة", pmCloseUnsaved: "هناك تغييرات غير محفوظة. هل تريد الإغلاق وإلغاءها؟", peTitle: "تعديل الصورة", peDone: "تم", peCancel: "إلغاء", peFraming: "تأطير الصورة", peFramingHint: "اسحبوا الصورة لوضعها داخل الإطار. هكذا تمامًا ستظهر في معرض الموقع، على الحاسوب والهاتف.", peZoom: "مستوى التكبير", peZoomIn: "تكبير", peZoomOut: "تصغير", peReset: "إعادة ضبط التأطير", pePreview: "معاينة بحجم الهاتف", peReplace: "استبدال الصورة", peVisibility: "معروضة في الموقع", peCategory: "نوع الصورة", peDescriptions: "وصف الصورة (لقارئات الشاشة ولـ Google)", peFramePos: "الموضع في الإطار: {x}% · {y}%، تكبير ×{z}", issuePublishedDelete: "لا يمكن حذف صورة معروضة في الموقع. يجب إخفاؤها والحفظ، ثم الحذف.", issueFrame: "التأطير غير صالح — يجب إعادة ضبطه.", issueTooMany: "يمكن إضافة أو استبدال 20 صورة كحد أقصى في حفظ واحد.", issuePhotoN: "الصورة {n}: {text}",
   langName: 'العربية',
   close: 'إغلاق', save: 'حفظ', cancel: 'إلغاء', edit: 'تعديل', closeEdit: 'إغلاق التعديل', remove: 'إزالة', delete: 'حذف',
   up: 'لأعلى', down: 'لأسفل', upNamed: 'لأعلى: {name}', downNamed: 'لأسفل: {name}', named: '{action}: {name}', grip: 'سحب',
@@ -151,6 +155,7 @@ const ar: Dict = {
   unsavedRefresh: 'هناك تغييرات غير محفوظة. هل تريد تحديث الصفحة رغم ذلك؟',
   loading: 'جارٍ تحميل المحتوى…', saving: 'جارٍ الحفظ…',
   nothingToSave: 'لا توجد تغييرات للحفظ — كل شيء محفوظ.',
+  restoreDraft: 'وُجدت على هذا الجهاز تغييرات غير محفوظة من {time}. هل تريد استرجاعها؟ (الإلغاء يحذفها)',
   savedTest: 'تم الحفظ (commit {sha}، فرع تجريبي — الموقع العام لا يتغير).',
   savedProd: 'تم الحفظ (commit {sha})؛ لم يُنشر في الموقع بعد.',
   doneTest: '{what} (commit {sha}، فرع تجريبي).', doneProd: '{what} (commit {sha})؛ لم يُنشر في الموقع بعد.',
@@ -158,6 +163,7 @@ const ar: Dict = {
   updating: 'جارٍ تحديث عرض الموقع…',
   updated: 'تم التحديث — جارٍ إعادة تحميل الصفحة…',
   updatedDirty: 'تم تحديث العرض. احفظوا التغييرات المفتوحة أو ألغوها، ثم حدّثوا الصفحة.',
+  updatedLater: 'تم تحديث العرض — ستُعاد تحميل الصفحة عند إغلاق النافذة المفتوحة.',
   updatedAfterReload: 'تعرض الصفحة آخر تغيير تم حفظه.',
   refreshNow: 'تحديث الصفحة',
   updateFailed: 'تم حفظ التغيير، لكن تحديث عرض الموقع فشل. يمكن المحاولة مجددًا بحفظ آخر؛ وإذا تكرر ذلك، يرجى التواصل مع المطوّر.',
@@ -165,7 +171,8 @@ const ar: Dict = {
   updateSlow: 'تم حفظ التغيير. تحديث عرض الموقع يستغرق وقتًا أطول من المعتاد؛ ستتحدث الصفحة عند انتهائه. إذا لم يحدث ذلك خلال بضع دقائق، يرجى التواصل مع المطوّر.',
   waitingPublish: 'تم الحفظ (commit {sha}). بانتظار النشر في الموقع…',
   publishedSite: 'نُشر في الموقع',
-  publishFailed: 'تم الحفظ، لكن النشر فشل. يعرض الموقع النسخة السابقة. يرجى التواصل مع المطوّر.',
+  publishFailed: 'تم حفظ التغيير ولم يُفقد، لكن الموقع لم يتحدّث حتى بعد المحاولة التلقائية الثانية. ما زال الموقع يعرض النسخة السابقة. لا حاجة للحفظ مجددًا — يرجى التواصل مع المطوّر.',
+  publishRetrying: 'تم حفظ التغيير. واجه نشره على الموقع خللًا مؤقتًا ويُعاد تلقائيًا — لا حاجة لفعل أي شيء.',
   testMode: 'وضع تجريبي: الحفظ لا يغيّر الموقع العام',
   claim: 'صياغة غير مسموح بها وفق قواعد الإعلان الطبي (مثل ضمان نتيجة أو "الأفضل")',
   moreIssues: 'قد توجد مشكلات أخرى؛ ستظهر بعد إصلاح هذه والحفظ مجددًا.',
@@ -233,7 +240,7 @@ const ar: Dict = {
   icons: { implant: 'زرعة', crown: 'تاج', whitening: 'تبييض', filling: 'حشوة', veneer: 'قشرة', aligner: 'تقويم الأسنان', 'root-canal': 'علاج العصب', extraction: 'خلع', cleaning: 'تنظيف', emergency: 'طوارئ', aesthetic: 'تجميل' },
   serviceFields: { title: 'اسم العلاج (عنوان الصفحة)', cardTitle: 'اسم قصير للبطاقة', summary: 'ملخص', candidacy: 'لمن يناسب', process: 'مراحل العلاج', expect: 'ماذا تتوقع', faq: 'أسئلة عن العلاج', seoTitle: 'عنوان لـ Google (اختياري)', seoDescription: 'وصف قصير لـ Google', reviewedOn: 'تاريخ المراجعة الطبية', step: 'مرحلة', detail: 'تفصيل', q: 'سؤال', a: 'جواب', slug: 'عنوان الصفحة', status: 'الحالة', icon: 'رمز' },
   errors: {
-    AUTH_REQUIRED: 'انتهت جلسة الدخول. يرجى تحديث الصفحة وتسجيل الدخول مجددًا. ستُفقد التغييرات غير المحفوظة — يُفضّل نسخها أولًا.',
+    AUTH_REQUIRED: 'انتهت جلسة الدخول. التغييرات غير المحفوظة محفوظة على هذا الجهاز: يرجى تحديث الصفحة وتسجيل الدخول ثم فتح نافذة التحرير نفسها — سيُعرض عليك استرجاعها.',
     AUTH_INVALID: 'انتهت جلسة الدخول. يرجى تحديث الصفحة وتسجيل الدخول مجددًا.',
     FORBIDDEN: 'تم حظر الإجراء لأسباب أمنية. يرجى تحديث الصفحة والمحاولة مجددًا.',
     NOT_FOUND: 'العنصر غير موجود — ربما حُذف. يرجى إعادة التحميل.',
@@ -250,6 +257,7 @@ const ar: Dict = {
   issues: {
     caption_he_required: "العنوان بالعبرية ناقص — يجب تعبئة العنوان بكل اللغات أو ترك جميعها فارغة.", caption_ar_required: "العنوان بالعربية ناقص — يجب تعبئة العنوان بكل اللغات أو ترك جميعها فارغة.", caption_en_required: "العنوان بالإنجليزية ناقص — يجب تعبئة العنوان بكل اللغات أو ترك جميعها فارغة.", caption_invalid: "العنوان غير صالح.", frame_not_allowed: "لا يوجد تأطير في هذا المعرض — تُعرض الصورة كاملة.", gallery_invalid: "المعرض غير معروف. يرجى تحديث الصفحة.",
     confirmation_required: 'يجب تأكيد أن الصورة لا تُظهر مريضًا أو جزءًا من مريض أو صورة قبل/بعد.',
+    mixed_script: 'يحتوي النص على حرف من أبجدية أخرى (مثل الروسية أو اليونانية) يشبه حرفًا عاديًا، وغالبًا ما يأتي من النسخ. يرجى إعادة كتابة الكلمة والحفظ مجددًا.',
     category_not_allowed: 'يجب اختيار نوع صورة من القائمة.',
     alt_he_required: 'الوصف بالعبرية ناقص.', alt_ar_required: 'الوصف بالعربية ناقص.', alt_en_required: 'الوصف بالإنجليزية ناقص.',
     alt_en_not_english: 'يجب أن يكون الوصف الإنجليزي مكتوبًا بالإنجليزية.',
@@ -263,11 +271,11 @@ const ar: Dict = {
     published_item_or_url_locked: 'لا يمكن حذف عنصر معروض في الموقع، أو تغيير عنوان علاج محفوظ. يجب إخفاؤه والحفظ، ثم الحذف.',
     content_invalid: 'المحتوى غير صالح.', wrong_row_count: 'قائمة الأيام غير مكتملة. يرجى إعادة التحميل.', not_an_array: 'قائمة الأيام غير صالحة. يرجى إعادة التحميل.',
   },
-  reasons: { too_small: 'ناقص', too_big: 'طويل جدًا', invalid_format: 'بصيغة غير صالحة', invalid_string: 'بصيغة غير صالحة', invalid_type: 'ناقص أو غير صالح', custom: 'مكرر — يوجد عنصر بالعنوان نفسه', invalid_union: 'غير صالح', invalid_union_discriminator: 'غير صالح', unrecognized_keys: 'يحتوي على حقل غير معروف', invalid_value: 'غير صالح' },
+  reasons: { too_small: 'ناقص', too_big: 'طويل جدًا', invalid_format: 'بصيغة غير صالحة', invalid_string: 'بصيغة غير صالحة', invalid_type: 'ناقص أو غير صالح', custom: 'مكرر — يوجد عنصر بالعنوان نفسه', invalid_union: 'غير صالح', invalid_union_discriminator: 'غير صالح', unrecognized_keys: 'يحتوي على حقل غير معروف', invalid_value: 'غير صالح', mixed_script: 'فيه حرف من أبجدية أخرى (مثل الروسية أو اليونانية) يشبه حرفًا عاديًا — يرجى إعادة كتابة الكلمة' },
 };
 
 const en: Dict = {
-  pmTitle: "Clinic photos", pmCount: "{n} photos", pmAdd: "Add photo", pmAddHint: "JPG or PNG · several at once", pmSave: "Save", pmSavePublish: "Save & publish", pmClose: "Close", pmNoChanges: "No changes", pmChanges: "{n} unsaved changes", pmEditPhoto: "Edit photo", pmDeletePhoto: "Delete photo", pmMoveEarlier: "Move earlier", pmMoveLater: "Move later", pmHidden: "Hidden", pmNew: "New", pmReplaced: "Replaced", pmNeedsText: "Needs description", pmUploading: "Uploading…", pmUploadingN: "Uploading photo {n} of {m}…", pmFailedUpload: "Upload failed", pmRetry: "Retry", pmRemove: "Remove", pmDeleteConfirm: "Delete this photo? It is removed from the site when you save; the history stays in the repository.", pmDeletePublished: "This photo is shown on the site right now, so it cannot be deleted directly. Hide it now? After saving, you can delete it.", pmDragHint: "To reorder: long-press a photo (or click and hold with the mouse) and drag it to its new place.", pmEmpty: "No photos yet. Add some with the \"Add photo\" tile.", pmConfirmPatients: "I confirm no new or replaced photo shows a patient, part of a patient, or a before/after image.", pmSaving: "Saving…", pmPublishing: "Publishing photos…", pmUpdating: "Updating website…", pmLive: "Live ✓ — the official site shows the change", pmUpdatedTest: "Updated in the test view ✓ — the public site does not change in test mode", pmFailed: "Failed", pmSlow: "The update is taking longer than usual; still checking…", pmViewPage: "View the updated page", pmCloseUnsaved: "You have unsaved changes. Close and discard them?", peTitle: "Edit photo", peDone: "Done", peCancel: "Cancel", peFraming: "Framing", peFramingHint: "Drag the photo to position it in the frame. This is exactly how it appears in the website gallery, on desktop and phone.", peZoom: "Zoom level", peZoomIn: "Zoom in", peZoomOut: "Zoom out", peReset: "Reset framing", pePreview: "Phone-size preview", peReplace: "Replace photo", peVisibility: "Shown on site", peCategory: "Photo type", peDescriptions: "Photo description (for screen readers and Google)", peFramePos: "Position in frame: {x}% · {y}%, zoom ×{z}", issuePublishedDelete: "A photo shown on the site cannot be deleted. Hide it, save, then delete it.", issueFrame: "The framing is not valid — reset it.", issueTooMany: "At most 20 photos can be added or replaced in one save.", issuePhotoN: "Photo {n}: {text}",
+  pmTitle: "Clinic photos", pmPreparing: "Preparing the photos…", pmCount: "{n} photos", pmAdd: "Add photo", pmAddHint: "JPG or PNG · several at once", pmSave: "Save", pmSavePublish: "Save & publish", pmClose: "Close", pmNoChanges: "No changes", pmChanges: "{n} unsaved changes", pmEditPhoto: "Edit photo", pmDeletePhoto: "Delete photo", pmMoveEarlier: "Move earlier", pmMoveLater: "Move later", pmHidden: "Hidden", pmNew: "New", pmReplaced: "Replaced", pmNeedsText: "Needs description", pmUploading: "Uploading…", pmUploadingN: "Uploading photo {n} of {m}…", pmFailedUpload: "Upload failed", pmRetry: "Retry", pmRemove: "Remove", pmDeleteConfirm: "Delete this photo? It is removed from the site when you save; the history stays in the repository.", pmDeletePublished: "This photo is shown on the site right now, so it cannot be deleted directly. Hide it now? After saving, you can delete it.", pmDragHint: "To reorder: long-press a photo (or click and hold with the mouse) and drag it to its new place.", pmEmpty: "No photos yet. Add some with the \"Add photo\" tile.", pmConfirmPatients: "I confirm no new or replaced photo shows a patient, part of a patient, or a before/after image.", pmSaving: "Saving…", pmPublishing: "Publishing photos…", pmUpdating: "Updating website…", pmLive: "Live ✓ — the official site shows the change", pmUpdatedTest: "Updated in the test view ✓ — the public site does not change in test mode", pmFailed: "Failed", pmSlow: "The update is taking longer than usual; still checking…", pmViewPage: "View the updated page", pmCloseUnsaved: "You have unsaved changes. Close and discard them?", peTitle: "Edit photo", peDone: "Done", peCancel: "Cancel", peFraming: "Framing", peFramingHint: "Drag the photo to position it in the frame. This is exactly how it appears in the website gallery, on desktop and phone.", peZoom: "Zoom level", peZoomIn: "Zoom in", peZoomOut: "Zoom out", peReset: "Reset framing", pePreview: "Phone-size preview", peReplace: "Replace photo", peVisibility: "Shown on site", peCategory: "Photo type", peDescriptions: "Photo description (for screen readers and Google)", peFramePos: "Position in frame: {x}% · {y}%, zoom ×{z}", issuePublishedDelete: "A photo shown on the site cannot be deleted. Hide it, save, then delete it.", issueFrame: "The framing is not valid — reset it.", issueTooMany: "At most 20 photos can be added or replaced in one save.", issuePhotoN: "Photo {n}: {text}",
   langName: 'English',
   close: 'Close', save: 'Save', cancel: 'Cancel', edit: 'Edit', closeEdit: 'Close editing', remove: 'Remove', delete: 'Delete',
   up: 'Move up', down: 'Move down', upNamed: 'Move up: {name}', downNamed: 'Move down: {name}', named: '{action}: {name}', grip: 'Drag',
@@ -279,6 +287,7 @@ const en: Dict = {
   unsavedRefresh: 'You have unsaved changes. Refresh anyway?',
   loading: 'Loading content…', saving: 'Saving…',
   nothingToSave: 'Nothing to save — everything is already saved.',
+  restoreDraft: 'This device has unsaved changes from {time}. Restore them? (Cancel deletes them.)',
   savedTest: 'Saved (commit {sha}, test branch — the public site does not change).',
   savedProd: 'Saved (commit {sha}); not yet published on the site.',
   doneTest: '{what} (commit {sha}, test branch).', doneProd: '{what} (commit {sha}); not yet published on the site.',
@@ -286,6 +295,7 @@ const en: Dict = {
   updating: 'Updating the website view…',
   updated: 'Updated — reloading the page…',
   updatedDirty: 'The view is updated. Save or discard your open changes, then refresh.',
+  updatedLater: 'The view is updated — the page will reload when you close the open window.',
   updatedAfterReload: 'This page shows your latest saved change.',
   refreshNow: 'Refresh the page',
   updateFailed: 'Your change is saved, but updating the website view failed. Saving again retries it; if it keeps failing, contact the developer.',
@@ -293,7 +303,8 @@ const en: Dict = {
   updateSlow: 'Your change is saved. Updating the website view is taking longer than usual; the page will update when it finishes. If it does not within a few minutes, contact the developer.',
   waitingPublish: 'Saved (commit {sha}). Waiting to be published on the site…',
   publishedSite: 'Published on the site',
-  publishFailed: 'Saved, but publishing failed. The site still shows the previous version. Please contact the developer.',
+  publishFailed: 'Your change is saved and safe, but the website did not update, even after the automatic retry. The site still shows the previous version. No need to save again — please contact the developer.',
+  publishRetrying: 'Your change is saved. Publishing hit a temporary problem and is being retried automatically — nothing to do.',
   testMode: 'Test mode: saving does not change the public site',
   claim: 'wording not allowed under medical advertising rules (for example promising a result, or "the best")',
   moreIssues: 'There may be more; they will appear after you fix these and save again.',
@@ -361,7 +372,7 @@ const en: Dict = {
   icons: { implant: 'Implant', crown: 'Crown', whitening: 'Whitening', filling: 'Filling', veneer: 'Veneer', aligner: 'Aligners', 'root-canal': 'Root canal', extraction: 'Extraction', cleaning: 'Cleaning', emergency: 'Emergency', aesthetic: 'Aesthetic' },
   serviceFields: { title: 'Treatment name (page heading)', cardTitle: 'Short name for the card', summary: 'Summary', candidacy: 'Who it suits', process: 'Treatment steps', expect: 'What to expect', faq: 'Questions about the treatment', seoTitle: 'Title for Google (optional)', seoDescription: 'Short description for Google', reviewedOn: 'Medical review date', step: 'Step', detail: 'Detail', q: 'Question', a: 'Answer', slug: 'Page address', status: 'Status', icon: 'Icon' },
   errors: {
-    AUTH_REQUIRED: 'Your sign-in has expired. Refresh the page and sign in again. Unsaved changes will be lost — copy them first.',
+    AUTH_REQUIRED: 'Your sign-in has expired. Your unsaved changes are kept on this device: refresh the page, sign in, and open the same editor again — you will be offered to restore them.',
     AUTH_INVALID: 'Your sign-in has expired. Refresh the page and sign in again.',
     FORBIDDEN: 'The action was blocked for security reasons. Refresh the page and try again.',
     NOT_FOUND: 'The item was not found — it may have been deleted. Reload.',
@@ -378,6 +389,7 @@ const en: Dict = {
   issues: {
     caption_he_required: "The Hebrew title is missing — fill in the title in every language, or leave them all empty.", caption_ar_required: "The Arabic title is missing — fill in the title in every language, or leave them all empty.", caption_en_required: "The English title is missing — fill in the title in every language, or leave them all empty.", caption_invalid: "The title is not valid.", frame_not_allowed: "This gallery has no framing — the image is always shown whole.", gallery_invalid: "Unknown gallery. Refresh the page.",
     confirmation_required: 'Confirm the photo shows no patient, part of a patient, or before/after image.',
+    mixed_script: 'The text contains a letter from another alphabet (for example Russian or Greek) that looks like an ordinary letter, usually from copy and paste. Retype that word and save again.',
     category_not_allowed: 'Choose a photo type from the list.',
     alt_he_required: 'The Hebrew description is missing.', alt_ar_required: 'The Arabic description is missing.', alt_en_required: 'The English description is missing.',
     alt_en_not_english: 'The English description must be written in English.',
@@ -391,7 +403,7 @@ const en: Dict = {
     published_item_or_url_locked: 'An item shown on the site cannot be deleted, and a saved treatment’s address cannot change. Hide it, save, then delete.',
     content_invalid: 'The content is not valid.', wrong_row_count: 'The list of days is incomplete. Reload.', not_an_array: 'The list of days is not valid. Reload.',
   },
-  reasons: { too_small: 'missing', too_big: 'too long', invalid_format: 'in an invalid format', invalid_string: 'in an invalid format', invalid_type: 'missing or invalid', custom: 'a duplicate — an item with the same address exists', invalid_union: 'invalid', invalid_union_discriminator: 'invalid', unrecognized_keys: 'contains an unknown field', invalid_value: 'invalid' },
+  reasons: { too_small: 'missing', too_big: 'too long', invalid_format: 'in an invalid format', invalid_string: 'in an invalid format', invalid_type: 'missing or invalid', custom: 'a duplicate — an item with the same address exists', invalid_union: 'invalid', invalid_union_discriminator: 'invalid', unrecognized_keys: 'contains an unknown field', invalid_value: 'invalid', mixed_script: 'contains a letter from another alphabet (for example Russian or Greek) that looks like an ordinary letter — retype that word' },
 };
 
 export const EDITOR_STRINGS = { he, ar, en } as const;

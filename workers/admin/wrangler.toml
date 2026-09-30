@@ -37,7 +37,8 @@ run_worker_first = true
 # help forge a token, which would require Cloudflare's private key.
 #
 # The Access application is self-hosted on the admin hostname, One-time PIN
-# only, 24h sessions, with a single Allow policy of exact email identities.
+# only, 7-day sessions (from 2026-09-30; was 24h), with a single Allow policy of
+# exact email identities.
 [vars]
 ACCESS_TEAM_DOMAIN = "late-queen-efb5.cloudflareaccess.com"   # issuer and JWKS are derived from it
 ACCESS_AUD = "539e1afa2f4375536a5115dbd0481decee80af4334dc154e170c35b5e2baa17c"
@@ -54,4 +55,30 @@ CONTENT_BRANCH = "main"
 # Cloudflare Workers Builds rebuilds this Worker after every commit to main,
 # so the Edit Mode pages match the public site. The status waits for the
 # SERVED build to contain the saved commit.
+ADMIN_REBUILD = "on"
+
+# ── STAGING (admin-staging.drkhalilkanani.com) ─────────────────────────────
+# A separate Worker for real end-to-end tests of the CMS without touching the
+# doctor's live site: it commits ONLY to the cms/integration branch, never to
+# main. Its own Access application (same exact-email policy, one-time PIN)
+# protects the hostname; ALLOWED_EMAILS and GITHUB_TOKEN are this Worker's own
+# secrets and, if unset, it refuses everyone.
+#
+#   npx wrangler deploy --env staging        (after npm run build:admin)
+[env.staging]
+name = "drkanani-admin-staging"
+workers_dev = false
+preview_urls = false
+routes = [{ pattern = "admin-staging.drkhalilkanani.com", custom_domain = true }]
+
+[env.staging.assets]
+directory = "./dist"
+binding = "ASSETS"
+run_worker_first = true
+
+[env.staging.vars]
+ACCESS_TEAM_DOMAIN = "late-queen-efb5.cloudflareaccess.com"
+ACCESS_AUD = "8528eed5ee6f372c02f97ef02e2d8d62fac50e7781c2345dd12944c6d48e1a61"
+ADMIN_ORIGIN = "https://admin-staging.drkhalilkanani.com"
+CONTENT_BRANCH = "cms/integration"
 ADMIN_REBUILD = "on"

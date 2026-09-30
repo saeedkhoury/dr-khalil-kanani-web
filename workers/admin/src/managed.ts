@@ -80,7 +80,7 @@ export async function managedContent(
   if (request.method === 'GET') return ok({ value: existing, sha: current.data.sha });
 
   const body = await readJson<{ value?: unknown; sha?: unknown; confirmed?: unknown; sameLocation?: unknown }>(request, 96 * 1024);
-  if (!body.ok) return fail(body.code);
+  if (!body.ok) return fail(body.code, body.issues);
   if (typeof body.body?.sha !== 'string' || !/^[0-9a-f]{40}$/.test(body.body.sha)) return fail('CONFLICT');
   if (body.body.sha !== current.data.sha) return fail('CONFLICT');
 

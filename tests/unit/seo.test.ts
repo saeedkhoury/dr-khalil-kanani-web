@@ -25,7 +25,8 @@ describe('structured data', () => {
     for (const locale of LOCALES) {
       for (const url of urlsIn(graphOf(locale))) {
         const host = new URL(url).hostname;
-        assert.ok(host === 'www.drkhalilkanani.com' || host === 'www.google.com' || host === 'www.instagram.com', `${locale}: ${url}`);
+        // schema.org appears once opening hours exist (dayOfWeek values).
+        assert.ok(['www.drkhalilkanani.com', 'www.google.com', 'www.instagram.com', 'schema.org', 'www.facebook.com', 'facebook.com', 'maps.app.goo.gl'].includes(host), `${locale}: ${url}`);
       }
     }
     assert.ok(urlsIn(graphOf('he', 'https://preview.invalid')).some((u) => u.startsWith('https://preview.invalid/')));

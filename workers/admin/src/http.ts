@@ -7,6 +7,8 @@
  * other `new Response(...)` in the Worker.
  */
 
+import { cleanJsonText } from '../../../src/lib/text-hygiene.ts';
+
 /**
  * Everything the admin Worker is allowed to know.
  *
@@ -208,7 +210,7 @@ export function fail(code: ErrorCode, issues?: Issues): Response {
 export async function readJson<T>(
   request: Request,
   maxBytes: number,
-): Promise<{ ok: true; body: T } | { ok: false; code: ErrorCode }> {
+): Promise<{ ok: true; body: T } | { ok: false; code: ErrorCode; issues?: Issues }> {
   const type = request.headers.get('Content-Type') ?? '';
   if (!type.toLowerCase().startsWith('application/json')) {
     return { ok: false, code: 'BAD_REQUEST' };
@@ -226,11 +228,28 @@ export async function readJson<T>(
     return { ok: false, code: 'PAYLOAD_TOO_LARGE' };
   }
 
+  let parsed: unknown;
   try {
-    return { ok: true, body: JSON.parse(text) as T };
+    parsed = JSON.parse(text);
   } catch {
     return { ok: false, code: 'BAD_REQUEST' };
   }
+  // Every CMS write passes here, so this is where the deploy's text rule is
+  // applied (src/lib/text-hygiene.ts): invisible marks removed, look-alike
+  // letters refused — never committed only to be refused by the deploy.
+  const cleaned = cleanJsonText(parsed);
+  if (!cleaned.ok) return { ok: false, code: 'INVALID', issues: [mixedScriptIssue(cleaned.path)] };
+  return { ok: true, body: cleaned.value as T };
+}
+
+/**
+ * Content saves send `{ value, sha }`, and every validation issue names its
+ * field relative to `value` ("0.locales.ar.summary:too_small"). A look-alike
+ * letter is named the same way, so the editor marks the field it is in.
+ */
+function mixedScriptIssue(path: string[]): string {
+  if (path[0] !== 'value' || path.length < 2) return 'mixed_script';
+  return `${path.slice(1).join('.')}:mixed_script`;
 }
 
 /**

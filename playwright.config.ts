@@ -9,6 +9,16 @@ export default defineConfig({
   // a real regression fails twice. Locally, failures surface at once.
   retries: process.env.CI ? 1 : 0,
   reporter: [['list'], ['html', { open: 'never' }]],
+  // Safari's engine for the admin (the doctor edits on an iPhone). Opt-in with
+  // PW_WEBKIT=1 so the deploy gate's time and browser download do not grow.
+  projects: [
+    { name: 'chromium', use: { browserName: 'chromium' } },
+    ...(process.env.PW_WEBKIT ? [{
+      name: 'webkit',
+      use: { browserName: 'webkit' as const },
+      testMatch: /(cms-journeys|visual-cms|admin|photo-publish)\.spec\.ts/,
+    }] : []),
+  ],
   use: {
     baseURL: 'http://127.0.0.1:4330',
     trace: 'retain-on-failure',

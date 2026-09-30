@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { clinic } from '../../src/data/clinic';
 import { treatmentWork } from '../../src/data/media';
+import services from '../../src/data/services.json' with { type: 'json' };
 
 // Derived, never hard-coded: a count literal here silently rots every time an
 // image is added or removed, and the failure reads as a bug in the gallery
@@ -9,10 +10,11 @@ import { treatmentWork } from '../../src/data/media';
 const WORK_TILE_COUNT = treatmentWork.length;
 
 const locales = ['he', 'ar', 'en'] as const;
+// Every PUBLISHED treatment, read from the data the doctor edits: a fixed list
+// here failed the deploy the moment he added, hid or renamed one.
+const treatmentSlugs = services.filter((s) => s.status === 'published').map((s) => s.slug);
 const routes = ['', 'about/', 'contact/', 'faq/', 'privacy/', 'accessibility/', 'treatments/',
-  ...['clear-aligners', 'dental-implants', 'emergency-dental', 'root-canal', 'teeth-whitening', 'veneers',
-      'tooth-extraction', 'dental-fillings']
-    .map((slug) => `treatments/${slug}/`)];
+  ...treatmentSlugs.map((slug) => `treatments/${slug}/`)];
 
 for (const locale of locales) {
   test(`${locale}: clinic work photographs, profile buttons and full-size navigation`, async ({ page }) => {

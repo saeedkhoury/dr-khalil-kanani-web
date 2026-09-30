@@ -341,7 +341,21 @@ describe('edit mode, preview and unsaved work', () => {
   test('saving clears the unsaved flag', () => {
     assert.match(VISUAL_CLIENT, /dirty=false;tell\(t\(publishing==='test'\?'savedTest':'savedProd'/);
     // And a save with nothing changed says so, rather than "saved".
-    assert.match(VISUAL_CLIENT, /if \(data\.unchanged\) \{ dirty=false; tell\(t\('nothingToSave'\)/);
+    assert.match(VISUAL_CLIENT, /if \(data\.unchanged\) \{ dirty=false; dropDraft\(\); tell\(t\('nothingToSave'\)/);
+  });
+
+  test('unsaved text survives an ended session: kept on the device, offered back, dropped when saved or discarded', () => {
+    assert.match(VISUAL_CLIENT, /localStorage\.setItem\(RESCUE\+kind/);
+    assert.match(VISUAL_CLIENT, /keepDraft\(\); \/\/ kept before the request/);
+    assert.match(VISUAL_CLIENT, /confirm\(t\('restoreDraft'/);
+    assert.match(VISUAL_CLIENT, /clearTimeout\(keepTimer\); dropDraft\(\);/);
+    assert.match(VISUAL_CLIENT, /if \(dirty\) dropDraft\(\);/);
+  });
+
+  test('a first failed deploy is "retrying", and only a failed retry is "failed"', () => {
+    assert.match(VISUAL_CLIENT, /function retryPending\(data\)\{ return !\(data && data\.attempt>=2\); \}/);
+    assert.match(VISUAL_CLIENT, /retryPending\(data\) && retryPolls\+\+<RETRY_POLLS\) \{ pubTell\(t\('publishRetrying'\)/);
+    assert.match(VISUAL_CLIENT, /retryPending\(data\) && retryPolls\+\+<RETRY_POLLS\)\{ pmTell\(t\('publishRetrying'\)/);
   });
 
   test('publication status survives closing the dialog', () => {
@@ -355,6 +369,6 @@ describe('edit mode, preview and unsaved work', () => {
     assert.match(VISUAL_CLIENT, /barTell\(t\('publishedSite'\),'published'\)/);
     // "Updated" only from preview 'ready', which the Worker reports only when
     // the build it serves contains the commit.
-    assert.match(VISUAL_CLIENT, /if \(data\.preview==='ready'\) \{ reloadWhenSafe\(commit\); return; \}/);
+    assert.match(VISUAL_CLIENT, /if \(data\.preview==='ready'\) \{ reloadWhenSafe\(commit, from\); return; \}/);
   });
 });
