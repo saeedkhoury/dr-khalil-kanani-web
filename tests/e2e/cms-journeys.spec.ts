@@ -655,7 +655,10 @@ test.describe('on a 390px touch phone', () => {
     expect(corner.x + corner.width).toBeLessThanOrEqual(t0.x + t0.width);
   });
 
-  test('long-press lifts a photo and dragging rearranges; a quick swipe only scrolls', async ({ page }) => {
+  test('long-press lifts a photo and dragging rearranges; a quick swipe only scrolls', async ({ page, browserName }) => {
+    // Real multi-step touch sequences need the Chrome DevTools Protocol, which
+    // only Chromium has; WebKit covers the same manager through the other tests.
+    test.skip(browserName !== 'chromium', 'raw touch input needs CDP (Chromium only)');
     await openManager(page);
     const cdp = await page.context().newCDPSession(page);
     const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', x = 0, y = 0) =>
