@@ -87,7 +87,7 @@ async function putHours({ request, env }: Context): Promise<Response> {
   if (!sameOrigin(request, env)) return fail('FORBIDDEN');
 
   const body = await readJson<unknown>(request, MAX_HOURS_BODY);
-  if (!body.ok) return fail(body.code);
+  if (!body.ok) return fail(body.code, body.issues);
 
   // Named `submitted`, not `payload`: in a Worker that also verifies JWTs,
   // "payload" reads as the token's claims, and a structural test keeps that
@@ -212,7 +212,7 @@ async function postPhoto({ request, env }: Context): Promise<Response> {
   if (!sameOrigin(request, env)) return fail('FORBIDDEN');
 
   const body = await readJson<UploadBody>(request, MAX_PHOTO_BODY);
-  if (!body.ok) return fail(body.code);
+  if (!body.ok) return fail(body.code, body.issues);
 
   const bytes = decodeBase64(body.body?.contentBase64);
   if (bytes === null) return fail('INVALID', ['file_required']);
@@ -280,7 +280,7 @@ async function photoAction(
   if (!sameOrigin(request, env)) return fail('FORBIDDEN');
 
   const body = await readJson<{ file?: unknown }>(request, MAX_ACTION_BODY);
-  if (!body.ok) return fail(body.code);
+  if (!body.ok) return fail(body.code, body.issues);
 
   const file = body.body?.file;
   if (typeof file !== 'string' || file === '') return fail('INVALID', ['file_required']);
@@ -354,7 +354,7 @@ async function reorderPhotos({ request, env }: Context): Promise<Response> {
   if (!sameOrigin(request, env)) return fail('FORBIDDEN');
 
   const body = await readJson<{ files?: unknown }>(request, MAX_ACTION_BODY);
-  if (!body.ok) return fail(body.code);
+  if (!body.ok) return fail(body.code, body.issues);
 
   const files = body.body?.files;
   if (!Array.isArray(files) || files.some((f) => typeof f !== 'string')) {
@@ -402,7 +402,7 @@ const MAX_IMAGES_PER_SAVE = 20;
 async function stagePhoto({ request, env }: Context): Promise<Response> {
   if (!sameOrigin(request, env)) return fail('FORBIDDEN');
   const body = await readJson<{ contentBase64?: unknown; confirmed?: unknown }>(request, MAX_PHOTO_BODY);
-  if (!body.ok) return fail(body.code);
+  if (!body.ok) return fail(body.code, body.issues);
   // Nothing reaches the repository's object store without the no-patient
   // confirmation — not even an unreferenced blob.
   if (body.body?.confirmed !== true) return fail('INVALID', ['confirmation_required']);
@@ -427,7 +427,7 @@ async function stagePhoto({ request, env }: Context): Promise<Response> {
 async function savePhotos({ request, env }: Context): Promise<Response> {
   if (!sameOrigin(request, env)) return fail('FORBIDDEN');
   const body = await readJson<{ gallery?: unknown; sha?: unknown; photos?: unknown; confirmed?: unknown }>(request, 256 * 1024);
-  if (!body.ok) return fail(body.code);
+  if (!body.ok) return fail(body.code, body.issues);
   const gallery = galleryOf(body.body?.gallery);
   if (gallery === null) return fail('INVALID', ['gallery_invalid']);
   const photos = body.body?.photos;
@@ -502,7 +502,7 @@ async function describePhoto({ request, env }: Context): Promise<Response> {
   if (!sameOrigin(request, env)) return fail('FORBIDDEN');
 
   const body = await readJson<{ file?: unknown; altHe?: unknown; altAr?: unknown; altEn?: unknown }>(request, MAX_ACTION_BODY);
-  if (!body.ok) return fail(body.code);
+  if (!body.ok) return fail(body.code, body.issues);
 
   const file = body.body?.file;
   if (typeof file !== 'string' || file === '') return fail('INVALID', ['file_required']);
@@ -539,7 +539,7 @@ async function replacePhoto({ request, env }: Context): Promise<Response> {
   if (!sameOrigin(request, env)) return fail('FORBIDDEN');
 
   const body = await readJson<{ file?: unknown; contentBase64?: unknown; confirmed?: unknown }>(request, MAX_PHOTO_BODY);
-  if (!body.ok) return fail(body.code);
+  if (!body.ok) return fail(body.code, body.issues);
 
   const file = body.body?.file;
   if (typeof file !== 'string' || file === '') return fail('INVALID', ['file_required']);
@@ -634,10 +634,15 @@ async function getStatus({ request, env }: Context): Promise<Response> {
   const preview = await previewForSha(env, sha, await deployedBuild(env), env.ADMIN_REBUILD?.trim() === 'on');
   // Only a production content branch can be live on the official site; a
   // test branch never is, and is never asked.
-  const live = env.CONTENT_BRANCH?.trim() === 'main' && result.data.state === 'published'
+  // A failed deploy is asked too: when the doctor saves again, the NEXT
+  // commit's deploy carries this change, and "failed" would then be false —
+  // the site is serving it.
+  const production = env.CONTENT_BRANCH?.trim() === 'main';
+  const live = production && result.data.state !== 'committed'
     ? await liveOnPublicSite(env, sha)
     : false;
-  return ok({ ...result.data, preview, live });
+  const superseded = live === true && result.data.state === 'failed';
+  return ok({ ...result.data, ...(superseded ? { state: 'published', reason: null } : {}), preview, live });
 }
 
 /**

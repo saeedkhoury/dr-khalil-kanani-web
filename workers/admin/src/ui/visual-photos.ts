@@ -507,13 +507,18 @@ export const PHOTOS_SOURCE = String.raw`
   async function trackPhotos(commit){
     const token=++pm.saveToken;
     pmTell(publishing==='production'?t('pmPublishing'):t('pmUpdating'),'working');
+    let retryPolls=0;
     for(let attempt=0; attempt<150; attempt++){
       await sleep(attempt<6?4000:6000);
       if(token!==pm.saveToken) return;
       let data; try{ data=await api('/api/status?sha='+encodeURIComponent(commit),'GET'); }catch{ continue; }
       if(token!==pm.saveToken) return;
       if(publishing==='production'){
-        if(data.state==='failed'){ pmTell(t('pmFailed')+' — '+t('publishFailed'),'failed',true); return; }
+        if(data.state==='failed'){
+          // A first failure is retried automatically (retry-deploy.yml): say so and keep watching.
+          if(retryPending(data) && retryPolls++<RETRY_POLLS){ pmTell(t('publishRetrying'),'working'); continue; }
+          pmTell(t('pmFailed')+' — '+t('publishFailed'),'failed',true); return;
+        }
         if(data.live===true){ pmTell(t('pmLive'),'published'); offerView(); return; }
         pmTell(data.state==='published'?t('pmUpdating'):t('pmPublishing'),'working');
       } else {

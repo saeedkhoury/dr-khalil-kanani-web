@@ -77,6 +77,7 @@ const SOURCE = String.raw`
      here by accident — nothing is committed until Save. */
   const close = button(t('close'), () => {
     if (dirty && !confirm(t('unsavedClose'))) return;
+    if (dirty) dropDraft();
     dirty = false; dialog.close();
   });
   head.append(close);
@@ -91,12 +92,21 @@ const SOURCE = String.raw`
   const saveButton = button(t('save'), () => void save(), 'primary');
   footActions.append(saveButton);
   document.body.append(dialog);
-  dialog.addEventListener('cancel',(event)=>{ if (dirty && !confirm(t('unsavedClose'))) event.preventDefault(); else dirty=false; });
+  dialog.addEventListener('cancel',(event)=>{ if (dirty && !confirm(t('unsavedClose'))) event.preventDefault(); else { if(dirty) dropDraft(); dirty=false; } });
 
   let kind='', sha='', draft=null, original=null, focus='', busy=false, dirty=false, publishing='test';
   let view={mode:'list',id:'',lang:locale}, expanded=new Set(), sent=null;
   /** Marked on every field change, cleared on save. Guards the close. */
-  function touch(){ dirty=true; }
+  function touch(){ dirty=true; clearTimeout(keepTimer); keepTimer=setTimeout(keepDraft,400); }
+  /* Unsaved work survives a lost session. The Access session can end while
+     the doctor is typing; the page then has to reload to sign in, and before
+     this everything unsaved was gone. A copy is kept on THIS device until it
+     is saved, deliberately discarded, or restored. Text only — photographs
+     are far too large for browser storage. */
+  const RESCUE='visual-unsaved-'; let keepTimer=0;
+  function keepDraft(){ if(!kind||!draft||!dirty) return; try{ localStorage.setItem(RESCUE+kind,JSON.stringify({at:Date.now(),draft})); }catch{} }
+  function dropDraft(which){ try{ localStorage.removeItem(RESCUE+(which||kind)); }catch{} }
+  function rescued(which){ try{ const v=JSON.parse(localStorage.getItem(RESCUE+which)||'null'); return v&&v.draft&&typeof v.at==='number'?v:null; }catch{ return null; } }
 
   function tell(text,state){message.textContent=text;message.setAttribute('data-state',state||'');message.classList.remove('visual-loading');barTell(text,state);}
   function setBusy(on){busy=on;saveButton.disabled=on;main.inert=on;if(on)main.setAttribute('aria-busy','true');else main.removeAttribute('aria-busy');}
@@ -193,6 +203,11 @@ const SOURCE = String.raw`
 
   /* ── Publication: ONE tracker; it never touches the dialog's result line ─ */
   let trackToken=0;
+  /* A failed FIRST deploy attempt is re-run once by retry-deploy.yml, which
+     takes a minute to start; until attempt 2 has also failed, the change is
+     "being retried", not "failed". About four minutes of patience at most. */
+  const RETRY_POLLS=40;
+  function retryPending(data){ return !(data && data.attempt>=2); }
   function pubTell(text,state){ pubLine.textContent=text; pubLine.hidden=!text; pubLine.setAttribute('data-state',state||''); barTell(text,state); }
   /*
    * After a save the doctor sees, in order: Saved → Updating the website view
@@ -204,7 +219,7 @@ const SOURCE = String.raw`
    */
   async function track(commit){
     if(!commit) return;
-    const token=++trackToken; let announced=false;
+    const token=++trackToken; let announced=false, retryPolls=0;
     pubTell(publishing==='test'?t('updating'):t('waitingPublish',{sha:short(commit)}),'working');
     for (let attempt=0; attempt<150; attempt++) {
       await sleep(attempt<6?4000:6000);
@@ -215,7 +230,10 @@ const SOURCE = String.raw`
       if (data.preview==='failed') { pubTell(t('updateFailed'),'failed'); return; }
       if (data.preview==='none' && attempt>=8 && !announced) { announced=true; pubTell(t('updateNotConfigured'),'info'); }
       if (publishing==='production') {
-        if (data.state==='failed') { pubTell(t('publishFailed'),'failed'); return; }
+        if (data.state==='failed') {
+          if (retryPending(data) && retryPolls++<RETRY_POLLS) { pubTell(t('publishRetrying'),'working'); continue; }
+          pubTell(t('publishFailed'),'failed'); return;
+        }
         if (data.state==='published') { barTell(t('publishedSite'),'published'); }
       }
       if (data.preview==='building' && !announced) pubTell(t('updating'),'working');
@@ -253,6 +271,13 @@ const SOURCE = String.raw`
       sha=data.sha;
       draft=structuredClone(kind==='hours'?data.rows:data.value);
       original=structuredClone(draft);
+      // Unsaved work from a session that ended: offer it back, once.
+      const kept=rescued(kind);
+      if (kept && JSON.stringify(kept.draft)!==JSON.stringify(draft)) {
+        const when=new Date(kept.at).toLocaleString(locale==='en'?'en-GB':locale==='ar'?'ar':'he-IL',{dateStyle:'short',timeStyle:'short'});
+        if (confirm(t('restoreDraft',{time:when}))) { draft=structuredClone(kept.draft); dirty=true; }
+        else dropDraft();
+      } else if (kept) dropDraft();
       if (kind==='services' && focus==='new') { const created=newService(); draft.push(created); dirty=true; view={mode:'item',id:created.id,lang:locale}; focus=''; }
       else if (kind==='services' && focus) { const item=draft.find(x=>x.slug===focus); if(item) view={mode:'item',id:item.id,lang:locale}; }
       loading(false); tell(''); render(); main.scrollTop=0;
@@ -265,13 +290,15 @@ const SOURCE = String.raw`
   }
   async function save(){
     if(busy) return;
+    clearTimeout(keepTimer); keepDraft(); // kept before the request, in case the session has ended
     clearErrors(); sent=structuredClone(draft);
     setBusy(true); tell(t('saving'),'working');
     try {
       const data=await api(urls[kind],'PUT',payloadFor());
       if (data.blob) sha=data.blob;
-      if (data.unchanged) { dirty=false; tell(t('nothingToSave'),'info'); return; }
+      if (data.unchanged) { dirty=false; dropDraft(); tell(t('nothingToSave'),'info'); return; }
       original=structuredClone(draft);
+      clearTimeout(keepTimer); dropDraft();
       dirty=false;tell(t(publishing==='test'?'savedTest':'savedProd',{sha:short(data.sha)}),'ok');
       render(); void track(data.sha);
     } catch (error) { fail(error); } finally { setBusy(false); }

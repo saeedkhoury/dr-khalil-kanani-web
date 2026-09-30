@@ -74,6 +74,8 @@ export async function callAdmin(
   request: Request,
   gitHub: Reply[],
   env: Env = adminEnv,
+  /** What https://www.drkhalilkanani.com/build.txt answers (the live commit). */
+  publicBuild?: string,
 ): Promise<{ response: Response; calls: Recorded[] }> {
   const original = globalThis.fetch;
   const calls: Recorded[] = [];
@@ -93,6 +95,9 @@ export async function callAdmin(
       const reply = gitHub[Math.min(i++, gitHub.length - 1)] ?? { status: 500, body: {} };
       if (reply.raw !== undefined) return new Response(reply.raw as Uint8Array<ArrayBuffer>, { status: reply.status });
       return new Response(JSON.stringify(reply.body), { status: reply.status });
+    }
+    if (publicBuild !== undefined && url === 'https://www.drkhalilkanani.com/build.txt') {
+      return new Response(`${publicBuild}\n`, { status: 200 });
     }
     throw new Error(`unexpected network access to ${url}`);
   }) as typeof fetch;
