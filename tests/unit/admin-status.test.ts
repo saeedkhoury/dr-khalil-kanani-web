@@ -40,6 +40,25 @@ describe('a failed deploy whose change is live anyway', () => {
     assert.equal(body.data.reason, null);
   });
 
+  test('the latest-status endpoint says the same (production, 2026-09-30)', async () => {
+    // After the release the panel opened on "publication failed" for a
+    // 27 Sep save whose content later deploys had long since published.
+    const later = 'b'.repeat(40);
+    const { response } = await callAdmin(
+      await adminRequest('/api/status/latest'),
+      [
+        { status: 200, body: [{ sha: SHA, commit: { message: 'cms(media): update doctor work', author: { date: '2026-09-27T21:44:44Z' } } }] },
+        { status: 200, body: { workflow_runs: [{ ...run('completed', 'failure'), run_attempt: 2 }] } },
+        { status: 200, body: { status: 'ahead' } },
+      ],
+      { ...adminEnv, CONTENT_BRANCH: 'main', ADMIN_REBUILD: 'on' } as Env,
+      later,
+    );
+    const body = await response.json() as { data: { state: string; reason: string | null } };
+    assert.equal(body.data.state, 'published');
+    assert.equal(body.data.reason, null);
+  });
+
   test('stays failed when the site does not contain it', async () => {
     const other = 'c'.repeat(40);
     const { response } = await callAdmin(
