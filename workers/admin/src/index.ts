@@ -666,7 +666,14 @@ async function getLatestStatus({ env }: Context): Promise<Response> {
   const result = await latestStatus(env);
   if (!result.ok) return upstream(result.reason);
   // null means no CMS commit has ever been made — a clean panel, not an error.
-  return ok(result.data);
+  // A failed deploy whose change a later deploy published is not a failure,
+  // here as in getStatus: the panel opened on "failed" for a live change.
+  const data = result.data;
+  if (data && data.state === 'failed' && env.CONTENT_BRANCH?.trim() === 'main'
+    && await liveOnPublicSite(env, data.sha) === true) {
+    return ok({ ...data, state: 'published', reason: null });
+  }
+  return ok(data);
 }
 
 /* -------------------------------------------------------------------------- */
