@@ -37,7 +37,7 @@ The bare production build refuses unconfirmed published facts. To reproduce
 the **existing** production workflow without disabling its gate:
 
 ```bash
-ASTRO_SITE=https://www.drkhalilkanani.com ACK_UNVERIFIED=doctor.ar,doctor.en,tagline.ar npm run build
+ASTRO_SITE=https://www.drkhalilkanani.com ACK_UNVERIFIED=doctor.ar,tagline.ar npm run build
 ```
 
 This is an acknowledgement, not owner verification. Do not expand the list or
