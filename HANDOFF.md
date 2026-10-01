@@ -6,6 +6,18 @@ Current repository state. Not a history — see `CHANGELOG.md` for that.
 
 ---
 
+## SEO + GEO project — 2026-10-01
+
+Research: `docs/SEO-GEO-BASELINE.md` (measured starting point),
+`docs/SEARCH-INTENT-MAP.md` (one page per query, HE/AR/EN evidence),
+`docs/LOCAL-CITATIONS.md`, `docs/SEO-GEO-MONITORING.md` (what to re-measure,
+monthly). First release PR #14: titles in searched words, generated treatments
+description, related-treatment links, ProfilePage. The biggest remaining
+levers are owner facts and listings, not code: one phone number, published
+hours, the name form (a different Dr. Wasim Khalil Kanani shares the town and
+AI answers already merge the two), Business Profile review clean-up, and
+listings on easy.co.il / Dapei Zahav / doctors.co.il.
+
 ## Current state — 2026-09-30 (read this first; older sections below are history)
 
 **CMS reliability pass — RELEASED 2026-09-30** (PR #10, merge 22cdefa; follow-up
