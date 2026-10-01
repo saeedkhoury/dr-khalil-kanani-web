@@ -21,6 +21,18 @@ anything else or an alternative icon is served. Google requested to recrawl `/` 
 crawled 27 Sep); its result icon updates only after it reprocesses the home
 page — do not change the favicon URL to "bust" its cache.
 
+**Status 2026-10-01 ~20:30 UTC: website side correct — waiting for Google
+favicon recrawl.** Re-verified end to end: Google's cached "A" is
+pixel-identical to the template `public/favicon.ico` of 3735a51 (the layout
+declared only the SVG tooth, so browser tabs were right while `/favicon.ico`
+was the "A"). Every live host/scheme/UA gets the same 6-frame tooth ICO; bare
+and http hosts 301 once to `https://www.`; Cloudflare is DNS-only (GitHub
+Pages + Fastly, max-age 600), so there is nothing to purge. Google has
+already refreshed some favicon caches (s2 for www, faviconV2 http://www at
+64 px); the 16/32 px entries Search shows are still the "A". Track it with
+`node scripts/check-google-favicon.mjs` (exit 0 = Google shows the tooth for
+both hostnames). Do not request indexing again and do not touch the favicon.
+
 ## SEO + GEO project — 2026-10-01
 
 Research: `docs/SEO-GEO-BASELINE.md` (measured starting point),
