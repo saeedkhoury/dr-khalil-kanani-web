@@ -1,47 +1,46 @@
 /**
- * Raster favicons, rendered at build time from the clinic's mark
- * (public/favicon.svg — the tooth glyph extracted from the supplied logo,
- * identical to the header logo). One source: a raster copy cannot drift from
- * the mark visitors see, and no template icon can survive in a file nobody
- * looks at — /favicon.ico was the Astro starter's "A" until 2026-10-01, and
- * Google Search showed it.
+ * Favicons, rendered at build time from the clinic tooth logo the owner
+ * supplied (src/assets/brand/clinic-tooth.png, 2026-10-01). Until then
+ * /favicon.ico was the Astro starter's "A", and Google Search showed it.
  *
- * The SVG is passed in rather than read here: the routes inline it at build
- * (`?raw`), and a file read from this module would resolve against dist/.
+ * The image is trimmed to the tooth, centred on a square of its own light
+ * background with a small margin — never stretched — and resized from the
+ * full-resolution source for each size.
+ *
+ * The routes pass the image bytes in (inlined at build); a file read from
+ * this module would resolve against dist/.
  */
 import sharp from 'sharp';
 
 /** Sizes inside /favicon.ico: browser tabs (16, 32) and Google (48). */
 export const ICO_SIZES = [16, 32, 48] as const;
 
-/** The mark on a transparent square — the same look as favicon.svg. */
-export async function faviconPng(svg: string, size: number): Promise<Buffer> {
-  const pad = Math.max(1, Math.round(size * 0.04));
-  const inner = size - 2 * pad;
-  const mark = await sharp(Buffer.from(svg), { density: 1200 })
-    .resize(inner, inner, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-    .png()
-    .toBuffer();
-  return sharp({ create: { width: size, height: size, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
-    .composite([{ input: mark, left: pad, top: pad }])
+/** Margin around the tooth, as a share of the square's side. */
+const MARGIN = 0.06;
+
+/** The tooth, trimmed and centred on a square of the logo's own background. */
+async function squareLogo(source: Buffer): Promise<Buffer> {
+  const { data } = await sharp(source).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const background = { r: data[0], g: data[1], b: data[2], alpha: 1 }; // the image's corner colour
+  const trimmed = await sharp(source).removeAlpha().trim({ threshold: 12 }).toBuffer({ resolveWithObject: true });
+  const { width, height } = trimmed.info;
+  const side = Math.ceil(Math.max(width, height) / (1 - 2 * MARGIN));
+  const left = Math.floor((side - width) / 2);
+  const top = Math.floor((side - height) / 2);
+  return sharp(trimmed.data)
+    .extend({ left, right: side - width - left, top, bottom: side - height - top, background })
     .png()
     .toBuffer();
 }
 
-/** 180×180 on white: iOS renders transparency as black and rounds the corners itself. */
-export async function appleTouchIcon(svg: string): Promise<Buffer> {
-  const size = 180;
-  const pad = Math.round(size * 0.12);
-  const inner = size - 2 * pad;
-  const mark = await sharp(Buffer.from(svg), { density: 1200 })
-    .resize(inner, inner, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
-    .png()
-    .toBuffer();
-  return sharp({ create: { width: size, height: size, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } } })
-    .composite([{ input: mark, left: pad, top: pad }])
-    .flatten({ background: '#ffffff' })
-    .png()
-    .toBuffer();
+/** A square PNG of the logo at `size` pixels. */
+export async function faviconPng(source: Buffer, size: number): Promise<Buffer> {
+  return sharp(await squareLogo(source)).resize(size, size, { kernel: 'lanczos3' }).png().toBuffer();
+}
+
+/** 180×180, opaque: iOS renders transparency as black and rounds the corners itself. */
+export async function appleTouchIcon(source: Buffer): Promise<Buffer> {
+  return faviconPng(source, 180);
 }
 
 /**
@@ -70,4 +69,13 @@ export function icoFromPngs(images: Array<{ size: number; data: Buffer }>): Buff
     offset += data.length;
   }
   return Buffer.concat([header, ...entries, ...images.map((image) => image.data)]);
+}
+
+/** The bytes of a `data:` URI (how the routes receive the inlined image). */
+export function bytesOfDataUri(uri: string): Buffer {
+  const comma = uri.indexOf(',');
+  if (!uri.startsWith('data:') || comma < 0 || !uri.slice(0, comma).endsWith(';base64')) {
+    throw new Error('favicon source is not an inlined base64 image');
+  }
+  return Buffer.from(uri.slice(comma + 1), 'base64');
 }
