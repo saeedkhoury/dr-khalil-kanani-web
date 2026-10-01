@@ -1,10 +1,10 @@
-/** /apple-touch-icon.png — 180×180, the clinic tooth logo (src/lib/favicon.ts). */
+/** /apple-touch-icon.png — 180×180, the clinic tooth logo on white (src/lib/favicon.ts). */
 import type { APIRoute } from 'astro';
-import { appleTouchIcon, bytesOfDataUri } from '../lib/favicon';
+import { appleTouchIcon } from '../lib/favicon';
 // Inlined at build: a runtime file read would resolve against dist/.
-import logo from '../assets/brand/clinic-tooth.png?inline';
+import mark from '../assets/brand/clinic-mark.svg?raw';
 
 export const prerender = true;
 
 export const GET: APIRoute = async () =>
-  new Response(new Uint8Array(await appleTouchIcon(bytesOfDataUri(logo))), { headers: { 'content-type': 'image/png' } });
+  new Response(new Uint8Array(await appleTouchIcon(mark)), { headers: { 'content-type': 'image/png' } });

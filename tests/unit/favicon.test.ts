@@ -1,7 +1,13 @@
 /**
- * Favicons are rendered from the clinic tooth logo the owner supplied on
- * 2026-10-01 (src/assets/brand/clinic-tooth.png). Until then /favicon.ico was
- * the Astro starter's black/white/pink "A", and Google Search showed it.
+ * Favicons are rendered from the clinic's own vector logo
+ * (src/assets/brand/clinic-mark.svg — the tooth the owner confirmed, the same
+ * paths as the header logo and the schema logo). Until 2026-10-01
+ * /favicon.ico was the Astro starter's black/white/pink "A", and Google
+ * Search showed it.
+ *
+ * Vector, not a screenshot: a raster source carried its own near-white
+ * background, which Google and dark browser tabs showed as a white box
+ * around the tooth.
  */
 
 import { test, describe } from 'node:test';
@@ -11,12 +17,11 @@ import sharp from 'sharp';
 
 import { faviconPng, appleTouchIcon, icoFromPngs, ICO_SIZES } from '../../src/lib/favicon.ts';
 
-const SOURCE = readFileSync(new URL('../../src/assets/brand/clinic-tooth.png', import.meta.url));
+const SOURCE = readFileSync(new URL('../../src/assets/brand/clinic-mark.svg', import.meta.url));
 
 /**
- * Pixels that are not the light background: how many are blue-dominant (the
- * tooth and its anti-aliased edges), pinkish, or black/grey — the colours of
- * the old "A".
+ * Pixels the mark actually paints: how many are blue-dominant (the tooth and
+ * its anti-aliased edges), pinkish, or black/grey — the colours of the old "A".
  */
 async function colours(png: Buffer): Promise<{ marked: number; blue: number; pink: number; dark: number }> {
   const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -37,16 +42,17 @@ async function corner(png: Buffer): Promise<number[]> {
   return [...data.subarray(0, 4)];
 }
 
-describe('the favicon is the supplied clinic tooth logo', () => {
+describe('the favicon is the clinic tooth logo', () => {
   for (const size of [48, 96]) {
-    test(`${size}×${size} PNG: square, on the logo's light background, clinic blue`, async () => {
+    test(`${size}×${size} PNG: square, transparent around the mark, clinic blue`, async () => {
       const png = await faviconPng(SOURCE, size);
       const meta = await sharp(png).metadata();
       assert.equal(meta.format, 'png');
       assert.equal(meta.width, size);
       assert.equal(meta.height, size);
-      const [r, g, b, a] = await corner(png);
-      assert.ok(r > 240 && g > 240 && b > 240 && a === 255, `light opaque corner, got ${[r, g, b, a]}`);
+      assert.ok(meta.hasAlpha);
+      const [, , , a] = await corner(png);
+      assert.equal(a, 0, 'transparent corner — no white box in a dark tab or result');
       const { marked, blue, pink, dark } = await colours(png);
       assert.ok(marked > size * size * 0.1, 'the tooth fills a real part of the square');
       assert.equal(blue, marked, 'every tooth pixel is blue');
@@ -56,21 +62,20 @@ describe('the favicon is the supplied clinic tooth logo', () => {
 
   test('the tooth keeps its proportions and is centred', async () => {
     const png = await faviconPng(SOURCE, 96);
-    const { info } = await sharp(png).trim({ threshold: 12 }).toBuffer({ resolveWithObject: true });
-    const srcBox = (await sharp(SOURCE).trim({ threshold: 12 }).toBuffer({ resolveWithObject: true })).info;
+    const { info } = await sharp(png).trim({ threshold: 1 }).toBuffer({ resolveWithObject: true });
+    const srcBox = (await sharp(SOURCE, { density: 600 }).trim({ threshold: 1 }).toBuffer({ resolveWithObject: true })).info;
     const ratio = (w: number, h: number) => w / h;
     assert.ok(Math.abs(ratio(info.width, info.height) - ratio(srcBox.width, srcBox.height)) < 0.06, 'aspect ratio preserved');
     const left = -(info.trimOffsetLeft ?? 0); const right = 96 - left - info.width;
     assert.ok(Math.abs(left - right) <= 2, `centred horizontally (${left} / ${right})`);
   });
 
-  test('apple-touch-icon: 180×180, opaque (iOS draws transparency as black), clinic blue', async () => {
+  test('apple-touch-icon: 180×180, white (iOS draws transparency as black), clinic blue', async () => {
     const png = await appleTouchIcon(SOURCE);
     const meta = await sharp(png).metadata();
     assert.equal(meta.width, 180);
     assert.equal(meta.height, 180);
-    const [, , , a] = await corner(png);
-    assert.equal(a, 255);
+    assert.deepEqual(await corner(png), [255, 255, 255, 255], 'opaque white corner');
     const { marked, blue, pink, dark } = await colours(png);
     assert.equal(blue, marked);
     assert.equal(pink + dark, 0);

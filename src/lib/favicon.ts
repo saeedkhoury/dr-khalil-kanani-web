@@ -1,14 +1,16 @@
 /**
- * Favicons, rendered at build time from the clinic tooth logo the owner
- * supplied (src/assets/brand/clinic-tooth.png, 2026-10-01). Until then
- * /favicon.ico was the Astro starter's "A", and Google Search showed it.
+ * Favicons, rendered at build time from the clinic's own vector logo
+ * (src/assets/brand/clinic-mark.svg — the tooth, the same paths as the header
+ * logo and the schema logo). Until 2026-10-01 /favicon.ico was the Astro
+ * starter's "A", and Google Search showed it.
  *
- * The image is trimmed to the tooth, centred on a square of its own light
- * background with a small margin — never stretched — and resized from the
- * full-resolution source for each size.
+ * Vector, not a screenshot of the logo: a raster source carries its own
+ * near-white background, which Google and dark browser tabs draw as a white
+ * box around the tooth. Rendering the paths gives clean edges at 16 px and
+ * true transparency at every size.
  *
- * The routes pass the image bytes in (inlined at build); a file read from
- * this module would resolve against dist/.
+ * The routes pass the SVG text in (inlined at build with `?raw`); a file read
+ * from this module would resolve against dist/.
  */
 import sharp from 'sharp';
 
@@ -18,32 +20,48 @@ import sharp from 'sharp';
  */
 export const ICO_SIZES = [16, 32, 48, 96, 144, 192] as const;
 
-/** Margin around the tooth, as a share of the square's side. */
-const MARGIN = 0.06;
+/** Clear space around the mark, as a share of the square's side. */
+const MARGIN = 0.04;
 
-/** The tooth, trimmed and centred on a square of the logo's own background. */
-async function squareLogo(source: Buffer): Promise<Buffer> {
-  const { data } = await sharp(source).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  const background = { r: data[0], g: data[1], b: data[2], alpha: 1 }; // the image's corner colour
-  const trimmed = await sharp(source).removeAlpha().trim({ threshold: 12 }).toBuffer({ resolveWithObject: true });
-  const { width, height } = trimmed.info;
-  const side = Math.ceil(Math.max(width, height) / (1 - 2 * MARGIN));
-  const left = Math.floor((side - width) / 2);
-  const top = Math.floor((side - height) / 2);
-  return sharp(trimmed.data)
-    .extend({ left, right: side - width - left, top, bottom: side - height - top, background })
+/** The mark, trimmed to its own ink and centred on a transparent square. */
+async function squareMark(svg: string): Promise<Buffer> {
+  const transparent = { r: 0, g: 0, b: 0, alpha: 0 };
+  // Rendered large once, then scaled down per size: small icons keep the
+  // anti-aliasing of the full-resolution render.
+  const rendered = await sharp(Buffer.from(svg), { density: 1200 })
+    .resize(1024, 1024, { fit: 'inside', background: transparent })
+    .png()
+    .toBuffer();
+  // The artboard is not the mark: trim to the ink so the tooth sits centred.
+  const { data, info } = await sharp(rendered).trim({ threshold: 1 }).toBuffer({ resolveWithObject: true });
+  const side = Math.ceil(Math.max(info.width, info.height) / (1 - 2 * MARGIN));
+  const left = Math.floor((side - info.width) / 2);
+  const top = Math.floor((side - info.height) / 2);
+  return sharp(data)
+    .extend({ left, right: side - info.width - left, top, bottom: side - info.height - top, background: transparent })
     .png()
     .toBuffer();
 }
 
-/** A square PNG of the logo at `size` pixels. */
-export async function faviconPng(source: Buffer, size: number): Promise<Buffer> {
-  return sharp(await squareLogo(source)).resize(size, size, { kernel: 'lanczos3' }).png().toBuffer();
+/** A square, transparent PNG of the mark at `size` pixels. */
+export async function faviconPng(svg: string | Buffer, size: number): Promise<Buffer> {
+  return sharp(await squareMark(String(svg)))
+    .resize(size, size, { kernel: 'lanczos3' })
+    .png()
+    .toBuffer();
 }
 
-/** 180×180, opaque: iOS renders transparency as black and rounds the corners itself. */
-export async function appleTouchIcon(source: Buffer): Promise<Buffer> {
-  return faviconPng(source, 180);
+/** 180×180 on white: iOS draws transparency as black and rounds the corners itself. */
+export async function appleTouchIcon(svg: string | Buffer): Promise<Buffer> {
+  const size = 180;
+  const pad = Math.round(size * 0.1);
+  const inner = size - 2 * pad;
+  const mark = await sharp(await squareMark(String(svg))).resize(inner, inner).png().toBuffer();
+  return sharp({ create: { width: size, height: size, channels: 4, background: { r: 255, g: 255, b: 255, alpha: 1 } } })
+    .composite([{ input: mark, left: pad, top: pad }])
+    .flatten({ background: '#ffffff' })
+    .png()
+    .toBuffer();
 }
 
 /**
@@ -72,13 +90,4 @@ export function icoFromPngs(images: Array<{ size: number; data: Buffer }>): Buff
     offset += data.length;
   }
   return Buffer.concat([header, ...entries, ...images.map((image) => image.data)]);
-}
-
-/** The bytes of a `data:` URI (how the routes receive the inlined image). */
-export function bytesOfDataUri(uri: string): Buffer {
-  const comma = uri.indexOf(',');
-  if (!uri.startsWith('data:') || comma < 0 || !uri.slice(0, comma).endsWith(';base64')) {
-    throw new Error('favicon source is not an inlined base64 image');
-  }
-  return Buffer.from(uri.slice(comma + 1), 'base64');
 }
