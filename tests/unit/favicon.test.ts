@@ -78,7 +78,11 @@ describe('the favicon is the supplied clinic tooth logo', () => {
 });
 
 describe('favicon.ico is a real ICO file', () => {
-  test('ICO header with 16, 32 and 48 px PNG images that decode to their stated size', async () => {
+  test('carries Google\'s sizes: 48 px and larger multiples of 48, plus small browser sizes', () => {
+    assert.deepEqual([...ICO_SIZES], [16, 32, 48, 96, 144, 192]);
+  });
+
+  test('ICO header with every size as a PNG image that decodes to its stated size', async () => {
     const images = await Promise.all(ICO_SIZES.map(async (size) => ({ size, data: await faviconPng(SOURCE, size) })));
     const ico = icoFromPngs(images);
     assert.equal(ico.readUInt16LE(0), 0, 'reserved');

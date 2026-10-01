@@ -271,28 +271,21 @@ async function main() {
     }
   }
 
-  // ── favicons: one root-level set for the whole host ──
+  // ── favicon: ONE declaration, the same on every page ──
   // 2026-10-01: /favicon.ico was still the Astro starter's "A" and Google
-  // Search showed it. Every page declares the same icons, each served from
-  // the site root as an image; /favicon.ico itself must be the real file.
-  const iconSets = new Map();
+  // Search showed it. Google takes the site's favicon from the home page's
+  // icon declaration; one stable URL, nothing else for it to choose from.
   for (const [url, p] of pages) {
-    if (!p.icons.some((i) => i.rel === 'icon')) err(url, 'no <link rel="icon">');
-    const seenIcons = new Set();
-    for (const i of p.icons) {
-      const u = new URL(i.href, url);
-      if (u.origin !== ORIGIN || !/^\/[^/]+$/.test(u.pathname)) err(url, `icon not at the site root: ${i.href}`);
-      const key = `${i.rel} ${u.pathname} ${i.sizes}`;
-      if (seenIcons.has(key)) err(url, `duplicate icon declaration: ${key}`);
-      seenIcons.add(key);
-    }
-    iconSets.set(JSON.stringify(p.icons), url);
+    const declared = p.icons.map((i) => `${i.rel} ${new URL(i.href, url).pathname}`);
+    if (declared.join('|') !== 'icon /favicon.ico') err(url, `icon declarations must be exactly <link rel="icon" href="/favicon.ico">, found: ${declared.join(', ') || 'none'}`);
   }
-  if (iconSets.size > 1) err([...iconSets.values()].slice(0, 3).join(' + '), 'pages declare different icon sets');
-  const iconPaths = new Set(['/favicon.ico', ...[...pages.values()].flatMap((p) => p.icons.map((i) => new URL(i.href, ORIGIN).pathname))]);
-  for (const path of iconPaths) {
+  for (const path of ['/favicon.ico', '/apple-touch-icon.png']) {
     const r = await get(`${ORIGIN}${path}`);
     if (r.status !== 200 || !/^image\//.test(r.type)) err(path, `icon answers ${r.status} ${r.type}`);
+  }
+  for (const path of ['/favicon.svg', '/favicon.png', '/favicon-48x48.png', '/favicon-96x96.png', '/site.webmanifest', '/manifest.json']) {
+    const r = await get(`${ORIGIN}${path}`);
+    if (r.status === 200) err(path, 'an alternative icon or manifest is published; Google must have one favicon to choose');
   }
   // The template's "A" was a PNG merely named .ico; the real one is an ICO container.
   const ico = Buffer.from(await (await fetch(local(`${ORIGIN}/favicon.ico`))).arrayBuffer());

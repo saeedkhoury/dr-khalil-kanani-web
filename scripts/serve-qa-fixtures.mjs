@@ -26,7 +26,7 @@ symlinkSync(join(root, 'node_modules'), join(fixture, 'node_modules'), 'dir');
 
 // Reuse the existing vector brand mark; no patient or stock photographs.
 mkdirSync(join(fixture, 'src/assets/images'), { recursive: true });
-cpSync(join(root, 'public/favicon.svg'), join(fixture, 'src/assets/images/qa-mark.svg'));
+cpSync(join(root, 'src/assets/brand/clinic-mark.svg'), join(fixture, 'src/assets/images/qa-mark.svg'));
 writeFileSync(join(fixture, 'src/lib/images.ts'), `
 import mark from '../assets/images/qa-mark.svg';
 import type { ImageMetadata } from 'astro';
