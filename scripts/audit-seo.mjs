@@ -26,7 +26,7 @@ import { extname, join, resolve } from 'node:path';
 const args = process.argv.slice(2);
 const flag = (name) => { const i = args.indexOf(name); return i === -1 ? undefined : args[i + 1]; };
 const DIST = flag('--dist');
-const TYPES = { '.html': 'text/html; charset=utf-8', '.xml': 'application/xml', '.txt': 'text/plain; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml' };
+const TYPES = { '.html': 'text/html; charset=utf-8', '.xml': 'application/xml', '.txt': 'text/plain; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.css': 'text/css', '.js': 'text/javascript', '.svg': 'image/svg+xml', '.ico': 'image/x-icon' };
 
 /** GitHub Pages semantics: /x → 301 /x/, /x/ → x/index.html, else 404.html. */
 async function serveDist(dir) {
@@ -99,6 +99,7 @@ function parse(html) {
     robots: attr(meta('name', 'robots') ?? '', 'content') ?? '',
     canonical: links.filter((l) => /rel\s*=\s*"canonical"/i.test(l)).map((l) => attr(l, 'href')),
     hreflang: links.filter((l) => /rel\s*=\s*"alternate"/i.test(l) && attr(l, 'hreflang')).map((l) => ({ lang: attr(l, 'hreflang'), href: attr(l, 'href') })),
+    icons: links.filter((l) => /rel\s*=\s*"[^"]*icon[^"]*"/i.test(l)).map((l) => ({ rel: (attr(l, 'rel') ?? '').toLowerCase(), href: attr(l, 'href') ?? '', sizes: attr(l, 'sizes') ?? '' })),
     og: Object.fromEntries(metas.filter((m) => /^og:|^twitter:/.test(attr(m, 'property') ?? attr(m, 'name') ?? '')).map((m) => [attr(m, 'property') ?? attr(m, 'name'), attr(m, 'content')])),
     headings: [...body.matchAll(/<h([1-6])\b[^>]*>([\s\S]*?)<\/h\1>/gi)].map((m) => ({ level: Number(m[1]), text: text(m[2]) })),
     jsonld: [...html.matchAll(/<script[^>]*type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1]),
@@ -269,6 +270,33 @@ async function main() {
       } catch { /* mailto:, tel: etc. */ }
     }
   }
+
+  // ── favicons: one root-level set for the whole host ──
+  // 2026-10-01: /favicon.ico was still the Astro starter's "A" and Google
+  // Search showed it. Every page declares the same icons, each served from
+  // the site root as an image; /favicon.ico itself must be the real file.
+  const iconSets = new Map();
+  for (const [url, p] of pages) {
+    if (!p.icons.some((i) => i.rel === 'icon')) err(url, 'no <link rel="icon">');
+    const seenIcons = new Set();
+    for (const i of p.icons) {
+      const u = new URL(i.href, url);
+      if (u.origin !== ORIGIN || !/^\/[^/]+$/.test(u.pathname)) err(url, `icon not at the site root: ${i.href}`);
+      const key = `${i.rel} ${u.pathname} ${i.sizes}`;
+      if (seenIcons.has(key)) err(url, `duplicate icon declaration: ${key}`);
+      seenIcons.add(key);
+    }
+    iconSets.set(JSON.stringify(p.icons), url);
+  }
+  if (iconSets.size > 1) err([...iconSets.values()].slice(0, 3).join(' + '), 'pages declare different icon sets');
+  const iconPaths = new Set(['/favicon.ico', ...[...pages.values()].flatMap((p) => p.icons.map((i) => new URL(i.href, ORIGIN).pathname))]);
+  for (const path of iconPaths) {
+    const r = await get(`${ORIGIN}${path}`);
+    if (r.status !== 200 || !/^image\//.test(r.type)) err(path, `icon answers ${r.status} ${r.type}`);
+  }
+  // The template's "A" was a PNG merely named .ico; the real one is an ICO container.
+  const ico = Buffer.from(await (await fetch(local(`${ORIGIN}/favicon.ico`))).arrayBuffer());
+  if (ico.length < 6 || ico.readUInt32BE(0) !== 0x00000100) err('/favicon.ico', 'not an ICO file (a renamed template image?)');
 
   // ── hreflang reciprocity ──
   for (const [url, p] of pages) {
