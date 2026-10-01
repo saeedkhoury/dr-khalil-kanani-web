@@ -6,15 +6,19 @@ Current repository state. Not a history — see `CHANGELOG.md` for that.
 
 ---
 
-## Favicon — 2026-10-01 (PR #16, 7025dec)
+## Favicon — 2026-10-01 (PRs #16, #18, #19; live bf66071)
 
-Google Search showed the Astro starter's "A": `public/favicon.ico` was the
-template icon, and `/favicon.ico` is where browsers and Google fall back. It
-is gone; `/favicon.ico` (ICO 16/32/48), `/favicon-48x48.png`,
-`/favicon-96x96.png` and `/apple-touch-icon.png` are rendered at build from
-`public/favicon.svg` (the clinic's tooth mark — edit only that file). The SEO
-gate fails if `/favicon.ico` is not a real ICO or a page declares other icons.
-Google refreshes its cached favicon only after recrawling the home page.
+Google Search showed the Astro starter's "A" (`public/favicon.ico` was the
+template icon). Now: every page declares exactly ONE icon,
+`<link rel="icon" href="/favicon.ico">` — keep that URL stable. `/favicon.ico`
+(16–192 px) is rendered at build from the blue tooth logo the doctor supplied,
+`src/assets/brand/clinic-tooth.png`; `/apple-touch-icon.png` is served but not
+declared. No other icon or manifest is published. The flat mark SVG
+(`src/assets/brand/clinic-mark.svg`) only feeds the schema logo `/logo.png`.
+The SEO gate fails if a page declares anything else or an alternative icon is
+served. Google requested to recrawl `/` and `/he/` on 2026-10-01 (both last
+crawled 27 Sep); its result icon updates only after it reprocesses the home
+page — do not change the favicon URL to "bust" its cache.
 
 ## SEO + GEO project — 2026-10-01
 
