@@ -131,7 +131,13 @@ const bar = BAR_STRINGS[locale as keyof typeof BAR_STRINGS] ?? BAR_STRINGS.he;
     <meta name="twitter:card" content="summary_large_image" />
 
     <meta name="theme-color" content="#fcfdfe" />
+    {/* One icon set for the whole host, rendered from the clinic mark
+        (src/lib/favicon.ts). Root-relative so /he/, /ar/ and /en/ share it. */}
+    <link rel="icon" href={`${import.meta.env.BASE_URL}favicon.ico`} sizes="16x16 32x32 48x48" />
+    <link rel="icon" href={`${import.meta.env.BASE_URL}favicon-48x48.png`} type="image/png" sizes="48x48" />
+    <link rel="icon" href={`${import.meta.env.BASE_URL}favicon-96x96.png`} type="image/png" sizes="96x96" />
     <link rel="icon" href={`${import.meta.env.BASE_URL}favicon.svg`} type="image/svg+xml" />
+    <link rel="apple-touch-icon" href={`${import.meta.env.BASE_URL}apple-touch-icon.png`} sizes="180x180" />
 
     <script is:inline>
       // Flip the no-js flag before paint so JS-dependent reveal states never
