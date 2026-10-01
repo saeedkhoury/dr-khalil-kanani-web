@@ -11,6 +11,6 @@ const locale = DEFAULT_LOCALE;
 const t = useTranslations(locale);
 const canonical = new URL(localizePath(locale, ''), Astro.site ?? clinic.siteUrl).toString();
 ---
-<BaseLayout locale={locale} title={seoTitle.home(locale, t('site.title'))} description={t('hero.subtitle')} canonical={canonical}>
+<BaseLayout locale={locale} title={seoTitle.home(locale, t('site.shortName'))} description={t('hero.subtitle')} canonical={canonical}>
   <HomeSections locale={locale} />
 </BaseLayout>

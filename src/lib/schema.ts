@@ -65,6 +65,8 @@ interface GraphOptions {
   breadcrumbs?: Array<{ name: string; path: string }>;
   /** Published treatments in this locale, in the doctor's order. */
   services?: Array<{ slug: string; name: string }>;
+  /** 'ProfilePage' for the doctor's about page; otherwise a WebPage. */
+  pageType?: 'WebPage' | 'ProfilePage';
 }
 
 /**
@@ -78,7 +80,7 @@ function officialProfiles(): string[] {
     .filter((url) => url.startsWith('https://'));
 }
 
-export function buildGraph({ origin, locale, pathname, title, description, breadcrumbs, services = [] }: GraphOptions) {
+export function buildGraph({ origin, locale, pathname, title, description, breadcrumbs, services = [], pageType = 'WebPage' }: GraphOptions) {
   const abs = (path = ''): string => new URL(path, origin).toString();
   const nodes: Record<string, unknown>[] = [];
   const logo = { '@type': 'ImageObject', '@id': abs('/#logo'), url: abs(LOGO_PATH), contentUrl: abs(LOGO_PATH), width: LOGO_SIZE, height: LOGO_SIZE, caption: clinic.doctor[locale] };
@@ -203,8 +205,9 @@ export function buildGraph({ origin, locale, pathname, title, description, bread
   const current = services.find((s) => pathname === localizePath(locale, `treatments/${s.slug}`));
 
   /* ---- WebPage (one per locale page) ---------------------------------- */
+  const profile = pageType === 'ProfilePage';
   nodes.push({
-    '@type': 'WebPage',
+    '@type': pageType,
     '@id': abs(`${pathname}#webpage`),
     url: abs(pathname),
     name: title,
@@ -212,8 +215,10 @@ export function buildGraph({ origin, locale, pathname, title, description, bread
     inLanguage: locale, // aligns with <html lang> and hreflang
     isPartOf: { '@id': abs(ID.website) },
     about: { '@id': abs(ID.clinic) },
-    // A treatment page is ABOUT that treatment, offered by the clinic.
+    // A treatment page is ABOUT that treatment, offered by the clinic; the
+    // about page is the doctor's profile.
     ...(current ? { mainEntity: { '@id': serviceId(current.slug) } } : {}),
+    ...(profile ? { mainEntity: { '@id': abs(ID.doctor) } } : {}),
   });
 
   /* ---- BreadcrumbList -------------------------------------------------- */

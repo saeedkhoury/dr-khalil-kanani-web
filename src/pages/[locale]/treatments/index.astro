@@ -5,7 +5,7 @@ import ContactCta from '../../../components/sections/ContactCta.astro';
 import { LOCALES, localizePath, type Locale } from '../../../i18n/config';
 import { useTranslations } from '../../../i18n/ui';
 import { getTreatments } from '../../../lib/content';
-import { seoTitle } from '../../../lib/seo';
+import { seoTitle, treatmentsDescription } from '../../../lib/seo';
 
 export function getStaticPaths() {
   return LOCALES.map((locale) => ({ params: { locale } }));
@@ -15,11 +15,7 @@ const locale = Astro.params.locale as Locale;
 const t = useTranslations(locale);
 const treatments = await getTreatments(locale);
 
-const description = {
-  he: 'הטיפולים הניתנים במרפאה בג׳דיידה-מכר: השתלות, טיפולי שורש, ציפויים, קשתיות שקופות, הלבנה וטיפולי חירום.',
-  ar: 'العلاجات المتوفرة في العيادة في الجديدة-المكر: زراعة، علاج عصب، قشور، تقويم شفاف، تبييض وعلاجات طوارئ.',
-  en: 'Treatments available at the clinic in Jadeidi-Makr: implants, root canal, veneers, clear aligners, whitening and emergency care.',
-}[locale];
+const description = treatmentsDescription(locale, treatments.map((t) => t.data.cardTitle));
 
 const breadcrumbs = [
   { name: t('nav.home'), path: localizePath(locale, '') },
