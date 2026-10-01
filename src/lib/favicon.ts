@@ -12,8 +12,11 @@
  */
 import sharp from 'sharp';
 
-/** Sizes inside /favicon.ico: browser tabs (16, 32) and Google (48). */
-export const ICO_SIZES = [16, 32, 48] as const;
+/**
+ * Sizes inside /favicon.ico, the site's ONE declared icon: browser tabs
+ * (16, 32) and Google Search, which asks for 48 px or a larger multiple of 48.
+ */
+export const ICO_SIZES = [16, 32, 48, 96, 144, 192] as const;
 
 /** Margin around the tooth, as a share of the square's side. */
 const MARGIN = 0.06;

@@ -1,7 +1,7 @@
 /**
- * /favicon.ico — the clinic tooth logo at 16, 32 and 48 px (src/lib/favicon.ts).
- * Browsers, bookmark tools and Google fall back to this path even when the
- * page declares other icons; it held the Astro starter's "A" until 2026-10-01.
+ * /favicon.ico — the site's one icon: the clinic tooth logo at 16–192 px
+ * (src/lib/favicon.ts). Keep this URL stable; Google caches favicons by URL.
+ * It held the Astro starter's "A" until 2026-10-01.
  */
 import type { APIRoute } from 'astro';
 import { bytesOfDataUri, faviconPng, icoFromPngs, ICO_SIZES } from '../lib/favicon';
