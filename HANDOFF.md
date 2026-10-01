@@ -2,7 +2,7 @@
 
 Current repository state. Not a history — see `CHANGELOG.md` for that.
 
-**Last updated:** 2026-09-30
+**Last updated:** 2026-10-01
 
 ---
 
@@ -50,19 +50,29 @@ than usual; still checking" and never claims failure or success.
 Production deploy (`deploy.yml`) now runs verify ‖ build ‖ e2e (2 shards) in
 parallel; all still block the deploy.
 
-Still open:
-- **Google sign-in** (OTP stays as the backup). The secret must be created and
-  pasted by the owner, never by an agent: Google Cloud project
-  `dr-kanani-admin` → Google Auth Platform → Clients → Create client → Web
-  application; Authorized JavaScript origin
-  `https://late-queen-efb5.cloudflareaccess.com`; redirect URI
-  `https://late-queen-efb5.cloudflareaccess.com/cdn-cgi/access/callback`. Then
-  Cloudflare Zero Trust → Settings → Authentication → Login methods → Add →
-  Google, paste the client ID and secret. After that, attach the new login
-  method to BOTH Access apps (admin and admin-staging) alongside OTP; the
-  exact-email policy is unchanged.
-- The one physical-iPhone check (Safari: sign in once, refresh, close and
-  reopen Safari — no second code while the 7-day session lasts).
+**Sign-in (2026-10-01): Google first, one-time code as backup.** On iPhone
+Safari the Cloudflare one-time-code page kept showing "This One-Time Pin has
+already been used" — outside our code, so the doctor's normal path no longer
+uses it.
+
+- Google Cloud project `dr-kanani-admin`: OAuth app published (basic scopes
+  only — no verification needed), Web client "Cloudflare Access
+  (admin.drkhalilkanani.com)", origin `https://late-queen-efb5.cloudflareaccess.com`,
+  redirect `…/cdn-cgi/access/callback`. The client secret lives only in
+  Cloudflare; it was pasted by the owner, never handled by an agent.
+- Cloudflare Zero Trust login method "Google" (d7fda7c1…) next to One-time PIN
+  on BOTH Access apps (admin and admin-staging). "Instant authentication" is
+  off so the login page shows "Sign in with Google" with the code form below.
+- Unchanged: the reusable exact-email policy (3 addresses, no "everyone"), the
+  Worker's `ALLOWED_EMAILS` check, JWT + audience verification, 7-day app
+  sessions (SameSite=Lax, HttpOnly, no binding cookie).
+- Verified: Google sign-in on staging and production (session endpoint
+  accepts it, refresh and /he /ar /en keep it); signed-out requests go to the
+  login page; **physical iPhone Safari: Google sign-in, close and reopen —
+  passed (owner, 2026-10-01).** An outside Google account was not tried live
+  (no second account); it is refused by the policy and by the Worker list.
+- If Google sign-in ever breaks (`deleted_client`, `invalid_client`): add a new
+  secret to the Google client and paste it into the Cloudflare login method.
 
 ## Current state — 2026-09-27 (read this first; older sections below are history)
 
