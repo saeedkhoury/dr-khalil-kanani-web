@@ -30,8 +30,31 @@ export async function getTreatment(locale: Locale, slug: string): Promise<Treatm
   return (await getTreatments(locale)).find((item) => item.data.slug === slug);
 }
 
+/**
+ * Where a patient reading one treatment is likely to go next. Taking "the
+ * first three" linked the last treatments in the doctor's order from nowhere
+ * but the hub (extraction and fillings: 4 internal links each, 2026-10-01).
+ * Unknown or hidden treatments are skipped; the rest is filled in the
+ * doctor's order, so a treatment added later still gets related links.
+ */
+const NEXT_STEPS: Record<string, string[]> = {
+  'emergency-dental': ['root-canal', 'tooth-extraction', 'dental-fillings'],
+  'root-canal': ['dental-fillings', 'emergency-dental', 'tooth-extraction'],
+  'dental-fillings': ['root-canal', 'emergency-dental', 'veneers'],
+  'tooth-extraction': ['dental-implants', 'emergency-dental', 'root-canal'],
+  'dental-implants': ['tooth-extraction', 'root-canal', 'emergency-dental'],
+  veneers: ['teeth-whitening', 'clear-aligners', 'dental-fillings'],
+  'teeth-whitening': ['veneers', 'clear-aligners', 'dental-fillings'],
+  'clear-aligners': ['teeth-whitening', 'veneers', 'dental-implants'],
+};
+
 export async function getRelated(locale: Locale, slug: string, limit = 3): Promise<Treatment[]> {
-  return (await getTreatments(locale)).filter((item) => item.data.slug !== slug).slice(0, limit);
+  const others = (await getTreatments(locale)).filter((item) => item.data.slug !== slug);
+  const chosen = (NEXT_STEPS[slug] ?? [])
+    .map((next) => others.find((item) => item.data.slug === next))
+    .filter((item): item is Treatment => item !== undefined);
+  for (const item of others) if (!chosen.includes(item)) chosen.push(item);
+  return chosen.slice(0, limit);
 }
 
 export async function getTreatmentSlugs(): Promise<string[]> {
