@@ -6,6 +6,16 @@ Current repository state. Not a history — see `CHANGELOG.md` for that.
 
 ---
 
+## Favicon — 2026-10-01 (PR #16, 7025dec)
+
+Google Search showed the Astro starter's "A": `public/favicon.ico` was the
+template icon, and `/favicon.ico` is where browsers and Google fall back. It
+is gone; `/favicon.ico` (ICO 16/32/48), `/favicon-48x48.png`,
+`/favicon-96x96.png` and `/apple-touch-icon.png` are rendered at build from
+`public/favicon.svg` (the clinic's tooth mark — edit only that file). The SEO
+gate fails if `/favicon.ico` is not a real ICO or a page declares other icons.
+Google refreshes its cached favicon only after recrawling the home page.
+
 ## SEO + GEO project — 2026-10-01
 
 Research: `docs/SEO-GEO-BASELINE.md` (measured starting point),
