@@ -204,3 +204,24 @@ has **no** listing on easy.co.il or doctors.co.il (checked 2026-10-01).
 | 9 | Arabic vocabulary gap (فينير; دكتور اسنان) | AR relevance | developer, doctor review |
 | 10 | GBP URL not on the site / in schema | entity link | developer (fact known) |
 | 11 | Arabic font 162 KB | AR LCP +0.6 s, still "good" | optional |
+
+---
+
+## 2026-10-01 (later) — after the first SEO/GEO release (PR #14, 2b7eb7a)
+
+IMPLEMENTED and live (merge → live 3 min 55 s). Rollback tag
+`rollback/pre-seo-geo-2026-10-01`.
+
+| Change | Live check |
+|---|---|
+| Home titles: profession + town | `ד״ר חליל כנעאני — רופא שיניים בג׳דיידה-מכר` · `د. خليل كنعاني — طبيب أسنان في الجديدة-المكر` · `Dr. Khalil Kanani — Dentist in Jadeidi-Makr` |
+| Veneers Google titles (HE/AR) | `ציפויים לשיניים (למינייט) …` · `القشور التجميلية (فينير) …` |
+| Treatments description built from the published treatments | all 8 listed in each language |
+| Related treatments by next step | every treatment linked from 2–4 treatment pages (extraction, fillings: from 0) |
+| About page = `ProfilePage`, main entity the dentist | validator.schema.org: 0 errors, 0 warnings |
+| Live crawl gate | 46 pages, 0 errors, 1 warning (unchanged CMS text) |
+| IndexNow | 33 changed URLs → HTTP 200 |
+| CMS | admin rebuilt from the same commit; editors open; session valid |
+
+CRAWLABLE immediately; INDEXED / RANKING not yet observable — re-measure on
+the monthly cadence (docs/SEO-GEO-MONITORING.md).
