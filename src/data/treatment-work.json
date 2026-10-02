@@ -40,31 +40,12 @@
     }
   },
   {
-    "id": "work-veneers-02",
-    "file": "work-veneers-02.jpg",
-    "category": "treatment-work",
-    "width": 1254,
-    "height": 1254,
-    "status": "unpublished",
-    "provenance": "owner-supplied",
-    "alt": {
-      "he": "פרסום של המרפאה עם שתי תמונות של השיניים הקדמיות, מסומנות לפני ואחרי",
-      "ar": "منشور للعيادة يعرض صورتين للأسنان الأمامية، موسومتين بقبل وبعد",
-      "en": "Clinic post with two photographs of the front teeth, labelled before and after"
-    },
-    "caption": {
-      "he": "ציפויי שיניים",
-      "ar": "قشور الأسنان",
-      "en": "Veneers"
-    }
-  },
-  {
     "id": "work-whitening-01",
     "file": "work-whitening-01.jpg",
     "category": "treatment-work",
     "width": 1254,
     "height": 1254,
-    "status": "published",
+    "status": "unpublished",
     "provenance": "owner-supplied",
     "alt": {
       "he": "פרסום של המרפאה בכותרת \"הלבנת שיניים וניקוי אבנית\", ובו שתי תמונות מסומנות לפני ואחרי",
