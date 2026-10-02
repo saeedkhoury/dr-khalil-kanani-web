@@ -22,6 +22,7 @@ never a ranking: it depends on who searches, where, on what device, and when.
 | Live crawl gate | `node scripts/audit-seo.mjs https://www.drkhalilkanani.com` | 46 pages, 0 errors, 1 warning | 2026-10-01 |
 | IndexNow | deploy log, job `indexnow` | last submission HTTP 200 | 2026-09-30 |
 | Bing | Bing Webmaster Tools | not set up | — |
+| Google result favicon | `node scripts/check-google-favicon.mjs` | www: s2 current, faviconV2 still the old "A"; bare host: both still the "A" | 2026-10-01 |
 
 ## What to track and how to read it
 
@@ -54,6 +55,7 @@ sources cited.
 | When | What |
 |---|---|
 | Every release | live crawl gate; IndexNow line in the deploy log |
+| Weekly until it passes | `node scripts/check-google-favicon.mjs` — exit 0 once Google shows the tooth for both hostnames; until then change nothing on the site |
 | Monthly | Search Console Performance (3-month window) and Pages; Business Profile performance; the AI check; one observation per P1 query |
 | Quarterly | Lighthouse mobile on the three homes + two treatment pages; citations audit (every listing still identical) |
 
