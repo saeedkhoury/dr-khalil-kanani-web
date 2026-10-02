@@ -12,7 +12,7 @@ import assert from 'node:assert/strict';
 
 import { buildGraph, LOGO_PATH, serializeGraph } from '../../src/lib/schema.ts';
 import { inLocality, seoTitle } from '../../src/lib/seo.ts';
-import { clinic, LOCALES } from '../../src/data/clinic.ts';
+import { clinic, confirmedDoctorNames, GOOGLE_BUSINESS_PROFILE, LOCALES, VERIFICATION } from '../../src/data/clinic.ts';
 
 const ORIGIN = 'https://www.drkhalilkanani.com';
 type Node = Record<string, unknown>;
@@ -45,7 +45,49 @@ describe('structured data', () => {
   test('the clinic carries the Business Profile name exactly; the descriptive form is an alternate', () => {
     const dentist = graphOf('he').find((n) => n['@type'] === 'Dentist')!;
     assert.equal(dentist.name, clinic.doctor.he);
-    assert.deepEqual(dentist.alternateName, [`${clinic.doctor.he} — ${clinic.tagline.he}`]);
+    assert.equal((dentist.alternateName as string[])[0], `${clinic.doctor.he} — ${clinic.tagline.he}`);
+  });
+
+  // 2026-10-01: "Dr Khalil Kanani" in Google showed a Beirut doctor's panel.
+  // The Business Profile is named in Hebrew only; every language version must
+  // say that the clinic and the doctor answer to each CONFIRMED spelling.
+  test('clinic and doctor carry every confirmed spelling of the name in every language', () => {
+    for (const locale of LOCALES) {
+      const graph = graphOf(locale);
+      for (const type of ['Dentist', 'Person']) {
+        const node = graph.find((n) => n['@type'] === type)!;
+        const names = [node.name, ...((node.alternateName as string[]) ?? [])];
+        for (const confirmed of confirmedDoctorNames()) assert.ok(names.includes(confirmed), `${locale} ${type}: ${confirmed}`);
+        assert.equal(new Set(names).size, names.length, `${locale} ${type}: duplicate names`);
+      }
+    }
+  });
+
+  test('a spelling still awaiting the owner is never repeated as an alternate name', () => {
+    const pending = (['he', 'ar', 'en'] as const).filter((l) => !['verified', 'owner'].includes(VERIFICATION[`doctor.${l}`].tier));
+    for (const l of pending) {
+      for (const locale of LOCALES.filter((x) => x !== l)) {
+        for (const type of ['Dentist', 'Person']) {
+          const node = graphOf(locale).find((n) => n['@type'] === type)!;
+          assert.ok(!((node.alternateName as string[]) ?? []).includes(clinic.doctor[l]), `${locale} ${type} repeats unconfirmed ${l}`);
+        }
+      }
+    }
+  });
+
+  test('the clinic points at its own Google Business Profile, the same in every language', () => {
+    for (const locale of LOCALES) {
+      const dentist = graphOf(locale).find((n) => n['@type'] === 'Dentist')!;
+      assert.ok((dentist.sameAs as string[]).includes(GOOGLE_BUSINESS_PROFILE), locale);
+      assert.equal(dentist.hasMap, GOOGLE_BUSINESS_PROFILE, locale);
+    }
+  });
+
+  test('the clinic is located in Israel', () => {
+    for (const locale of LOCALES) {
+      const dentist = graphOf(locale).find((n) => n['@type'] === 'Dentist')!;
+      assert.equal((dentist.address as Node).addressCountry, 'IL');
+    }
   });
 
   test('languages sit on properties schema.org defines for them', () => {

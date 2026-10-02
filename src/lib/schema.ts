@@ -31,7 +31,7 @@
  *    2026-09-27). The origin is now a required argument.
  */
 
-import { clinic, hasAddress, hasGeo, hasHours, mapsUrl } from '../data/clinic.ts';
+import { clinic, confirmedDoctorNames, GOOGLE_BUSINESS_PROFILE, hasAddress, hasGeo, hasHours } from '../data/clinic.ts';
 import { localizePath, type Locale } from '../i18n/config.ts';
 
 const ID = {
@@ -75,9 +75,20 @@ interface GraphOptions {
  * Mode. An empty field is simply absent — never guessed.
  */
 function officialProfiles(): string[] {
-  return [clinic.social.instagram, clinic.social.facebook, clinic.social.googleBusiness]
+  const urls = [clinic.social.instagram, clinic.social.facebook, GOOGLE_BUSINESS_PROFILE, clinic.social.googleBusiness]
     .map((url) => url.trim())
     .filter((url) => url.startsWith('https://'));
+  return [...new Set(urls)];
+}
+
+/**
+ * The page's own name first, then every other CONFIRMED spelling: one doctor
+ * and one clinic whichever script Google meets them in. "Dr Khalil Kanani"
+ * otherwise matched an unrelated doctor in Beirut (2026-10-01), because the
+ * Business Profile carries the Hebrew name only.
+ */
+function otherNames(locale: Locale): string[] {
+  return confirmedDoctorNames().filter((name) => name !== clinic.doctor[locale]);
 }
 
 export function buildGraph({ origin, locale, pathname, title, description, breadcrumbs, services = [], pageType = 'WebPage' }: GraphOptions) {
@@ -106,7 +117,7 @@ export function buildGraph({ origin, locale, pathname, title, description, bread
     // Exactly the verified Google Business Profile name, so the two are read
     // as one entity. The descriptive form stays findable as an alternate name.
     name: clinic.doctor[locale],
-    alternateName: [`${clinic.doctor[locale]} — ${clinic.tagline[locale]}`],
+    alternateName: [`${clinic.doctor[locale]} — ${clinic.tagline[locale]}`, ...otherNames(locale)],
     // The domain's home, identical on every page so the entity never splits.
     url: abs('/'),
     logo,
@@ -153,8 +164,9 @@ export function buildGraph({ origin, locale, pathname, title, description, bread
       latitude: clinic.address.geo.lat,
       longitude: clinic.address.geo.lng,
     };
-    // The same pin the page's own map link opens: one location, everywhere.
-    dentist.hasMap = mapsUrl(locale);
+    // The Business Profile's own Maps place: the site and the profile are
+    // one clinic. (The page's visible map link still opens the pin.)
+    dentist.hasMap = GOOGLE_BUSINESS_PROFILE;
   }
 
   if (hasHours()) {
@@ -196,6 +208,7 @@ export function buildGraph({ origin, locale, pathname, title, description, bread
     '@type': 'Person',
     '@id': abs(ID.doctor),
     name: clinic.doctor[locale],
+    alternateName: otherNames(locale),
     jobTitle: locale === 'he' ? 'רופא שיניים' : locale === 'ar' ? 'طبيب أسنان' : 'Dentist',
     url: abs(localizePath(locale, 'about')),
     knowsLanguage: ['he', 'ar', 'en'],

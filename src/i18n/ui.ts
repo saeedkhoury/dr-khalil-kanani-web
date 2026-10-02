@@ -217,7 +217,7 @@ export const ui = {
     'hero.eyebrow': 'الجديدة-المكر',
     'hero.title': 'طب وتجميل الأسنان',
     'hero.subtitle':
-      'عيادة خاصة في الجديدة-المكر. رعاية شخصية، شرح كامل قبل كل علاج، وخدمة بالعربية والعبرية والإنجليزية.',
+      'عيادة أسنان خاصة في الجديدة-المكر، إسرائيل. رعاية شخصية، شرح كامل قبل كل علاج، وخدمة بالعربية والعبرية والإنجليزية.',
 
     'trust.explanation.title': 'شرح كامل مسبقًا',
     'trust.explanation.body': 'قبل كل علاج تحصلون على شرح لما سيجري ولماذا.',
@@ -378,7 +378,7 @@ export const ui = {
     'hero.eyebrow': 'Jadeidi-Makr',
     'hero.title': 'Dental & aesthetic care',
     'hero.subtitle':
-      'A private clinic in Jadeidi-Makr. Personal care, a full explanation before every treatment, and service in Hebrew, Arabic and English.',
+      'A private dental clinic in Jadeidi-Makr, Israel. Personal care, a full explanation before every treatment, and service in Hebrew, Arabic and English.',
 
     'trust.explanation.title': 'Explained in advance',
     'trust.explanation.body': 'Before any treatment you get a clear explanation of what and why.',
