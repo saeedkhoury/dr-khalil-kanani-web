@@ -16,7 +16,7 @@ export default defineConfig({
     ...(process.env.PW_WEBKIT ? [{
       name: 'webkit',
       use: { browserName: 'webkit' as const },
-      testMatch: /(cms-journeys|visual-cms|admin|photo-publish)\.spec\.ts/,
+      testMatch: /(cms-journeys|visual-cms|admin|photo-publish|accessibility)\.spec\.ts/,
     }] : []),
   ],
   use: {

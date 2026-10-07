@@ -5,20 +5,27 @@
  *   These texts are written to cover the elements the regulations require.
  *   They are not legal advice and must be reviewed by an Israeli lawyer.
  *
- * ACCESSIBILITY — reg. 35ה of the Equal Rights for Persons with Disabilities
- * (Service Accessibility) Regulations, 2013 requires a prominent statement
- * containing: the accommodations implemented, a channel for reporting an
- * accessibility failure, and reference to the remediation process (60 days
- * from notice). A רכז נגישות (accessibility coordinator) must be appointed
- * only by service providers with 25+ employees, so this clinic does NOT
- * declare one — declaring a coordinator that has not been appointed would
- * be an inaccurate statement. A named human contact is given instead.
- *
- * The conformance target is Israeli Standard IS 5568, whose normative base
- * is WCAG 2.0 level AA. Note the Israeli national deviations: 2.4.10
- * (Section Headings) is REQUIRED at AA — stricter than WCAG — while 1.2.4
- * and 1.2.5 are not required and 3.1.2 is disapplied. This site is built to
- * WCAG 2.1 AA, a safe superset.
+ * ACCESSIBILITY — checked 2026-10-07 against the Commission for Equal Rights
+ * of Persons with Disabilities guide "הצהרת נגישות ומידע על הסדרי הנגישות
+ * באתר אינטרנט" (gov.il, updated 15.04.2026) and the standard's text:
+ *  - Websites must meet IS 5568 Part 1 at level AA (reg. 35 of the Equal
+ *    Rights for Persons with Disabilities (Service Accessibility)
+ *    Regulations, 2013). The current edition is IS 5568-1 (September 2023),
+ *    which replaced the May 2021 edition and is WCAG 2.0 with national
+ *    changes: 1.2.1–1.2.3 raised to AA, 1.2.4/1.2.5 lowered to AAA, 2.4.10
+ *    Section Headings raised to AA, 3.1.2 not applicable.
+ *  - The statement must be prominent, reachable from at least two places
+ *    (here: the footer and the accessibility panel), and give: last-update
+ *    date, commitment, standard and level, measures taken, supported
+ *    browsers, how it was tested, known limitations, third-party partial
+ *    conformance, the accessibility coordinator's details where one must be
+ *    appointed, and a contact for reporting problems.
+ *  - The organisation's physical accessibility arrangements must also be
+ *    published (reg. 34א) — see PHYSICAL_ACCESSIBILITY_CONFIRMED below.
+ * A רכז נגישות must be appointed by a service provider employing 25 or more
+ * people. Whether that applies here is the owner's fact; no coordinator is
+ * named until the owner confirms one, and the clinic phone is the contact.
+ * No unverified legal timeline is promised in the statement.
  *
  * No accessibility overlay widget is used. Overlays do not confer legal
  * compliance, and the US FTC fined one vendor $1M in April 2025 over claims
@@ -46,7 +53,20 @@ export const ACCESSIBILITY_CONTACT = {
   email: '',
 };
 
+/** Privacy policy date. The accessibility statement has its own, below. */
 export const LAST_UPDATED = '2026-09-20';
+
+/** Date the accessibility statement was last reviewed against the site. */
+export const ACCESSIBILITY_UPDATED = '2026-10-07';
+
+/**
+ * Physical accessibility of the clinic (reg. 34א): OWNER INFORMATION REQUIRED.
+ * Nothing about parking, the route from the street, the entrance, steps,
+ * the treatment room or the toilet has been confirmed by the clinic, so the
+ * statement says so and asks visitors to call ahead. Replace that section
+ * with the confirmed facts — never with assumptions.
+ */
+export const PHYSICAL_ACCESSIBILITY_CONFIRMED = false;
 
 export const accessibilityStatement: LegalSection[] = [
   {
@@ -58,15 +78,15 @@ export const accessibilityStatement: LegalSection[] = [
     body: {
       he: [
         'המרפאה רואה חשיבות במתן שירות נגיש לכלל הציבור, לרבות אנשים עם מוגבלות.',
-        'אתר זה נבנה בהתאם לתקן הישראלי ת״י 5568 ברמת AA, המבוסס על הנחיות הנגישות לתכני אינטרנט (WCAG), ובהתאם לתקנות שוויון זכויות לאנשים עם מוגבלות (התאמות נגישות לשירות), התשע״ג-2013.',
+        'האתר הותאם לדרישות התקן הישראלי ת״י 5568 חלק 1 (2023) ברמה AA, המבוסס על הנחיות WCAG 2.0, בהתאם לתקנות שוויון זכויות לאנשים עם מוגבלות (התאמות נגישות לשירות), התשע״ג-2013.',
       ],
       ar: [
         'تولي العيادة أهمية لتقديم خدمة متاحة لعموم الجمهور، بمن فيهم الأشخاص ذوو الإعاقة.',
-        'بُني هذا الموقع وفقًا للمعيار الإسرائيلي ת״י 5568 بمستوى AA، المستند إلى إرشادات إتاحة محتوى الويب (WCAG)، ووفقًا لأنظمة المساواة في حقوق الأشخاص ذوي الإعاقة (تعديلات إتاحة الخدمة) لعام 2013.',
+        'جرى ملاءمة الموقع لمتطلبات المعيار الإسرائيلي ת״י 5568 الجزء 1 (2023) بمستوى AA، المستند إلى إرشادات WCAG 2.0، وفقًا لأنظمة المساواة في حقوق الأشخاص ذوي الإعاقة (تعديلات إتاحة الخدمة) لعام 2013.',
       ],
       en: [
         'The clinic considers it important to provide an accessible service to the public, including people with disabilities.',
-        'This site was built in accordance with Israeli Standard IS 5568 at level AA, which is based on the Web Content Accessibility Guidelines (WCAG), and with the Equal Rights for Persons with Disabilities (Service Accessibility) Regulations, 2013.',
+        'This site has been adapted to the requirements of Israeli Standard IS 5568 Part 1 (2023) at level AA, which is based on WCAG 2.0, under the Equal Rights for Persons with Disabilities (Service Accessibility) Regulations, 2013.',
       ],
     },
   },
@@ -78,37 +98,64 @@ export const accessibilityStatement: LegalSection[] = [
     },
     body: {
       he: [
-        'מבנה סמנטי ותקין של כותרות בכל עמוד, המאפשר ניווט באמצעות קורא מסך.',
-        'ניווט מלא באמצעות מקלדת, כולל סימון ברור של הפוקוס וקישור לדילוג לתוכן הראשי.',
-        'יחסי ניגודיות של 4.5:1 לפחות עבור טקסט רגיל, ו-3:1 עבור רכיבי ממשק.',
+        'מבנה סמנטי ותקין של כותרות וחלקי עמוד בכל עמוד, המאפשר ניווט באמצעות קורא מסך.',
+        'ניווט מלא באמצעות מקלדת, כולל סימון ברור של הפוקוס וקישור לדילוג לתוכן הראשי. רכיב בפוקוס אינו מוסתר מאחורי הכותרת העליונה או סרגל הפעולות.',
+        'יחסי ניגודיות של 4.5:1 לפחות עבור טקסט רגיל.',
         'תוויות מפורשות לכל שדה בטופס, והודעות שגיאה המקושרות לשדה ומוקראות על ידי טכנולוגיה מסייעת.',
         'טקסט חלופי לתמונות בעלות משמעות, וסימון תמונות דקורטיביות ככאלה.',
         'כיווניות תקינה של הדף בעברית, בערבית ובאנגלית, לרבות בידוד מספרי טלפון.',
-        'התאמה לצפייה במכשירים ניידים ובמסכים בגדלים שונים, ללא גלילה אופקית.',
-        'כיבוד הגדרת המערכת להפחתת אנימציות (prefers-reduced-motion).',
-        'האתר אינו עושה שימוש בקבצי PDF; כל התוכן מוגש כדפי HTML נגישים.',
+        'התאמה לצפייה במכשירים ניידים ובהגדלת תצוגה בדפדפן, ללא גלילה אופקית.',
+        'כיבוד הגדרת המערכת להפחתת תנועה ואנימציות.',
+        'כפתור ״הגדרות נגישות״ בכל עמוד (בפינה התחתונה, ובטלפון בסרגל הפעולות התחתון) מאפשר להגדיל את הטקסט, להגביר ניגודיות, להדגיש קישורים ולעצור אנימציות. ההגדרות נשמרות בדפדפן שלכם בלבד.',
+        'האתר אינו עושה שימוש בקבצי PDF; כל התוכן מוגש כדפי HTML.',
       ],
       ar: [
-        'بنية دلالية وسليمة للعناوين في كل صفحة، تتيح التصفح عبر قارئ الشاشة.',
-        'تصفّح كامل بواسطة لوحة المفاتيح، بما في ذلك إبراز واضح للتركيز ورابط للتخطي إلى المحتوى الرئيسي.',
-        'نسب تباين لا تقل عن 4.5:1 للنص العادي، و3:1 لعناصر الواجهة.',
+        'بنية دلالية وسليمة للعناوين وأقسام الصفحة في كل صفحة، تتيح التصفح عبر قارئ الشاشة.',
+        'تصفّح كامل بواسطة لوحة المفاتيح، بما في ذلك إبراز واضح للتركيز ورابط للتخطي إلى المحتوى الرئيسي. العنصر الذي عليه التركيز لا يختفي خلف الشريط العلوي أو شريط الإجراءات.',
+        'نسب تباين لا تقل عن 4.5:1 للنص العادي.',
         'تسميات صريحة لكل حقل في النموذج، ورسائل خطأ مرتبطة بالحقل وتُقرأ بواسطة التقنيات المساعدة.',
         'نص بديل للصور ذات المعنى، ووسم الصور الزخرفية بهذه الصفة.',
         'اتجاه سليم للصفحة بالعبرية والعربية والإنجليزية، بما في ذلك عزل أرقام الهواتف.',
-        'ملاءمة للعرض على الأجهزة المحمولة وعلى شاشات بأحجام مختلفة، دون تمرير أفقي.',
-        'احترام إعداد النظام لتقليل الحركة (prefers-reduced-motion).',
-        'لا يستخدم الموقع ملفات PDF؛ كل المحتوى يُقدَّم كصفحات HTML متاحة.',
+        'ملاءمة للعرض على الأجهزة المحمولة وعند تكبير العرض في المتصفح، دون تمرير أفقي.',
+        'احترام إعداد النظام لتقليل الحركة والرسوم المتحركة.',
+        'زر «إعدادات إمكانية الوصول» في كل صفحة (في الزاوية السفلية، وفي الهاتف ضمن شريط الإجراءات السفلي) يتيح تكبير النص وتعزيز التباين وإبراز الروابط وإيقاف الحركة. تُحفظ الإعدادات في متصفحكم فقط.',
+        'لا يستخدم الموقع ملفات PDF؛ كل المحتوى يُقدَّم كصفحات HTML.',
       ],
       en: [
-        'A semantic, correctly ordered heading structure on every page, allowing screen-reader navigation.',
-        'Full keyboard navigation, including a clearly visible focus indicator and a skip-to-content link.',
-        'Contrast ratios of at least 4.5:1 for normal text and 3:1 for user-interface components.',
+        'A semantic, correctly ordered structure of headings and page regions on every page, allowing screen-reader navigation.',
+        'Full keyboard navigation, including a clearly visible focus indicator and a skip-to-content link. A focused element is never hidden behind the top header or the action bar.',
+        'Contrast ratios of at least 4.5:1 for normal text.',
         'Explicit labels on every form field, with error messages tied to their field and announced by assistive technology.',
         'Alternative text for meaningful images, with decorative images marked as such.',
         'Correct text direction in Hebrew, Arabic and English, including isolation of phone numbers.',
-        'Support for mobile devices and a range of screen sizes, with no horizontal scrolling.',
-        'Respect for the system reduced-motion setting (prefers-reduced-motion).',
-        'The site uses no PDF files; all content is delivered as accessible HTML pages.',
+        'Support for mobile devices and for browser zoom, with no horizontal scrolling.',
+        'Respect for the system setting to reduce motion and animation.',
+        'An "Accessibility settings" button on every page (in the lower corner, and on phones in the bottom action bar) lets you enlarge text, increase contrast, highlight links and stop animations. Settings are saved only in your browser.',
+        'The site uses no PDF files; all content is delivered as HTML pages.',
+      ],
+    },
+  },
+  {
+    heading: {
+      he: 'איך האתר נבדק',
+      ar: 'كيف فُحص الموقع',
+      en: 'How the site was tested',
+    },
+    body: {
+      he: [
+        'האתר נבדק בגרסאות עדכניות של הדפדפנים Chrome ו-Safari, במחשב ובגודל מסך של טלפון, בעברית, בערבית ובאנגלית.',
+        'הבדיקות כללו בדיקה אוטומטית (axe-core) של כל עמודי האתר, ניווט ידני במקלדת, בדיקת מבנה הכותרות ושמות הרכיבים כפי שהם נמסרים לטכנולוגיה מסייעת, הגדלת טקסט ותצוגה, והפחתת תנועה.',
+        'האתר מיועד לגרסאות עדכניות של הדפדפנים הנפוצים. כל התוכן והקישורים זמינים גם כאשר JavaScript כבוי; כפתור ההגדרות והגלריה המורחבת דורשים אותו.',
+      ],
+      ar: [
+        'فُحص الموقع في إصدارات حديثة من المتصفحَين Chrome وSafari، على الحاسوب وبحجم شاشة الهاتف، بالعبرية والعربية والإنجليزية.',
+        'شملت الفحوص فحصًا آليًا (axe-core) لجميع صفحات الموقع، والتنقل اليدوي بلوحة المفاتيح، وفحص بنية العناوين وأسماء العناصر كما تُنقل إلى التقنيات المساعدة، وتكبير النص والعرض، وتقليل الحركة.',
+        'الموقع مُعدّ للإصدارات الحديثة من المتصفحات الشائعة. كل المحتوى والروابط متاحة أيضًا عند تعطيل JavaScript؛ أما زر الإعدادات والعرض المكبَّر للمعرض فيتطلبانه.',
+      ],
+      en: [
+        'The site was tested in current versions of Chrome and Safari, on a computer and at phone screen size, in Hebrew, Arabic and English.',
+        'Testing included an automated check (axe-core) of every page, manual keyboard navigation, review of the heading structure and of control names as exposed to assistive technology, text and page enlargement, and reduced motion.',
+        'The site is intended for current versions of common browsers. All content and links remain available with JavaScript turned off; the settings button and the enlarged gallery view need it.',
       ],
     },
   },
@@ -120,16 +167,37 @@ export const accessibilityStatement: LegalSection[] = [
     },
     body: {
       he: [
-        'תוכן המסופק על ידי צד שלישי, ככל שישולב בעתיד, עשוי שלא להיות נגיש במלואו.',
+        'מפת המיקום נטענת מ-Google רק לאחר לחיצה, והיא תוכן של צד שלישי שנגישותו אינה בשליטתנו. הכתובת, ההוראות וקישורי הניווט מוצגים גם כטקסט, ללא המפה.',
+        'הבדיקה לא כללה עדיין בדיקה עם תוכנת הקראת מסך מסוימת על ידי משתמש/ת.',
         'אנו פועלים לשיפור מתמיד של נגישות האתר. אם נתקלתם ברכיב שאינו נגיש, נשמח לדעת.',
       ],
       ar: [
-        'المحتوى الذي يقدّمه طرف ثالث، إذا أُدمج مستقبلًا، قد لا يكون متاحًا بالكامل.',
+        'تُحمَّل خريطة الموقع من Google فقط بعد النقر، وهي محتوى من طرف ثالث لا نتحكم في إتاحته. العنوان والتعليمات وروابط التنقل معروضة أيضًا كنص، دون الخريطة.',
+        'لم يشمل الفحص بعد اختبارًا ببرنامج قارئ شاشة محدد من قِبل مستخدم/ة.',
         'نعمل على تحسين إتاحة الموقع باستمرار. إذا واجهتم عنصرًا غير متاح، يسرّنا أن نعرف.',
       ],
       en: [
-        'Third-party content, should any be integrated in future, may not be fully accessible.',
+        'The location map loads from Google only after you press a button; it is third-party content whose accessibility we do not control. The address, directions and navigation links are also given as text, without the map.',
+        'Testing has not yet included a session by a person using a specific screen reader.',
         'We work to improve the accessibility of this site continuously. If you encounter an element that is not accessible, we would like to know.',
+      ],
+    },
+  },
+  {
+    heading: {
+      he: 'הסדרי נגישות במרפאה',
+      ar: 'ترتيبات إمكانية الوصول في العيادة',
+      en: 'Accessibility arrangements at the clinic',
+    },
+    body: {
+      he: [
+        'פרטי הנגישות הפיזית של המרפאה (חניה, הדרך מהרחוב, הכניסה, חדר הטיפולים והשירותים) טרם פורסמו כאן. כדי שנוכל להיערך מראש, אנא התקשרו לפני ההגעה וספרו לנו איזו התאמה אתם צריכים.',
+      ],
+      ar: [
+        'لم تُنشر هنا بعد تفاصيل إمكانية الوصول المادية في العيادة (الموقف، الطريق من الشارع، المدخل، غرفة العلاج ودورة المياه). لكي نستعد مسبقًا، يُرجى الاتصال قبل الوصول وإخبارنا بالتعديل الذي تحتاجونه.',
+      ],
+      en: [
+        'Details of the clinic’s physical accessibility (parking, the route from the street, the entrance, the treatment room and the toilet) have not yet been published here. So that we can prepare, please call before you come and tell us what accommodation you need.',
       ],
     },
   },
@@ -141,16 +209,13 @@ export const accessibilityStatement: LegalSection[] = [
     },
     body: {
       he: [
-        'אם נתקלתם בבעיית נגישות באתר, או שאתם זקוקים להתאמת נגישות לצורך קבלת שירות במרפאה, אנא צרו קשר ונטפל בפנייה.',
-        'בהתאם לתקנות, פנייה בדבר ליקוי נגישות תטופל בתוך 60 ימים ממועד קבלתה.',
+        'אם נתקלתם בבעיית נגישות באתר, או שאתם זקוקים להתאמת נגישות לצורך קבלת שירות במרפאה, אנא צרו קשר בטלפון שלהלן ונטפל בפנייה. כדאי לציין את העמוד ואת הבעיה.',
       ],
       ar: [
-        'إذا واجهتم مشكلة في إتاحة الموقع، أو كنتم بحاجة إلى تعديل لإتاحة الوصول لتلقي الخدمة في العيادة، يُرجى التواصل معنا وسنعالج الطلب.',
-        'وفقًا للأنظمة، تُعالَج الشكوى المتعلقة بخلل في إمكانية الوصول خلال 60 يومًا من تاريخ تلقّيها.',
+        'إذا واجهتم مشكلة في إتاحة الموقع، أو كنتم بحاجة إلى تعديل لإتاحة الوصول لتلقي الخدمة في العيادة، يُرجى التواصل معنا عبر الهاتف أدناه وسنعالج الطلب. يُفضَّل ذكر الصفحة والمشكلة.',
       ],
       en: [
-        'If you encounter an accessibility problem on this site, or you need an accessibility accommodation in order to receive service at the clinic, please contact us and we will address it.',
-        'In accordance with the regulations, a report of an accessibility failure will be handled within 60 days of receipt.',
+        'If you encounter an accessibility problem on this site, or you need an accessibility accommodation in order to receive service at the clinic, please contact us at the phone number below and we will address it. It helps to mention the page and the problem.',
       ],
     },
   },

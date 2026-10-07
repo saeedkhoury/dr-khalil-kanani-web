@@ -84,7 +84,9 @@ const legal = [
         }
       </ul>
     </div>
-    <div class="shell pb-6">
+    {/* md:pb-20 keeps the accessibility corner button (AccessibilityControl)
+        clear of this last line when the page is scrolled to its end. */}
+    <div class="shell pb-6 md:pb-20">
       <p class="text-[var(--text-xs)] leading-relaxed text-[var(--color-muted)]">
         {t('legal.disclaimer')}
       </p>

@@ -553,3 +553,82 @@
     }
   }
 }
+
+/* ==========================================================================
+   Focus never hides behind fixed bars (WCAG 2.4.11).
+   Keyboard focus scrolls the element into view, but the sticky header and
+   the phone action bar would sit on top of it; scroll-padding makes the
+   browser keep it clear of both.
+   ========================================================================== */
+html {
+  scroll-padding-block-start: 5.5rem;
+}
+@media (max-width: 767.98px) {
+  html {
+    scroll-padding-block-end: calc(var(--actionbar-h) + env(safe-area-inset-bottom, 0px) + 0.5rem);
+  }
+}
+
+/* ==========================================================================
+   Accessibility-panel preferences (src/lib/a11y-prefs.ts).
+   Each applies only when the visitor chose it; with no attribute on <html>
+   the site is exactly as designed. Unlayered, so they win over utilities.
+   ========================================================================== */
+
+/* Larger text. Breakpoints do not move with the root size, so the header
+   switches to its compact menu rather than overflowing the row. */
+html[data-a11y-text='1'] {
+  font-size: 115%;
+}
+html[data-a11y-text='2'] {
+  font-size: 130%;
+}
+html[data-a11y-text] .header-wide {
+  display: none !important;
+}
+html[data-a11y-text] .header-compact {
+  display: block !important;
+}
+html[data-a11y-text] .site-header > .shell {
+  flex-wrap: wrap;
+  row-gap: 0.25rem;
+}
+
+/* Higher contrast: secondary text becomes body text, hairlines become
+   visible edges, signal-blue graphics take the dark ink. */
+html[data-a11y-contrast] {
+  --color-muted: #0f2a3d;
+  --color-line: #6f8aa0;
+  --color-line-strong: #4a6274;
+  --color-signal: #0c5283;
+}
+
+/* Links identifiable without colour. */
+html[data-a11y-links] a:not(.skip-link) {
+  text-decoration-line: underline !important;
+  text-decoration-thickness: 2px !important;
+  text-underline-offset: 0.18em !important;
+}
+
+/* No animation: the same result as the operating-system setting. */
+html[data-a11y-motion] {
+  scroll-behavior: auto;
+}
+html[data-a11y-motion] *,
+html[data-a11y-motion] *::before,
+html[data-a11y-motion] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0ms !important;
+}
+html[data-a11y-motion] .reveal,
+html[data-a11y-motion] .enter {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* The settings panel needs JavaScript; without it, show no dead button. */
+html.no-js [data-a11y-open] {
+  display: none !important;
+}
