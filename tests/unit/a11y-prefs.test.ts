@@ -9,7 +9,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DEFAULT_PREFS, PREFS_KEY, TEXT_STEPS, parsePrefs, prefAttributes, HEAD_SCRIPT } from '../../src/lib/a11y-prefs.ts';
+import { DEFAULT_PREFS, PREFS_KEY, TEXT_STEPS, parsePrefs, prefAttributes, HEAD_SCRIPT, FAB_KEY, parseFabPosition, snapFab } from '../../src/lib/a11y-prefs.ts';
 
 describe('parsing stored preferences', () => {
   test('nothing stored, garbage, or wrong types → defaults', () => {
@@ -56,5 +56,31 @@ describe('the pre-paint head script', () => {
     assert.deepEqual(run('{"text":"2\\" onload=\\"x"}'), {});
     assert.deepEqual(run('}{'), {});
     assert.deepEqual(run(null, true), {});
+  });
+});
+
+describe('where the visitor dragged the accessibility button', () => {
+  test('nothing stored or anything malformed → default corner (null)', () => {
+    for (const raw of [null, '', 'x', '[]', '{"side":"top","y":0.5}', '{"side":"left","y":"0.5"}', '{"side":"left","y":2}', '{"side":"left","y":-0.1}']) {
+      assert.equal(parseFabPosition(raw), null, String(raw));
+    }
+  });
+  test('a side and a height fraction survive', () => {
+    assert.deepEqual(parseFabPosition('{"side":"left","y":0.42,"x":9}'), { side: 'left', y: 0.42 });
+    assert.deepEqual(parseFabPosition('{"side":"right","y":1}'), { side: 'right', y: 1 });
+  });
+  test('snap: the nearer physical edge wins, height is clamped into the allowed band', () => {
+    assert.deepEqual(snapFab({ centerX: 50, top: 300, viewportW: 375, minTop: 80, maxTop: 640, viewportH: 812 }), { side: 'left', y: 300 / 812 });
+    assert.deepEqual(snapFab({ centerX: 300, top: 10, viewportW: 375, minTop: 80, maxTop: 640, viewportH: 812 }), { side: 'right', y: 80 / 812 });
+    assert.deepEqual(snapFab({ centerX: 300, top: 900, viewportW: 375, minTop: 80, maxTop: 640, viewportH: 812 }), { side: 'right', y: 640 / 812 });
+  });
+  test('the head script restores the position before paint', () => {
+    const attrs: Record<string, string> = {};
+    const props: Record<string, string> = {};
+    const doc = { documentElement: { setAttribute: (k: string, v: string) => { attrs[k] = v; }, style: { setProperty: (k: string, v: string) => { props[k] = v; } } } };
+    const storage = { getItem: (k: string) => (k === FAB_KEY ? '{"side":"left","y":0.5}' : null) };
+    new Function('document', 'localStorage', HEAD_SCRIPT)(doc, storage);
+    assert.deepEqual(attrs, { 'data-fab-side': 'left' });
+    assert.deepEqual(props, { '--fab-y': '0.5' });
   });
 });

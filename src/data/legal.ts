@@ -106,7 +106,7 @@ export const accessibilityStatement: LegalSection[] = [
         'כיווניות תקינה של הדף בעברית, בערבית ובאנגלית, לרבות בידוד מספרי טלפון.',
         'התאמה לצפייה במכשירים ניידים ובהגדלת תצוגה בדפדפן, ללא גלילה אופקית.',
         'כיבוד הגדרת המערכת להפחתת תנועה ואנימציות.',
-        'כפתור ״הגדרות נגישות״ בכל עמוד (בפינה התחתונה, ובטלפון בסרגל הפעולות התחתון) מאפשר להגדיל את הטקסט, להגביר ניגודיות, להדגיש קישורים ולעצור אנימציות. ההגדרות נשמרות בדפדפן שלכם בלבד.',
+        'כפתור עגול ״הגדרות נגישות״ בכל עמוד (בפינה התחתונה, וניתן לגרור אותו לכל גובה לאורך צדי המסך) מאפשר להגדיל את הטקסט, להגביר ניגודיות, להדגיש קישורים ולעצור אנימציות. ההגדרות נשמרות בדפדפן שלכם בלבד.',
         'האתר אינו עושה שימוש בקבצי PDF; כל התוכן מוגש כדפי HTML.',
       ],
       ar: [
@@ -118,7 +118,7 @@ export const accessibilityStatement: LegalSection[] = [
         'اتجاه سليم للصفحة بالعبرية والعربية والإنجليزية، بما في ذلك عزل أرقام الهواتف.',
         'ملاءمة للعرض على الأجهزة المحمولة وعند تكبير العرض في المتصفح، دون تمرير أفقي.',
         'احترام إعداد النظام لتقليل الحركة والرسوم المتحركة.',
-        'زر «إعدادات إمكانية الوصول» في كل صفحة (في الزاوية السفلية، وفي الهاتف ضمن شريط الإجراءات السفلي) يتيح تكبير النص وتعزيز التباين وإبراز الروابط وإيقاف الحركة. تُحفظ الإعدادات في متصفحكم فقط.',
+        'زر دائري «إعدادات إمكانية الوصول» في كل صفحة (في الزاوية السفلية، ويمكن سحبه إلى أي ارتفاع على جانبَي الشاشة) يتيح تكبير النص وتعزيز التباين وإبراز الروابط وإيقاف الحركة. تُحفظ الإعدادات في متصفحكم فقط.',
         'لا يستخدم الموقع ملفات PDF؛ كل المحتوى يُقدَّم كصفحات HTML.',
       ],
       en: [
@@ -130,7 +130,7 @@ export const accessibilityStatement: LegalSection[] = [
         'Correct text direction in Hebrew, Arabic and English, including isolation of phone numbers.',
         'Support for mobile devices and for browser zoom, with no horizontal scrolling.',
         'Respect for the system setting to reduce motion and animation.',
-        'An "Accessibility settings" button on every page (in the lower corner, and on phones in the bottom action bar) lets you enlarge text, increase contrast, highlight links and stop animations. Settings are saved only in your browser.',
+        'A round "Accessibility settings" button on every page (in the lower corner; you can drag it to any height along either side of the screen) lets you enlarge text, increase contrast, highlight links and stop animations. Settings are saved only in your browser.',
         'The site uses no PDF files; all content is delivered as HTML pages.',
       ],
     },

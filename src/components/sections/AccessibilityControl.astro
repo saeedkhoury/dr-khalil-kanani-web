@@ -8,23 +8,25 @@
  * links, no animation. No screen-reader imitation: people who use one bring
  * their own, and a fake one gets in their way.
  *
- * The button is quiet on purpose. On phones it sits inside the bottom action
- * bar (StickyActionBar, `data-a11y-open`) so nothing floats over the text;
- * where that bar is absent (desktop, the contact page, 404) it is this small
- * corner button. <dialog>.showModal() gives the focus trap, Escape and an
- * inert page for free; preferences are applied by src/lib/a11y-prefs.ts.
+ * The button is a quiet round 44 px control. It starts in the lower corner
+ * (above the phone action bar where there is one) and can be dragged to any
+ * height along the left or right edge — it snaps to the nearer side, stays
+ * clear of the header and the action bar, and the spot is remembered in this
+ * browser (src/lib/a11y-prefs.ts, applied before paint). A press without
+ * movement opens the panel; a drag never does. <dialog>.showModal() gives
+ * the focus trap, Escape and an inert page for free.
  */
 import { localizePath, type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
-import { PREFS_KEY, TEXT_STEPS } from '../../lib/a11y-prefs';
+import { PREFS_KEY, FAB_KEY, TEXT_STEPS } from '../../lib/a11y-prefs';
 import Icon from '../primitives/Icon.astro';
 
 interface Props {
   locale: Locale;
-  /** The phone action bar carries its own trigger; hide the corner button below md. */
-  inActionBar: boolean;
+  /** The phone action bar is shown: start above it, never drop onto it. */
+  aboveActionBar: boolean;
 }
-const { locale, inActionBar } = Astro.props;
+const { locale, aboveActionBar } = Astro.props;
 const t = useTranslations(locale);
 
 const toggles = [
@@ -36,8 +38,9 @@ const toggles = [
 
 <button
   type="button"
-  class:list={['a11y-fab', inActionBar && 'a11y-fab--desktop']}
+  class:list={['a11y-fab', aboveActionBar && 'a11y-fab--above-bar']}
   data-a11y-open
+  data-fab-key={FAB_KEY}
   aria-haspopup="dialog"
   aria-controls="a11y-panel"
   aria-label={t('a11y.panel.open')}
@@ -88,10 +91,20 @@ const toggles = [
 
 <style>
   .a11y-fab {
+    /* The band the button may be dragged within: below the sticky header,
+       above the bottom edge (or the phone action bar). */
+    --fab-size: 44px;
+    --fab-min: 5rem;
+    --fab-max: calc(100dvh - var(--fab-size) - 1rem - env(safe-area-inset-bottom, 0px));
     position: fixed;
     z-index: 45;
     inset-block-end: calc(1rem + env(safe-area-inset-bottom, 0px));
     inset-inline-start: max(1rem, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+    /* A drag must move the button, not scroll the page or open a callout. */
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -108,9 +121,26 @@ const toggles = [
     background: var(--color-mist);
   }
   @media (max-width: 767.98px) {
-    .a11y-fab--desktop {
-      display: none;
+    .a11y-fab--above-bar {
+      --fab-max: calc(100dvh - var(--fab-size) - var(--actionbar-h) - env(safe-area-inset-bottom, 0px) - 0.75rem);
+      inset-block-end: calc(var(--actionbar-h) + env(safe-area-inset-bottom, 0px) + 0.75rem);
     }
+  }
+  /* Where the visitor dragged it: a physical side, a clamped height. */
+  :global(html[data-fab-side]) .a11y-fab {
+    inset: auto;
+    top: clamp(var(--fab-min), calc(var(--fab-y) * 100dvh), var(--fab-max));
+  }
+  :global(html[data-fab-side='left']) .a11y-fab {
+    left: max(0.75rem, env(safe-area-inset-left, 0px));
+  }
+  :global(html[data-fab-side='right']) .a11y-fab {
+    right: max(0.75rem, env(safe-area-inset-right, 0px));
+  }
+  .a11y-fab.is-dragging {
+    cursor: grabbing;
+    background: var(--color-mist);
+    box-shadow: 0 10px 28px -14px rgba(12, 82, 131, 0.55);
   }
 
   .a11y-panel {
@@ -277,7 +307,99 @@ const toggles = [
 </style>
 
 <script>
-  import { parsePrefs, prefAttributes, type A11yPrefs } from '../../lib/a11y-prefs';
+  import { parsePrefs, prefAttributes, snapFab, type A11yPrefs, type FabPosition } from '../../lib/a11y-prefs';
+
+  // ── Dragging the button along the side edges ──────────────────────────
+  const fab = document.querySelector<HTMLButtonElement>('.a11y-fab');
+  const fabKey = fab?.dataset.fabKey ?? '';
+  const placeFab = (pos: FabPosition | null): void => {
+    const root = document.documentElement;
+    if (pos) {
+      root.setAttribute('data-fab-side', pos.side);
+      root.style.setProperty('--fab-y', String(pos.y));
+    } else {
+      root.removeAttribute('data-fab-side');
+      root.style.removeProperty('--fab-y');
+    }
+    try {
+      if (pos) localStorage.setItem(fabKey, JSON.stringify(pos));
+      else localStorage.removeItem(fabKey);
+    } catch { /* private mode: it still moves for this page */ }
+  };
+  if (fab) {
+    const DRAG_THRESHOLD = 8;
+    const GAP = 12;
+    let start: { x: number; y: number; left: number; top: number } | null = null;
+    let dragging = false;
+    let suppressClick = false;
+    let current = { left: 0, top: 0 };
+
+    // Below the sticky header, above the bottom edge or the phone action bar.
+    const band = (): { minTop: number; maxTop: number } => {
+      const header = document.querySelector('.site-header')?.getBoundingClientRect();
+      const barEl = document.querySelector<HTMLElement>('[data-action-bar]');
+      const bar = barEl && getComputedStyle(barEl).display !== 'none' ? barEl.getBoundingClientRect() : null;
+      const minTop = (header ? Math.max(header.bottom, 0) : 0) + GAP;
+      const maxTop = (bar && bar.height ? bar.top : innerHeight) - fab.offsetHeight - GAP;
+      return { minTop, maxTop: Math.max(minTop, maxTop) };
+    };
+
+    fab.addEventListener('pointerdown', (event) => {
+      if (event.button !== 0) return;
+      const box = fab.getBoundingClientRect();
+      start = { x: event.clientX, y: event.clientY, left: box.left, top: box.top };
+      dragging = false;
+      try { fab.setPointerCapture(event.pointerId); } catch { /* synthetic pointer */ }
+    });
+    fab.addEventListener('pointermove', (event) => {
+      if (!start) return;
+      const dx = event.clientX - start.x;
+      const dy = event.clientY - start.y;
+      if (!dragging && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
+      if (!dragging) {
+        dragging = true;
+        fab.classList.add('is-dragging');
+      }
+      const { minTop, maxTop } = band();
+      current = {
+        left: Math.min(Math.max(start.left + dx, 0), innerWidth - fab.offsetWidth),
+        top: Math.min(Math.max(start.top + dy, minTop), maxTop),
+      };
+      fab.style.inset = 'auto';
+      fab.style.left = `${current.left}px`;
+      fab.style.top = `${current.top}px`;
+    });
+    const finish = (commit: boolean): void => {
+      if (!start) return;
+      start = null;
+      if (!dragging) return;
+      dragging = false;
+      fab.classList.remove('is-dragging');
+      fab.removeAttribute('style');
+      if (!commit) return;
+      const { minTop, maxTop } = band();
+      placeFab(snapFab({
+        centerX: current.left + fab.offsetWidth / 2,
+        top: current.top,
+        viewportW: innerWidth,
+        viewportH: innerHeight,
+        minTop,
+        maxTop,
+      }));
+      // The release that ends a drag also fires a click: swallow that one.
+      suppressClick = true;
+      window.setTimeout(() => { suppressClick = false; }, 400);
+    };
+    fab.addEventListener('pointerup', () => finish(true));
+    fab.addEventListener('pointercancel', () => finish(false));
+    // Capture runs before the open handler below.
+    fab.addEventListener('click', (event) => {
+      if (!suppressClick) return;
+      suppressClick = false;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }, true);
+  }
 
   // Focus Not Obscured (WCAG 2.4.11). A focused element can be fully inside
   // the viewport yet under the sticky header or the phone action bar, and
@@ -358,6 +480,7 @@ const toggles = [
     dialog.querySelector('[data-a11y-reset]')?.addEventListener('click', () => {
       prefs = parsePrefs(null);
       apply();
+      placeFab(null); // the button returns to its corner too
     });
 
     const close = (): void => dialog.close();
