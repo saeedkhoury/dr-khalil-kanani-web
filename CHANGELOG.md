@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-10-07 — Accessibility
+
+- Accessibility settings button (text size, contrast, underlined links, stop
+  animation) — native dialog, no third-party widget, saved only in the
+  visitor's browser.
+- Keyboard focus never hidden behind the sticky header or phone action bar;
+  enlarged text never scrolls sideways.
+- Accessibility statement rewritten against IS 5568-1 (2023) and the
+  Commission's checklist, in Hebrew, Arabic and English; the clinic's
+  physical-access facts are awaited from the owner.
+
 ## 2026-09-30 — CMS reliability pass
 
 - Staging admin (`admin-staging.drkhalilkanani.com` → branch `cms/integration`).

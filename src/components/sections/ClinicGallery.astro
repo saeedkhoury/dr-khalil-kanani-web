@@ -151,7 +151,7 @@ const EMPTY_NOTE = {
             galleries this wrapper is display:contents, so it changes nothing. */}
         <div
           id={workGallery ? 'work-strip' : undefined}
-          role={workGallery ? 'region' : undefined}
+          role={workGallery ? 'group' : undefined}
           aria-label={workGallery ? t('gallery.workTitle') : undefined}
           class:list={[
             workGallery
@@ -312,7 +312,7 @@ const EMPTY_NOTE = {
 
           const scrollByStep = (forward) => {
             const delta = step() * (forward ? 1 : -1) * (rtl() ? -1 : 1);
-            const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.hasAttribute('data-a11y-motion');
             strip.scrollBy({ left: delta, behavior: reduce ? 'auto' : 'smooth' });
           };
 

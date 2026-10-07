@@ -1,0 +1,384 @@
+---
+/**
+ * Accessibility settings: a small button and a native <dialog> panel.
+ *
+ * NOT an overlay that "fixes" the site — the markup itself is built to IS 5568
+ * (see docs and data/legal.ts). This only offers presentation preferences a
+ * visitor may want on top of that: larger text, higher contrast, underlined
+ * links, no animation. No screen-reader imitation: people who use one bring
+ * their own, and a fake one gets in their way.
+ *
+ * The button is quiet on purpose. On phones it sits inside the bottom action
+ * bar (StickyActionBar, `data-a11y-open`) so nothing floats over the text;
+ * where that bar is absent (desktop, the contact page, 404) it is this small
+ * corner button. <dialog>.showModal() gives the focus trap, Escape and an
+ * inert page for free; preferences are applied by src/lib/a11y-prefs.ts.
+ */
+import { localizePath, type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { PREFS_KEY, TEXT_STEPS } from '../../lib/a11y-prefs';
+import Icon from '../primitives/Icon.astro';
+
+interface Props {
+  locale: Locale;
+  /** The phone action bar carries its own trigger; hide the corner button below md. */
+  inActionBar: boolean;
+}
+const { locale, inActionBar } = Astro.props;
+const t = useTranslations(locale);
+
+const toggles = [
+  { key: 'contrast', label: t('a11y.panel.contrast') },
+  { key: 'links', label: t('a11y.panel.links') },
+  { key: 'motion', label: t('a11y.panel.motion') },
+] as const;
+---
+
+<button
+  type="button"
+  class:list={['a11y-fab', inActionBar && 'a11y-fab--desktop']}
+  data-a11y-open
+  aria-haspopup="dialog"
+  aria-controls="a11y-panel"
+  aria-label={t('a11y.panel.open')}
+>
+  <Icon name="accessibility" size={24} />
+</button>
+
+<dialog
+  id="a11y-panel"
+  class="a11y-panel"
+  aria-labelledby="a11y-panel-title"
+  data-prefs-key={PREFS_KEY}
+  data-text-steps={JSON.stringify(TEXT_STEPS)}
+>
+  <div class="a11y-panel-head">
+    <h2 id="a11y-panel-title" class="a11y-panel-title">{t('a11y.panel.title')}</h2>
+    <button type="button" class="a11y-icon-btn" data-a11y-close aria-label={t('a11y.panel.close')}>
+      <Icon name="close" size={20} />
+    </button>
+  </div>
+
+  <div class="a11y-row" role="group" aria-labelledby="a11y-text-label">
+    <span id="a11y-text-label">{t('a11y.panel.text')}</span>
+    <span class="a11y-stepper">
+      <button type="button" class="a11y-icon-btn" data-a11y-step="-1" aria-label={t('a11y.panel.smaller')}>
+        <Icon name="minus" size={20} />
+      </button>
+      <output class="a11y-value u-ltr" data-a11y-text-value aria-live="polite">100%</output>
+      <button type="button" class="a11y-icon-btn" data-a11y-step="1" aria-label={t('a11y.panel.larger')}>
+        <Icon name="plus" size={20} />
+      </button>
+    </span>
+  </div>
+
+  {toggles.map((item) => (
+    <button type="button" class="a11y-toggle" data-a11y-toggle={item.key} aria-pressed="false">
+      <span>{item.label}</span>
+      <span class="a11y-switch" aria-hidden="true"><span></span></span>
+    </button>
+  ))}
+
+  <div class="a11y-panel-foot">
+    <button type="button" class="a11y-reset" data-a11y-reset>{t('a11y.panel.reset')}</button>
+    <a href={localizePath(locale, 'accessibility')}>{t('legal.accessibility')}</a>
+  </div>
+  <p class="a11y-note">{t('a11y.panel.note')}</p>
+</dialog>
+
+<style>
+  .a11y-fab {
+    position: fixed;
+    z-index: 45;
+    inset-block-end: calc(1rem + env(safe-area-inset-bottom, 0px));
+    inset-inline-start: max(1rem, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 44px;
+    block-size: 44px;
+    border-radius: 999px;
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-porcelain);
+    color: var(--color-ink);
+    cursor: pointer;
+    transition: background-color var(--dur-fast) ease;
+  }
+  .a11y-fab:hover {
+    background: var(--color-mist);
+  }
+  @media (max-width: 767.98px) {
+    .a11y-fab--desktop {
+      display: none;
+    }
+  }
+
+  .a11y-panel {
+    inline-size: min(22rem, calc(100vw - 2rem));
+    max-block-size: calc(100dvh - 6rem);
+    overflow: auto;
+    margin: 0;
+    inset: auto;
+    inset-block-end: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+    inset-inline-start: max(1rem, env(safe-area-inset-left, 0px), env(safe-area-inset-right, 0px));
+    padding: 1rem;
+    border: 1px solid var(--color-line-strong);
+    border-radius: var(--radius-card);
+    background: var(--color-porcelain);
+    color: var(--color-body);
+    box-shadow: 0 18px 44px -24px rgba(12, 82, 131, 0.45);
+  }
+  .a11y-panel::backdrop {
+    background: rgba(15, 42, 61, 0.18);
+  }
+  /* Phones: a bottom sheet clear of the home indicator. */
+  @media (max-width: 767.98px) {
+    .a11y-panel {
+      inline-size: 100%;
+      max-inline-size: 100%;
+      inset-inline: 0;
+      inset-block-end: 0;
+      border-end-start-radius: 0;
+      border-end-end-radius: 0;
+      padding-block-end: calc(1rem + env(safe-area-inset-bottom, 0px));
+    }
+  }
+
+  .a11y-panel-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-block-end: 0.5rem;
+  }
+  .a11y-panel-title {
+    font-size: var(--text-lg);
+    margin: 0;
+  }
+  .a11y-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-inline-size: 44px;
+    min-block-size: 44px;
+    border-radius: var(--radius-btn);
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-porcelain);
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+  .a11y-icon-btn:hover:not(:disabled) {
+    background: var(--color-mist);
+  }
+  .a11y-icon-btn:disabled {
+    color: var(--color-muted);
+    cursor: default;
+    opacity: 0.55;
+  }
+
+  .a11y-row,
+  .a11y-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    inline-size: 100%;
+    min-block-size: 52px;
+    padding-block: 0.375rem;
+    border-block-start: 1px solid var(--color-line);
+    font-size: var(--text-base);
+    color: var(--color-body);
+  }
+  .a11y-stepper {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .a11y-value {
+    min-inline-size: 3.25rem;
+    text-align: center;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .a11y-toggle {
+    background: none;
+    border-inline: 0;
+    border-block-end: 0;
+    cursor: pointer;
+    text-align: start;
+    font: inherit;
+  }
+  .a11y-toggle:hover {
+    background: var(--color-mist);
+  }
+  .a11y-switch {
+    flex: none;
+    position: relative;
+    inline-size: 2.5rem;
+    block-size: 1.5rem;
+    border-radius: 999px;
+    border: 2px solid var(--color-muted);
+    background: var(--color-porcelain);
+  }
+  .a11y-switch > span {
+    position: absolute;
+    inset-block-start: 2px;
+    inset-inline-start: 2px;
+    inline-size: calc(1.5rem - 8px);
+    block-size: calc(1.5rem - 8px);
+    border-radius: 999px;
+    background: var(--color-muted);
+  }
+  .a11y-toggle[aria-pressed='true'] .a11y-switch {
+    border-color: var(--color-ink);
+    background: var(--color-ink);
+  }
+  .a11y-toggle[aria-pressed='true'] .a11y-switch > span {
+    inset-inline-start: auto;
+    inset-inline-end: 2px;
+    background: #fff;
+  }
+
+  .a11y-panel-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-block-start: 0.75rem;
+    border-block-start: 1px solid var(--color-line);
+  }
+  .a11y-panel-foot a {
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 44px;
+    color: var(--color-ink);
+    font-weight: 600;
+  }
+  .a11y-reset {
+    min-block-size: 44px;
+    padding-inline: 1rem;
+    border-radius: var(--radius-btn);
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-porcelain);
+    color: var(--color-ink);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .a11y-reset:hover {
+    background: var(--color-mist);
+  }
+  .a11y-note {
+    margin: 0.5rem 0 0;
+    font-size: var(--text-sm);
+    color: var(--color-muted);
+  }
+</style>
+
+<script>
+  import { parsePrefs, prefAttributes, type A11yPrefs } from '../../lib/a11y-prefs';
+
+  // Focus Not Obscured (WCAG 2.4.11). A focused element can be fully inside
+  // the viewport yet under the sticky header or the phone action bar, and
+  // browsers do not scroll then — scroll-padding only applies when they do.
+  // Nudge it clear of both, so a keyboard user always sees where they are.
+  const GAP = 8;
+  document.addEventListener('focusin', (event) => {
+    const el = event.target;
+    if (!(el instanceof HTMLElement) || el.closest('.site-header, [data-action-bar], dialog, .a11y-fab')) return;
+    // Keyboard focus only. A mouse or finger press focuses on the way down;
+    // scrolling then would move the target before the release and lose the
+    // click.
+    if (!el.matches(':focus-visible')) return;
+    const box = el.getBoundingClientRect();
+    if (!box.height) return;
+    const header = document.querySelector('.site-header')?.getBoundingClientRect();
+    const barEl = document.querySelector<HTMLElement>('[data-action-bar]');
+    const bar = barEl && getComputedStyle(barEl).display !== 'none' ? barEl.getBoundingClientRect() : null;
+    const top = header ? header.bottom : 0;
+    const bottom = bar && bar.height ? bar.top : innerHeight;
+    // 'instant': the page scrolls smoothly by default, and focus must not lag.
+    if (box.top < top) window.scrollBy({ top: box.top - top - GAP, behavior: 'instant' });
+    else if (box.bottom > bottom) window.scrollBy({ top: Math.min(box.bottom - bottom + GAP, box.top - top - GAP), behavior: 'instant' });
+  });
+
+  const dialog = document.querySelector<HTMLDialogElement>('#a11y-panel');
+  if (dialog) {
+    const key = dialog.dataset.prefsKey ?? '';
+    const steps: number[] = JSON.parse(dialog.dataset.textSteps ?? '[1]');
+    const root = document.documentElement;
+    let opener: HTMLElement | null = null;
+
+    const read = (): A11yPrefs => {
+      try { return parsePrefs(localStorage.getItem(key)); } catch { return parsePrefs(null); }
+    };
+    let prefs = read();
+
+    const apply = (): void => {
+      for (const name of [...root.getAttributeNames()]) if (name.startsWith('data-a11y-')) root.removeAttribute(name);
+      for (const [name, value] of Object.entries(prefAttributes(prefs))) root.setAttribute(name, value);
+      try {
+        const isDefault = Object.keys(prefAttributes(prefs)).length === 0;
+        if (isDefault) localStorage.removeItem(key);
+        else localStorage.setItem(key, JSON.stringify(prefs));
+      } catch { /* private mode: the choice still applies to this page */ }
+      render();
+    };
+
+    const value = dialog.querySelector<HTMLOutputElement>('[data-a11y-text-value]');
+    const smaller = dialog.querySelector<HTMLButtonElement>('[data-a11y-step="-1"]');
+    const larger = dialog.querySelector<HTMLButtonElement>('[data-a11y-step="1"]');
+    const render = (): void => {
+      if (value) value.textContent = `${Math.round(steps[prefs.text] * 100)}%`;
+      if (smaller) smaller.disabled = prefs.text === 0;
+      if (larger) larger.disabled = prefs.text === steps.length - 1;
+      dialog.querySelectorAll<HTMLButtonElement>('[data-a11y-toggle]').forEach((button) => {
+        const name = button.dataset.a11yToggle as 'contrast' | 'links' | 'motion';
+        button.setAttribute('aria-pressed', String(prefs[name]));
+      });
+    };
+
+    dialog.querySelectorAll<HTMLButtonElement>('[data-a11y-step]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const next = prefs.text + Number(button.dataset.a11yStep);
+        prefs = { ...prefs, text: Math.max(0, Math.min(steps.length - 1, next)) };
+        apply();
+        // A disabled button drops focus to <body>; keep the visitor in place.
+        if (button.disabled) (button === smaller ? larger : smaller)?.focus();
+      });
+    });
+    dialog.querySelectorAll<HTMLButtonElement>('[data-a11y-toggle]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const name = button.dataset.a11yToggle as 'contrast' | 'links' | 'motion';
+        prefs = { ...prefs, [name]: !prefs[name] };
+        apply();
+      });
+    });
+    dialog.querySelector('[data-a11y-reset]')?.addEventListener('click', () => {
+      prefs = parsePrefs(null);
+      apply();
+    });
+
+    const close = (): void => dialog.close();
+    dialog.querySelector('[data-a11y-close]')?.addEventListener('click', close);
+    // A click on the backdrop lands on the <dialog> itself.
+    dialog.addEventListener('click', (event) => { if (event.target === dialog) close(); });
+    dialog.addEventListener('close', () => {
+      document.querySelectorAll('[data-a11y-open]').forEach((b) => b.setAttribute('aria-expanded', 'false'));
+      opener?.focus();
+    });
+
+    document.querySelectorAll<HTMLElement>('[data-a11y-open]').forEach((button) => {
+      button.setAttribute('aria-expanded', 'false');
+      button.addEventListener('click', () => {
+        opener = button;
+        prefs = read();
+        render();
+        dialog.showModal();
+        button.setAttribute('aria-expanded', 'true');
+      });
+    });
+    render();
+  }
+</script>

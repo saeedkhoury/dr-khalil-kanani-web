@@ -21,6 +21,42 @@ anything else or an alternative icon is served. Google requested to recrawl `/` 
 crawled 27 Sep); its result icon updates only after it reprocesses the home
 page — do not change the favicon URL to "bust" its cache.
 
+## Accessibility — 2026-10-07
+
+Target: IS 5568 Part 1 (September 2023 edition) at level AA — WCAG 2.0 with
+national changes (2.4.10 at AA; 3.1.2 not applicable). Basis checked against
+the Commission's gov.il guide on accessibility statements (updated
+15.04.2026) and the standard's PDF; notes in the header of `src/data/legal.ts`.
+
+- **Site fixes:** keyboard focus is scrolled clear of the sticky header and the
+  phone action bar (2.4.11); the doctor's-work strip is a `group`, not a
+  second landmark with the section's name; the header switches to its compact
+  menu (and may wrap) when text is enlarged, so nothing scrolls sideways.
+- **Accessibility settings** (`AccessibilityControl.astro`,
+  `src/lib/a11y-prefs.ts`): a 44 px corner button on desktop and on pages
+  without the action bar; on phones an icon cell in the action bar. Native
+  `<dialog>`: text 100/115/130 %, higher contrast, underlined links, stop
+  animation, reset, statement link. Saved in localStorage only, applied
+  before paint; with nothing chosen the site is pixel-identical to before
+  apart from the button. Not an overlay and no screen-reader imitation.
+- **Statement** `/he|ar|en/accessibility/`: standard and level, measures,
+  how it was tested, known limitations (Google map is third-party content),
+  physical arrangements, contact by the clinic phone; its own date
+  (`ACCESSIBILITY_UPDATED`). Footer link "הצהרת נגישות / بيان إمكانية الوصول /
+  Accessibility Statement" plus the panel link = the two required routes.
+- **Tests:** `tests/e2e/accessibility.spec.ts` (Chromium and WebKit) and
+  `tests/unit/a11y-prefs.test.ts`.
+
+OWNER INFORMATION REQUIRED (the statement says these are not yet published
+rather than guessing):
+1. Physical accessibility of the clinic — parking (accessible bay?), route
+   from the street, steps/ramp at the entrance, door width, treatment room,
+   toilet, any aids. Then replace the "arrangements" section in
+   `src/data/legal.ts` and set `PHYSICAL_ACCESSIBILITY_CONFIRMED`.
+2. Whether the clinic employs 25 or more people (then a named accessibility
+   coordinator and contact details are required in the statement).
+3. Optionally an email for accessibility reports (`ACCESSIBILITY_CONTACT`).
+
 ## Link preview — 2026-10-07
 
 Every page's share preview (WhatsApp, iMessage, Facebook, X) is the clinic

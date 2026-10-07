@@ -42,6 +42,7 @@ const itemClass =
 ---
 
 <div
+  data-action-bar
   class="fixed inset-x-0 inset-be-0 z-50 border-t border-[var(--color-line)] bg-[var(--color-porcelain)]/97 backdrop-blur-sm md:hidden"
   style="padding-block-end: env(safe-area-inset-bottom)"
 >
@@ -76,5 +77,19 @@ const itemClass =
         </a>
       )
     }
+
+    {/* Opens the accessibility panel (AccessibilityControl.astro). Narrow and
+        icon-only so the three contact actions keep their room. */}
+    <button
+      type="button"
+      data-a11y-open
+      aria-haspopup="dialog"
+      aria-controls="a11y-panel"
+      aria-label={t('a11y.panel.open')}
+      class="flex min-h-[56px] w-14 flex-none items-center justify-center text-[var(--color-ink)] transition-colors duration-[var(--dur-fast)] hover:bg-[var(--color-mist)]"
+      style="border-inline-start:1px solid var(--color-line)"
+    >
+      <Icon name="accessibility" size={22} />
+    </button>
   </nav>
 </div>

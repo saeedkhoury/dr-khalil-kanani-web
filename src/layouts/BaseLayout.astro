@@ -29,6 +29,8 @@ import { getTreatments } from '../lib/content';
 import Header from '../components/sections/Header.astro';
 import Footer from '../components/sections/Footer.astro';
 import StickyActionBar from '../components/sections/StickyActionBar.astro';
+import AccessibilityControl from '../components/sections/AccessibilityControl.astro';
+import { HEAD_SCRIPT } from '../lib/a11y-prefs';
 import { BAR_STRINGS } from '../components/editor/bar-strings';
 
 interface Props {
@@ -139,6 +141,8 @@ const bar = BAR_STRINGS[locale as keyof typeof BAR_STRINGS] ?? BAR_STRINGS.he;
         the clinic tooth logo (src/lib/favicon.ts). Keep the URL stable. */}
     <link rel="icon" href={`${import.meta.env.BASE_URL}favicon.ico`} />
 
+    {/* Accessibility-panel choices, applied before paint (src/lib/a11y-prefs.ts). */}
+    <script is:inline set:html={HEAD_SCRIPT} />
     <script is:inline>
       // Flip the no-js flag before paint so JS-dependent reveal states never
       // leave content invisible if scripts fail.
@@ -163,6 +167,8 @@ const bar = BAR_STRINGS[locale as keyof typeof BAR_STRINGS] ?? BAR_STRINGS.he;
 
     {!hideActionBar && <StickyActionBar locale={locale} />}
 
+    <AccessibilityControl locale={locale} inActionBar={!hideActionBar} />
+
     {editing && <script is:inline src="/visual-editor.js" defer></script>}
 
     <script>
@@ -174,7 +180,9 @@ const bar = BAR_STRINGS[locale as keyof typeof BAR_STRINGS] ?? BAR_STRINGS.he;
       // progressive enhancement.
       import { inView } from 'motion';
 
-      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const reduced =
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+        document.documentElement.hasAttribute('data-a11y-motion');
       const targets = document.querySelectorAll<HTMLElement>('.reveal');
 
       // Opt IN to the hidden state only once observers are registered, so a

@@ -7,8 +7,10 @@ interface Props {
   locale: Locale;
   title: string;
   sections: LegalSection[];
+  /** ISO date this page was last reviewed; defaults to the privacy policy's. */
+  updated?: string;
 }
-const { locale, title, sections } = Astro.props;
+const { locale, title, sections, updated = LAST_UPDATED } = Astro.props;
 
 const updatedLabel = { he: 'עודכן לאחרונה', ar: 'آخر تحديث', en: 'Last updated' }[locale];
 ---
@@ -16,7 +18,7 @@ const updatedLabel = { he: 'עודכן לאחרונה', ar: 'آخر تحديث',
 <div class="shell section max-w-3xl">
   <h1>{title}</h1>
   <p class="mt-3 text-[var(--text-sm)] text-[var(--color-muted)]">
-    {updatedLabel}: <span class="u-ltr">{LAST_UPDATED}</span>
+    {updatedLabel}: <span class="u-ltr">{updated}</span>
   </p>
 
   {sections.map((section) => (
