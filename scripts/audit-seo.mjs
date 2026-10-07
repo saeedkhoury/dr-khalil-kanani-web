@@ -151,6 +151,7 @@ async function main() {
 
   // ── crawl: sitemap + everything linked from the home page ──
   const pages = new Map(); // prod url -> parsed
+  const shareImages = new Set(); // every og:image any page names
   const depth = new Map([[`${ORIGIN}/`, 0]]);
   const inbound = new Map();
   const todo = [`${ORIGIN}/`, ...inSitemap];
@@ -238,6 +239,10 @@ async function main() {
     for (const k of ['og:title', 'og:description', 'og:url', 'og:image']) if (!p.og[k]) err(url, `${k} missing`);
     if (p.og['og:url'] && p.og['og:url'] !== canonical) err(url, `og:url ${p.og['og:url']} ≠ canonical`);
     if (p.og['og:image'] && !/^https:\/\//.test(p.og['og:image'])) err(url, `og:image not absolute: ${p.og['og:image']}`);
+    else if (p.og['og:image'] && new URL(p.og['og:image']).origin !== ORIGIN) err(url, `og:image on another origin: ${p.og['og:image']}`);
+    for (const k of ['og:image:secure_url', 'twitter:image']) if (p.og[k] !== p.og['og:image']) err(url, `${k} ${p.og[k] ?? 'missing'} ≠ og:image`);
+    for (const k of ['og:image:type', 'og:image:width', 'og:image:height', 'og:image:alt']) if (!p.og[k]) err(url, `${k} missing`);
+    if (p.og['og:image']) shareImages.add(p.og['og:image']);
 
     // Structured data
     if (p.jsonld.length === 0) err(url, 'no JSON-LD');
@@ -270,6 +275,19 @@ async function main() {
       } catch { /* mailto:, tel: etc. */ }
     }
   }
+
+  // ── link-preview image: what WhatsApp, iMessage, Facebook and X fetch ──
+  // 2026-10-07: every page shared an illustration (tooth + dental mirror);
+  // the preview is now the clinic logo at one stable, versioned URL.
+  for (const imageUrl of shareImages) {
+    const r = await fetch(local(imageUrl), { redirect: 'manual' });
+    const type = r.headers.get('content-type') ?? '';
+    if (r.status !== 200 || !/^image\/png/.test(type)) { err(imageUrl, `share image answers ${r.status} ${type}`); continue; }
+    const png = Buffer.from(await r.arrayBuffer());
+    const [w, h] = png.length > 24 ? [png.readUInt32BE(16), png.readUInt32BE(20)] : [0, 0];
+    if (w !== 1200 || h !== 630) err(imageUrl, `share image is ${w}×${h}, expected 1200×630`);
+  }
+  if (shareImages.size !== 1) err('og:image', `pages share ${shareImages.size} different preview images; expected the one clinic logo`);
 
   // ── favicon: ONE declaration, the same on every page ──
   // 2026-10-01: /favicon.ico was still the Astro starter's "A" and Google

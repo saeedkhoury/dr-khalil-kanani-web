@@ -68,7 +68,7 @@ const fullTitle = title === t('site.title') || title.includes(t('site.shortName'
 
 const services = (await getTreatments(locale)).map((t) => ({ slug: t.data.slug, name: t.data.title }));
 const graph = buildGraph({ origin, locale, pathname, title: fullTitle, description, breadcrumbs, services, pageType });
-const og = await socialImage(origin, locale);
+const og = socialImage(origin, locale);
 /** Open Graph locales as Facebook lists them (it has no ar_IL). */
 const OG_LOCALE = { he: 'he_IL', ar: 'ar_AR', en: 'en_US' } as const;
 const editing = process.env.VISUAL_CMS === '1';
@@ -125,10 +125,14 @@ const bar = BAR_STRINGS[locale as keyof typeof BAR_STRINGS] ?? BAR_STRINGS.he;
     {Object.entries(OG_LOCALE).filter(([l]) => l !== locale).map(([, value]) => <meta property="og:locale:alternate" content={value} />)}
     <meta property="og:site_name" content={t('site.shortName')} />
     <meta property="og:image" content={og.url} />
+    <meta property="og:image:secure_url" content={og.url} />
+    <meta property="og:image:type" content={og.type} />
     <meta property="og:image:width" content={String(og.width)} />
     <meta property="og:image:height" content={String(og.height)} />
     <meta property="og:image:alt" content={og.alt} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={og.url} />
+    <meta name="twitter:image:alt" content={og.alt} />
 
     <meta name="theme-color" content="#fcfdfe" />
     {/* The site's ONE icon declaration, for every page and for Google Search:
