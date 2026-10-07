@@ -123,26 +123,74 @@ for (const locale of locales) {
     });
   }
 
-  test(`${locale}: phone — the button lives in the action bar; elsewhere it clears the bar`, async ({ page }) => {
+  test(`${locale}: phone — a round button above the action bar, never on it`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto(`/${locale}/`);
-    const inBar = page.locator('nav [data-a11y-open]');
-    await expect(inBar).toBeVisible();
-    await expect(inBar).toHaveAccessibleName(OPEN_LABEL[locale]);
-    await expect(page.locator('.a11y-fab')).toBeHidden();
-    await inBar.click();
-    const dialog = page.getByRole('dialog');
-    await expect(dialog).toBeVisible();
-    // Measured once the opening transition has settled.
-    await expect.poll(async () => { const b = (await dialog.boundingBox())!; return Math.round(b.y + b.height); }).toBeLessThanOrEqual(812);
-    expect((await dialog.boundingBox())!.y).toBeGreaterThanOrEqual(0);
-    await dialog.locator('[data-a11y-close]').click();
-    await expect(inBar).toBeFocused();
+    const fab = page.locator('.a11y-fab');
+    await expect(fab).toBeVisible();
+    await expect(fab).toHaveAccessibleName(OPEN_LABEL[locale]);
+    await expect(page.locator('[data-action-bar] [data-a11y-open]')).toHaveCount(0);
+    const button = (await fab.boundingBox())!;
+    const bar = (await page.locator('[data-action-bar]').boundingBox())!;
+    expect(button.width).toBe(44);
+    expect(button.height).toBe(44);
+    expect(button.y + button.height).toBeLessThanOrEqual(bar.y);
 
-    // The contact page has no action bar: the corner button appears instead.
-    await page.goto(`/${locale}/contact/`);
-    await expect(page.locator('.a11y-fab')).toBeVisible();
+    await fab.click();
+    const dialog = page.getByRole('dialog');
+    await expect.poll(async () => { const b = (await dialog.boundingBox())!; return Math.round(b.y + b.height); }).toBeLessThanOrEqual(812);
+    await dialog.locator('[data-a11y-close]').click();
+    await expect(fab).toBeFocused();
   });
+
+  for (const width of [375, 1280]) {
+    test(`${locale} at ${width}px: the button drags along the sides, snaps, stays clear and is remembered`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await page.goto(`/${locale}/`);
+      const fab = page.locator('.a11y-fab');
+      const drag = async (toX: number, toY: number) => {
+        const b = (await fab.boundingBox())!;
+        await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(b.x + b.width / 2 + 10, b.y + b.height / 2, { steps: 2 });
+        await page.mouse.move(toX, toY, { steps: 8 });
+        await page.mouse.up();
+      };
+
+      // Drop near the middle-left: it snaps to the left edge at that height.
+      await drag(width * 0.3, 400);
+      await expect(page.getByRole('dialog')).toBeHidden(); // a drag never opens the panel
+      await expect(page.locator('html')).toHaveAttribute('data-fab-side', 'left');
+      let box = (await fab.boundingBox())!;
+      expect(box.x).toBeLessThanOrEqual(16);
+      expect(Math.abs(box.y + box.height / 2 - 400)).toBeLessThanOrEqual(24);
+
+      // Dragged onto the header or the action bar, it stops short of both.
+      await drag(width * 0.8, 5);
+      await expect(page.locator('html')).toHaveAttribute('data-fab-side', 'right');
+      const header = (await page.locator('.site-header').boundingBox())!;
+      box = (await fab.boundingBox())!;
+      expect(box.y).toBeGreaterThanOrEqual(header.y + header.height);
+      expect(box.x + box.width).toBeGreaterThanOrEqual(width - 16);
+      await drag(width * 0.8, 795);
+      box = (await fab.boundingBox())!;
+      const barBox = await page.locator('[data-action-bar]').boundingBox();
+      const floor = barBox && barBox.height ? barBox.y : 800;
+      expect(box.y + box.height).toBeLessThanOrEqual(floor);
+
+      // Remembered across pages and reloads, before paint.
+      await page.goto(`/${locale}/faq/`);
+      await expect(page.locator('html')).toHaveAttribute('data-fab-side', 'right');
+      const after = (await fab.boundingBox())!;
+      expect(Math.abs(after.y - box.y)).toBeLessThanOrEqual(2);
+
+      // A plain press still opens it; Reset sends it back to the corner.
+      await fab.click();
+      await page.getByRole('dialog').locator('[data-a11y-reset]').click();
+      await expect(page.locator('html')).not.toHaveAttribute('data-fab-side', /./);
+      expect(await page.evaluate(() => localStorage.length)).toBe(0);
+    });
+  }
 
   test(`${locale}: phone — keyboard focus is never hidden behind the header or action bar`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 700 });

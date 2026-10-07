@@ -33,8 +33,10 @@ the Commission's gov.il guide on accessibility statements (updated
   second landmark with the section's name; the header switches to its compact
   menu (and may wrap) when text is enlarged, so nothing scrolls sideways.
 - **Accessibility settings** (`AccessibilityControl.astro`,
-  `src/lib/a11y-prefs.ts`): a 44 px corner button on desktop and on pages
-  without the action bar; on phones an icon cell in the action bar. Native
+  `src/lib/a11y-prefs.ts`): a round 44 px button, by default in the lower
+  corner (above the phone action bar). It can be dragged to any height along
+  the left or right edge, snaps to the nearer side, never covers the header
+  or the action bar, and the position is remembered (Reset restores it). Native
   `<dialog>`: text 100/115/130 %, higher contrast, underlined links, stop
   animation, reset, statement link. Saved in localStorage only, applied
   before paint; with nothing chosen the site is pixel-identical to before

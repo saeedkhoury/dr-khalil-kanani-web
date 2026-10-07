@@ -167,7 +167,7 @@ const bar = BAR_STRINGS[locale as keyof typeof BAR_STRINGS] ?? BAR_STRINGS.he;
 
     {!hideActionBar && <StickyActionBar locale={locale} />}
 
-    <AccessibilityControl locale={locale} inActionBar={!hideActionBar} />
+    <AccessibilityControl locale={locale} aboveActionBar={!hideActionBar} />
 
     {editing && <script is:inline src="/visual-editor.js" defer></script>}
 

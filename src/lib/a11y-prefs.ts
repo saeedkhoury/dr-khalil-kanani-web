@@ -55,7 +55,36 @@ export function prefAttributes(prefs: A11yPrefs): Record<string, string> {
   return attrs;
 }
 
-/** Inline <head> script: applies stored preferences before the first paint. */
+/** Where the visitor dragged the accessibility button. */
+export interface FabPosition {
+  /** Physical edge: the visitor dragged it there, whatever the language. */
+  side: 'left' | 'right';
+  /** Top of the button as a fraction of the viewport height. */
+  y: number;
+}
+
+export const FAB_KEY = 'kanani-a11y-button';
+
+/** Stored JSON → position, or null for the default corner. Self-contained (see HEAD_SCRIPT). */
+export function parseFabPosition(raw: string | null): FabPosition | null {
+  if (!raw) return null;
+  let data;
+  try { data = JSON.parse(raw); } catch (e) { return null; }
+  if (!data || typeof data !== 'object') return null;
+  if (data.side !== 'left' && data.side !== 'right') return null;
+  if (typeof data.y !== 'number' || !(data.y >= 0 && data.y <= 1)) return null;
+  return { side: data.side, y: data.y };
+}
+
+/** A dropped button → the nearer side edge, its top kept inside [minTop, maxTop]. */
+export function snapFab(drop: { centerX: number; top: number; viewportW: number; viewportH: number; minTop: number; maxTop: number }): FabPosition {
+  const top = Math.min(Math.max(drop.top, drop.minTop), Math.max(drop.minTop, drop.maxTop));
+  return { side: drop.centerX < drop.viewportW / 2 ? 'left' : 'right', y: top / drop.viewportH };
+}
+
+/** Inline <head> script: applies stored preferences and button position before the first paint. */
 export const HEAD_SCRIPT =
   'try{var a=(' + prefAttributes.toString() + ')((' + parsePrefs.toString() + ')(localStorage.getItem(' +
-  JSON.stringify(PREFS_KEY) + ')));for(var k in a)document.documentElement.setAttribute(k,a[k]);}catch(e){}';
+  JSON.stringify(PREFS_KEY) + ')));for(var k in a)document.documentElement.setAttribute(k,a[k]);}catch(e){}' +
+  'try{var f=(' + parseFabPosition.toString() + ')(localStorage.getItem(' + JSON.stringify(FAB_KEY) + '));' +
+  "if(f){document.documentElement.setAttribute('data-fab-side',f.side);document.documentElement.style.setProperty('--fab-y',String(f.y));}}catch(e){}";
