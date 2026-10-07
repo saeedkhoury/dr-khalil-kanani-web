@@ -21,6 +21,17 @@ anything else or an alternative icon is served. Google requested to recrawl `/` 
 crawled 27 Sep); its result icon updates only after it reprocesses the home
 page — do not change the favicon URL to "bust" its cache.
 
+## Link preview — 2026-10-07
+
+Every page's share preview (WhatsApp, iMessage, Facebook, X) is the clinic
+logo: `https://www.drkhalilkanani.com/social/clinic-share-v1.png`, 1200×630,
+rendered at build from `src/assets/brand/clinic-mark.svg`
+(`src/lib/social-image.ts`). It replaced an illustration of a tooth and a
+dental mirror. To change the picture again, render it at a new version
+(`-v2`), never new bytes behind the same URL — platforms cache by URL. The SEO
+gate fails if a page's `og:image` is off-host, if `og:image:secure_url` or
+`twitter:image` differ from it, or if the image is not a 1200×630 PNG.
+
 ## SEO + GEO project — 2026-10-01
 
 Research: `docs/SEO-GEO-BASELINE.md` (measured starting point),
