@@ -227,9 +227,9 @@ export const VERIFICATION: Record<
     note: 'Arabic spelling inferred. No Arabic lockup exists. Owner must confirm.',
   },
   'doctor.en': {
-    tier: 'unverified',
+    tier: 'owner',
     blocking: true,
-    note: 'Latin transliteration must be fixed by owner — every citation inherits it.',
+    note: 'English public name "Dr. Khalil Kanani" confirmed by the site manager, 2026-10-01. Every citation inherits it.',
   },
   'doctorFullName.he': {
     tier: 'owner',
@@ -294,6 +294,28 @@ export function hasHours(): boolean {
 }
 
 /** True when a confirmed street address exists in the given locale. */
+/**
+ * The clinic's Google Business Profile — read from the verified profile this
+ * account manages (Maps place "ד״ר חליל כנעאני", CID 475737018590581798,
+ * /g/11p1b5lmfj; website drkhalilkanani.com; pin within ~30 m of
+ * `address.geo`), 2026-10-01.
+ *
+ * Structured data only: it tells Google the site and the profile are one
+ * clinic. The visible "reviews on Google" link stays behind the owner's own
+ * Edit Mode field (`social.googleBusiness`), which switches on a whole section.
+ */
+export const GOOGLE_BUSINESS_PROFILE = 'https://www.google.com/maps?cid=475737018590581798';
+
+/**
+ * Every spelling of the doctor's name that is confirmed (verified or
+ * owner-supplied), in he/ar/en order. Only these may be repeated across
+ * languages as alternate names — an unconfirmed spelling stays on its own
+ * locale's pages until the owner confirms it.
+ */
+export function confirmedDoctorNames(): string[] {
+  return LOCALES.filter((l) => ['verified', 'owner'].includes(VERIFICATION[`doctor.${l}`].tier)).map((l) => clinic.doctor[l]);
+}
+
 export function hasAddress(locale: Locale): boolean {
   return clinic.address.street[locale].trim() !== '';
 }

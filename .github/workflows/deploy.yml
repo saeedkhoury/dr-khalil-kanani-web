@@ -79,7 +79,7 @@ jobs:
           #   tagline.ar  Arabic translation needs native review
           #
           # Remove entries as they are verified. Do not add without a reason.
-          ACK_UNVERIFIED: 'doctor.ar,doctor.en,tagline.ar'
+          ACK_UNVERIFIED: 'doctor.ar,tagline.ar'
         run: npm run build
 
       # Runs on dist/, so it checks what visitors actually receive. Heading
@@ -142,7 +142,7 @@ jobs:
           NODE_ENV: production
           ASTRO_SITE: https://www.drkhalilkanani.com
           ASTRO_BASE: /
-          ACK_UNVERIFIED: 'doctor.ar,doctor.en,tagline.ar'
+          ACK_UNVERIFIED: 'doctor.ar,tagline.ar'
         run: npm run build
       - name: Install browser for QA
         run: npx playwright install --with-deps chromium
