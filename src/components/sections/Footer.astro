@@ -90,6 +90,18 @@ const legal = [
       <p class="text-[var(--text-xs)] leading-relaxed text-[var(--color-muted)]">
         {t('legal.disclaimer')}
       </p>
+      {/* The studio credit, the footer's last line: English in every locale, so it is
+          isolated left-to-right (.u-ltr) and set in the English face on every page. */}
+      <p class="mt-3 text-[var(--text-xs)] uppercase tracking-[0.08em] text-[var(--color-muted)]">
+        <a
+          href="https://skova.dev"
+          target="_blank"
+          rel="noopener"
+          lang="en"
+          class="u-ltr text-[var(--color-muted)] underline underline-offset-[3px] [font-family:var(--font-en,system-ui,sans-serif)] hover:text-[var(--color-ink)]"
+          >Developed by ©SKOVA<span class="sr-only"> (opens in a new tab)</span></a
+        >
+      </p>
     </div>
   </div>
 </footer>
