@@ -2,9 +2,19 @@
 
 Current repository state. Not a history — see `CHANGELOG.md` for that.
 
-**Last updated:** 2026-10-01
+**Last updated:** 2026-10-28
 
 ---
+
+## Studio credit — 2026-10-28
+
+The footer's last line is the studio credit "Developed by ©SKOVA", linking to
+https://skova.dev in a new tab (`src/components/sections/Footer.astro`). It is
+English in every locale: isolated left-to-right with `.u-ltr`, `lang="en"`, and
+set in the English face with a system fallback, because `--font-en` is only
+defined on the English pages. The new-tab hint is screen-reader text inside the
+link, so the accessible name contains the visible text. Verified: all gates,
+axe clean in he/ar/en at 375 px and desktop, nothing covers it.
 
 ## Favicon — 2026-10-01 (PRs #16, #18, #19, #21; live 4513b42)
 
