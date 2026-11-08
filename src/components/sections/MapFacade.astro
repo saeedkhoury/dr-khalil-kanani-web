@@ -74,14 +74,14 @@ const embedSrc = `https://www.google.com/maps?q=${lat},${lng}&z=16&hl=${locale}&
             type="button"
             id="map-facade-load"
             hidden
-            class="inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-[var(--color-ink)] px-6 text-[var(--text-sm)] font-semibold text-white transition-[background-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-[var(--color-ink-deep)] active:translate-y-px"
+            class="inline-flex min-h-[48px] cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-btn)] bg-[var(--color-ink)] px-6 text-[length:var(--text-sm)] font-semibold text-white transition-[background-color,transform] duration-[var(--dur-fast)] ease-[var(--ease-out)] hover:bg-[var(--color-ink-deep)] active:translate-y-px"
           >
             {t('map.load')}
           </button>
-          <noscript><p class="max-w-sm text-[var(--text-sm)]">{t('map.noJs')}</p></noscript>
+          <noscript><p class="max-w-sm text-[length:var(--text-sm)]">{t('map.noJs')}</p></noscript>
 
           {/* Said before the press, not after. */}
-          <p class="max-w-sm text-[var(--text-sm)] leading-relaxed text-[var(--color-muted)]">
+          <p class="max-w-sm text-[length:var(--text-sm)] leading-relaxed text-[var(--color-muted)]">
             {t('map.privacy')}
           </p>
         </div>

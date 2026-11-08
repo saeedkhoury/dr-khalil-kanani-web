@@ -1,9 +1,24 @@
 ---
-/** Compact identity, navigation and legal footer. Contact details live on the contact page. */
+/**
+ * Site footer — an editorial "mega footer" (pattern: a dark statement band,
+ * labelled link columns, then a quiet legal row with social icons).
+ *
+ * It also carries real search weight:
+ *  - The clinic's name and address appear on every page, in the same words
+ *    as the structured data (local search reads them as one entity).
+ *  - Every published treatment page is linked from every page, so no
+ *    treatment depends on the hub alone for internal links.
+ *
+ * Only verified facts render. A social profile, an address line or the
+ * opening hours appear only once they exist in the data the doctor edits
+ * (contact-facts.json, hours.json) — nothing is filled in for looks.
+ */
 import { localizePath, type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
-import { clinic } from '../../data/clinic';
+import { clinic, whatsappUrl, hasAddress, hasHours, mapsUrl } from '../../data/clinic';
+import { getTreatments } from '../../lib/content';
 import Logo from '../primitives/Logo.astro';
+import Icon from '../primitives/Icon.astro';
 
 interface Props {
   locale: Locale;
@@ -12,96 +27,352 @@ const { locale } = Astro.props;
 const t = useTranslations(locale);
 const year = new Date().getFullYear();
 
-const nav = [
+const treatments = (await getTreatments(locale)).map((item) => ({
+  slug: item.data.slug,
+  name: item.data.cardTitle,
+}));
+
+const clinicLinks = [
+  { key: 'nav.home', path: '' },
   { key: 'nav.about', path: 'about' },
   { key: 'nav.treatments', path: 'treatments' },
   { key: 'nav.faq', path: 'faq' },
   { key: 'nav.contact', path: 'contact' },
 ] as const;
 
-const legal = [
+const infoLinks = [
   { key: 'legal.accessibility', path: 'accessibility' },
   { key: 'legal.privacy', path: 'privacy' },
 ] as const;
 
+const waMessage = {
+  he: 'שלום, אשמח לקבוע תור במרפאה.',
+  ar: 'مرحبًا، أودّ حجز موعد في العيادة.',
+  en: 'Hello, I would like to request an appointment.',
+}[locale];
+
+const instagram = clinic.social.instagram.trim();
+const instagramHandle = instagram ? `@${instagram.replace(/\/+$/, '').split('/').pop()}` : '';
+
+// Profiles render only once their exact URL is in the data.
+const social = [
+  { name: 'Instagram', icon: 'instagram', href: instagram },
+  { name: 'Facebook', icon: 'facebook', href: clinic.social.facebook.trim() },
+  { name: 'WhatsApp', icon: 'whatsapp', href: whatsappUrl(waMessage) },
+  { name: 'Google', icon: 'map-pin', href: clinic.social.googleBusiness.trim() },
+].filter((item) => item.href);
+
+const showAddress = hasAddress(locale);
+const directions = mapsUrl(locale);
+const dayNames: Record<Locale, Record<string, string>> = {
+  he: { Sunday: 'ראשון', Monday: 'שני', Tuesday: 'שלישי', Wednesday: 'רביעי', Thursday: 'חמישי', Friday: 'שישי', Saturday: 'שבת' },
+  ar: { Sunday: 'الأحد', Monday: 'الاثنين', Tuesday: 'الثلاثاء', Wednesday: 'الأربعاء', Thursday: 'الخميس', Friday: 'الجمعة', Saturday: 'السبت' },
+  en: { Sunday: 'Sun', Monday: 'Mon', Tuesday: 'Tue', Wednesday: 'Wed', Thursday: 'Thu', Friday: 'Fri', Saturday: 'Sat' },
+};
 ---
 
-<footer class="mt-8 border-t border-[var(--color-line)] bg-[var(--color-mist)]">
-  <div class="shell grid gap-10 py-12 sm:grid-cols-2">
-    <!-- Identity -->
-    <div class="lg:col-span-1">
-      <div class="flex items-center gap-2.5">
-        <Logo size={40} />
-        <span class="leading-tight">
-          <span class="block font-semibold text-[var(--color-ink)]">{clinic.doctor[locale]}</span>
-          <span class="block text-[var(--text-sm)] text-[var(--color-muted)]">{clinic.tagline[locale]}</span>
-        </span>
+<footer class="site-footer mt-8">
+  {/* ---- Statement band ------------------------------------------------ */}
+  {
+    instagram && (
+      <section class="footer-band" aria-labelledby="footer-follow-heading">
+        <div class="shell py-14 text-center sm:py-16">
+          <p class="footer-kicker">{t('footer.stayEyebrow')}</p>
+          <h2 id="footer-follow-heading" class="footer-band-title mt-3">{t('footer.followTitle')}</h2>
+          <p class="mx-auto mt-3 max-w-xl text-[length:var(--text-base)] text-white/80">{t('footer.followBody')}</p>
+          <a
+            href={instagram}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="footer-band-cta press mt-8"
+          >
+            <Icon name="instagram" size={18} />
+            <span>{t('footer.follow')}</span>
+            <span class="u-ltr footer-band-handle">{instagramHandle}</span>
+            <span class="sr-only">{t('footer.newTab')}</span>
+          </a>
+        </div>
+      </section>
+    )
+  }
+
+  {/* ---- Link columns -------------------------------------------------- */}
+  <div class="footer-main">
+    <div class="shell footer-grid py-14">
+      <div class="footer-brand">
+        <a href={localizePath(locale, '')} class="inline-flex items-center gap-2.5 no-underline" aria-label={t('site.shortName')}>
+          <Logo size={40} />
+          <span class="leading-tight">
+            <span class="block font-semibold text-[var(--color-ink)]">{clinic.doctor[locale]}</span>
+            <span class="block text-[length:var(--text-sm)] text-[var(--color-muted)]">{clinic.tagline[locale]}</span>
+          </span>
+        </a>
       </div>
-      <p class="mt-4 text-[var(--text-sm)] text-[var(--color-muted)]">
-        {clinic.address.locality[locale]}
-      </p>
+
+      <nav class="footer-col" aria-labelledby="footer-treatments-heading">
+        <h2 id="footer-treatments-heading" class="footer-heading">{t('footer.treatments')}</h2>
+        <ul class="footer-list">
+          {treatments.map((item) => (
+            <li><a href={localizePath(locale, `treatments/${item.slug}`)} class="footer-link">{item.name}</a></li>
+          ))}
+        </ul>
+      </nav>
+
+      <nav class="footer-col" aria-labelledby="footer-nav-heading">
+        <h2 id="footer-nav-heading" class="footer-heading">{t('footer.clinic')}</h2>
+        <ul class="footer-list">
+          {clinicLinks.map((item) => (
+            <li><a href={localizePath(locale, item.path)} class="footer-link">{t(item.key)}</a></li>
+          ))}
+        </ul>
+      </nav>
+
+      <nav class="footer-col" aria-labelledby="footer-info-heading">
+        <h2 id="footer-info-heading" class="footer-heading">{t('footer.info')}</h2>
+        <ul class="footer-list">
+          {infoLinks.map((item) => (
+            <li><a href={localizePath(locale, item.path)} class="footer-link">{t(item.key)}</a></li>
+          ))}
+        </ul>
+      </nav>
+
+      {/* Name and address: the same facts as the structured data. */}
+      <div class="footer-col">
+        <h2 class="footer-heading">{t('footer.contact')}</h2>
+        <address class="footer-list not-italic">
+          {showAddress && (
+            <p class="footer-text">
+              {directions ? (
+                <a href={directions} target="_blank" rel="noopener noreferrer" class="footer-link">
+                  {clinic.address.street[locale]}, {clinic.address.locality[locale]}
+                  <span class="sr-only"> {t('footer.newTab')}</span>
+                </a>
+              ) : (
+                <span>{clinic.address.street[locale]}, {clinic.address.locality[locale]}</span>
+              )}
+            </p>
+          )}
+          {!showAddress && <p class="footer-text">{clinic.address.locality[locale]}</p>}
+          {/* The phone stays out of the footer on purpose: on phones exactly one
+              tap-to-call link is visible (the action bar), and the full contact
+              details are consolidated on the contact page. */}
+          <p class="footer-text">
+            <a href={localizePath(locale, 'contact')} class="footer-link">{t('nav.contact')}</a>
+          </p>
+          {hasHours() && (
+            <ul class="mt-2 grid gap-0.5" style="list-style:none;padding-inline-start:0;margin:0">
+              {clinic.hours.map((h) => (
+                <li class="flex justify-between gap-4 text-[length:var(--text-xs)] text-[var(--color-muted)]">
+                  <span>{dayNames[locale][h.day]}</span>
+                  <span class="u-ltr">{h.closed ? '—' : `${h.opens}–${h.closes}`}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </address>
+      </div>
     </div>
 
-    <!-- Navigate -->
-    <nav aria-labelledby="footer-nav-heading">
-      <h2 id="footer-nav-heading" class="eyebrow mb-3">{t('nav.menu')}</h2>
-      <ul class="space-y-1.5" style="list-style:none;padding-inline-start:0;margin:0">
-        {
-          nav.map((item) => (
-            <li>
-              <a
-                href={localizePath(locale, item.path)}
-                class="text-[var(--text-sm)] text-[var(--color-body)] no-underline hover:underline"
-              >
-                {t(item.key)}
-              </a>
-            </li>
-          ))
-        }
-      </ul>
-    </nav>
+    {/* ---- Legal row --------------------------------------------------- */}
+    <div class="shell">
+      <div class="footer-bottom">
+        <div class="footer-legal">
+          <p>
+            © <span class="u-ltr">{year}</span> {clinic.doctor[locale]} · {clinic.address.locality[locale]} · {t('footer.rights')}
+          </p>
+          <p class="mt-1">{t('legal.disclaimer')}</p>
+          {/* The studio credit: English in every locale, so it is isolated
+              left-to-right and set in the English face on every page. */}
+          <p class="mt-2">
+            <a
+              href="https://skova.dev"
+              target="_blank"
+              rel="noopener"
+              lang="en"
+              class="footer-credit u-ltr"
+            >Developed by ©SKOVA<span class="sr-only"> (opens in a new tab)</span></a>
+          </p>
+        </div>
 
-  </div>
-
-  <!-- Legal -->
-  <div class="border-t border-[var(--color-line)]">
-    <div class="shell flex flex-col gap-3 py-5 sm:flex-row sm:items-center sm:justify-between">
-      <p class="text-[var(--text-xs)] text-[var(--color-muted)]">
-        © <span class="u-ltr">{year}</span> {clinic.doctor[locale]}. {t('footer.rights')}.
-      </p>
-      <ul class="flex flex-wrap gap-4" style="list-style:none;padding-inline-start:0;margin:0">
         {
-          legal.map((item) => (
-            <li>
-              <a
-                href={localizePath(locale, item.path)}
-                class="text-[var(--text-xs)] text-[var(--color-muted)] no-underline hover:underline"
-              >
-                {t(item.key)}
-              </a>
-            </li>
-          ))
+          social.length > 0 && (
+            <ul class="footer-social" aria-label={t('footer.social')}>
+              {social.map((item) => (
+                <li>
+                  <a
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="footer-social-link press"
+                    aria-label={`${item.name} ${t('footer.newTab')}`}
+                  >
+                    <Icon name={item.icon} size={19} />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )
         }
-      </ul>
-    </div>
-    {/* pb-20 keeps the accessibility button's default corner
-        (AccessibilityControl) clear of this last line at the page's end. */}
-    <div class="shell pb-20">
-      <p class="text-[var(--text-xs)] leading-relaxed text-[var(--color-muted)]">
-        {t('legal.disclaimer')}
-      </p>
-      {/* The studio credit, the footer's last line: English in every locale, so it is
-          isolated left-to-right (.u-ltr) and set in the English face on every page. */}
-      <p class="mt-3 text-[var(--text-xs)] uppercase tracking-[0.08em] text-[var(--color-muted)]">
-        <a
-          href="https://skova.dev"
-          target="_blank"
-          rel="noopener"
-          lang="en"
-          class="u-ltr text-[var(--color-muted)] underline underline-offset-[3px] [font-family:var(--font-en,system-ui,sans-serif)] hover:text-[var(--color-ink)]"
-          >Developed by ©SKOVA<span class="sr-only"> (opens in a new tab)</span></a
-        >
-      </p>
+      </div>
     </div>
   </div>
 </footer>
+
+<style>
+  /* ---- Statement band: the one dark surface on the site ---------------- */
+  .footer-band {
+    background:
+      radial-gradient(40rem 18rem at 50% 0%, color-mix(in srgb, var(--color-signal) 28%, transparent) 0%, transparent 70%),
+      var(--color-ink-deep);
+    color: #fff;
+  }
+  .footer-kicker {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.78);
+  }
+  :global(html[lang='he']) .footer-kicker,
+  :global(html[lang='ar']) .footer-kicker,
+  :global(html[lang='he']) .footer-heading,
+  :global(html[lang='ar']) .footer-heading {
+    letter-spacing: 0.04em;
+    text-transform: none;
+  }
+  .footer-band-title {
+    color: #fff;
+    font-size: var(--text-3xl);
+  }
+  .footer-band-cta {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-inline-size: 100%;
+    padding-block: 0.5rem;
+    align-items: center;
+    gap: 0.625rem;
+    min-block-size: 48px;
+    padding-inline: 1.5rem;
+    border-radius: var(--radius-pill);
+    background: #fff;
+    color: var(--color-ink-deep);
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.45);
+  }
+  .footer-band-cta:hover {
+    background: var(--color-mist);
+  }
+  .footer-band-handle {
+    font-weight: 400;
+    color: var(--color-muted);
+  }
+
+  /* ---- Columns ---------------------------------------------------------- */
+  .footer-main {
+    background: var(--color-mist);
+    border-block-start: 1px solid var(--color-line);
+  }
+  .footer-grid {
+    display: grid;
+    gap: 2.5rem 2rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .footer-brand {
+    grid-column: 1 / -1;
+  }
+  @media (min-width: 1024px) {
+    .footer-grid {
+      grid-template-columns: 1.4fr 1.2fr 1fr 1fr 1.2fr;
+    }
+    .footer-brand {
+      grid-column: auto;
+    }
+  }
+  .footer-heading {
+    margin-block-end: 1rem;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-ink);
+  }
+  .footer-list {
+    display: grid;
+    gap: 0.625rem;
+    margin: 0;
+    padding-inline-start: 0;
+    list-style: none;
+  }
+  .footer-link,
+  .footer-text {
+    font-size: var(--text-sm);
+    color: var(--color-body);
+    text-decoration: none;
+  }
+  .footer-link:hover {
+    color: var(--color-ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  /* ---- Legal row ------------------------------------------------------- */
+  .footer-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding-block: 1.5rem 5rem;
+    border-block-start: 1px solid var(--color-line);
+  }
+  @media (min-width: 768px) {
+    .footer-bottom {
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: space-between;
+    }
+  }
+  .footer-legal {
+    max-inline-size: 46rem;
+    font-size: var(--text-xs);
+    line-height: 1.6;
+    color: var(--color-muted);
+  }
+  /* The credit is the quietest line on the page. */
+  .footer-credit {
+    font-family: var(--font-en, system-ui, sans-serif);
+    font-size: 0.6875rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .footer-credit:hover {
+    color: var(--color-ink);
+  }
+  .footer-social {
+    display: flex;
+    gap: 0.625rem;
+    margin: 0;
+    padding-inline-start: 0;
+    list-style: none;
+  }
+  .footer-social-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 44px;
+    block-size: 44px;
+    border-radius: 12px;
+    background: #fff;
+    color: var(--color-ink);
+    border: 1px solid var(--color-line);
+    box-shadow: 0 1px 2px rgba(15, 42, 61, 0.05);
+  }
+  .footer-social-link:hover {
+    background: var(--color-ink);
+    border-color: var(--color-ink);
+    color: #fff;
+  }
+</style>

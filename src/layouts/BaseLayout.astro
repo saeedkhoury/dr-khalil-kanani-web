@@ -204,9 +204,9 @@ const bar = BAR_STRINGS[locale as keyof typeof BAR_STRINGS] ?? BAR_STRINGS.he;
         document.documentElement.classList.add('js-reveal');
       }
 
-      // Header gains a hairline + surface tint once the page scrolls, so it
-      // separates from content without a drop shadow. Passive listener, and a
-      // single dataset write guarded by a change check — no layout reads.
+      // Once the page scrolls, the header's scroll-edge blur fades in so the
+      // floating glass controls stay legible over content. Passive listener,
+      // and a single dataset write guarded by a change check — no layout reads.
       const header = document.querySelector<HTMLElement>('.site-header');
       if (header) {
         let scrolled = false;

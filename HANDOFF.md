@@ -6,6 +6,34 @@ Current repository state. Not a history — see `CHANGELOG.md` for that.
 
 ---
 
+## Apple design + Liquid Glass — 2026-11-08
+
+- **Header** (`Header.astro`): no background bar. Clinic mark, a centred
+  Liquid Glass capsule (Home · About · Treatments · FAQ) with a white lens
+  that glides to the hovered/focused item, a glass language capsule, and one
+  filled "Contact us" action. Phones: glass menu button + glass sheet. A
+  scroll-edge blur fades content under the header instead of a solid strip.
+- **Design language** (`global.css`, "APPLE DESIGN LANGUAGE"): `.glass`
+  (functional layer only — header controls, menus, action bar, a11y button
+  and panel; never cards), `.press`, `.btn-filled/.btn-tinted`, `.icon-tile`,
+  `.card/.card-interactive`, `.brand-wash`. Capsule buttons, 22px cards,
+  semibold display headings, iOS curve. Reduce-transparency / increase-
+  contrast / the site's own contrast and stop-motion settings fall back to
+  solid, static surfaces. Admin mirrored tokens updated (`tokens.ts`).
+- **Bug fixed:** every `text-[var(--text-*)]` class compiled to a COLOUR, so
+  the designed font sizes never applied (77 places). Use
+  `text-[length:var(--text-*)]` for sizes.
+- **Footer** (`Footer.astro`): dark "Stay in touch" band (Instagram), columns
+  Treatments (all 8) · The clinic · Information · Contact (address), legal row
+  with social icon tiles (Facebook / Google appear once their URLs are in
+  `contact-facts.json`) and a smaller SKOVA credit. The phone stays out of the
+  footer: one tap-to-call link on phones (the action bar).
+- **WhatsApp icon** is now the official filled mark (one entry in `Icon.astro`).
+- **SEO status (Search Console, Nov 2026):** 1 page indexed, 44 "crawled –
+  not indexed". Remedies are owner facts: confirmed hours, one main phone,
+  steady Google reviews, citations (easy, Dapei Zahav, doctors.co.il, Bing
+  Places, Apple), doctor credentials, Facebook / GBP URLs.
+
 ## Studio credit — 2026-10-28
 
 The footer's last line is the studio credit "Developed by ©SKOVA", linking to

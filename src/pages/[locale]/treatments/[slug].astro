@@ -78,7 +78,7 @@ const reviewed = d.reviewedOn
 >
   <!-- Breadcrumb -->
   <nav class="shell pt-8" aria-label="Breadcrumb">
-    <ol class="flex flex-wrap items-center gap-1.5 text-[var(--text-sm)] text-[var(--color-muted)]" style="list-style:none;padding-inline-start:0;margin:0">
+    <ol class="flex flex-wrap items-center gap-1.5 text-[length:var(--text-sm)] text-[var(--color-muted)]" style="list-style:none;padding-inline-start:0;margin:0">
       {breadcrumbs.slice(0, -1).map((b) => (
         <li class="flex items-center gap-1.5">
           <a href={b.path} class="no-underline hover:underline">{b.name}</a>
@@ -94,13 +94,13 @@ const reviewed = d.reviewedOn
     <!-- Lede -->
     <header class="shell pt-6 pb-10">
       <div class="flex items-center gap-3">
-        <span class="flex size-12 items-center justify-center rounded-[var(--radius-btn)] bg-[var(--color-haze)] text-[var(--color-ink)]">
+        <span class="icon-tile flex size-12 items-center justify-center">
           <Icon name={d.icon} size={26} />
         </span>
         <p class="eyebrow">{t('nav.treatments')}</p>
       </div>
       <h1 class="mt-4">{d.title}</h1>
-      <p class="mt-4 max-w-2xl text-[var(--text-lg)] leading-relaxed text-[var(--color-muted)]">{d.summary}</p>
+      <p class="mt-4 max-w-2xl text-[length:var(--text-lg)] leading-relaxed text-[var(--color-muted)]">{d.summary}</p>
 
       <div class="mt-7 flex flex-col gap-3 sm:flex-row">
         <Button href={localizePath(locale, 'contact')} variant="primary" icon="plus">{t('action.bookAppointment')}</Button>
@@ -132,11 +132,11 @@ const reviewed = d.reviewedOn
         <ol class="mt-8 space-y-6" style="list-style:none;padding-inline-start:0;margin-block-end:0">
           {d.process.map((step, i) => (
             <li class="flex gap-4">
-              <span class="flex size-9 shrink-0 items-center justify-center rounded-full border border-[var(--color-line-strong)] text-[var(--text-sm)] font-semibold text-[var(--color-ink)]">
+              <span class="flex size-9 shrink-0 items-center justify-center rounded-full border border-[var(--color-line-strong)] text-[length:var(--text-sm)] font-semibold text-[var(--color-ink)]">
                 <span class="u-ltr">{i + 1}</span>
               </span>
               <div>
-                <h3 class="text-[var(--text-base)] font-semibold">{step.step}</h3>
+                <h3 class="text-[length:var(--text-base)] font-semibold">{step.step}</h3>
                 <p class="mt-1 leading-relaxed text-[var(--color-muted)]">{step.detail}</p>
               </div>
             </li>
@@ -164,11 +164,11 @@ const reviewed = d.reviewedOn
 
     <!-- Review stamp + disclaimer -->
     <div class="shell max-w-3xl">
-      <p class="border-t border-[var(--color-line)] pt-6 text-[var(--text-sm)] text-[var(--color-muted)]">
+      <p class="border-t border-[var(--color-line)] pt-6 text-[length:var(--text-sm)] text-[var(--color-muted)]">
         {reviewed && <>{t('legal.reviewedBy')} {clinic.doctor[locale]} · <span class="u-ltr">{reviewed}</span><br /></>}
         {t('legal.disclaimer')}
       </p>
-      <p class="mt-4 text-[var(--text-sm)] text-[var(--color-muted)]">
+      <p class="mt-4 text-[length:var(--text-sm)] text-[var(--color-muted)]">
         {where}{' '}
         <a href={localizePath(locale, 'about')} class="underline underline-offset-2 text-[var(--color-ink)]">{aboutAnchor}</a>
         {' · '}
@@ -180,12 +180,12 @@ const reviewed = d.reviewedOn
     {related.length > 0 && (
       <section class="section" aria-labelledby="related-heading">
         <div class="shell">
-          <h2 id="related-heading" class="text-[var(--text-xl)]">{t('treatments.relatedTitle')}</h2>
+          <h2 id="related-heading" class="text-[length:var(--text-xl)]">{t('treatments.relatedTitle')}</h2>
           <ul class="mt-6 grid gap-4 sm:grid-cols-3" style="list-style:none;padding-inline-start:0;margin-block-end:0">
             {related.map((r) => (
               <li>
-                <a href={localizePath(locale, `treatments/${r.data.slug}`)} class="flex h-full items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-4 no-underline hover:border-[var(--color-signal)]">
-                  <span class="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-btn)] bg-[var(--color-haze)] text-[var(--color-ink)]">
+                <a href={localizePath(locale, `treatments/${r.data.slug}`)} class="card card-interactive flex h-full items-center gap-3 p-4 no-underline">
+                  <span class="icon-tile flex size-10 shrink-0 items-center justify-center">
                     <Icon name={r.data.icon} size={20} />
                   </span>
                   <span class="font-semibold text-[var(--color-ink)]">{r.data.cardTitle}</span>

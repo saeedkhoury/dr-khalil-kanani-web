@@ -1,14 +1,26 @@
 ---
 /**
- * Site header.
+ * Site header — a floating Liquid Glass control layer.
  *
- * The mobile menu is a native <details>/<summary> disclosure — keyboard
- * operable, screen-reader understood, and functional with JavaScript
- * disabled. No framework island is needed for navigation.
+ * Apple's model (HIG Materials / Liquid Glass): glass belongs only to the
+ * functional layer that floats above content, never to a full-width bar.
+ * So there is no background strip here: the clinic mark sits on the page,
+ * and only the controls are glass — the navigation capsule, the language
+ * capsule and the menu button. The one tinted control is the primary action,
+ * "Contact us" (Apple colours the background of a prominent action, once).
+ *
+ * Content scrolling beneath gets a scroll-edge effect (a blur that fades
+ * out downward) instead of a solid header colour.
+ *
+ * Navigation stays real links in the server HTML. On phones the menu is a
+ * native <details> disclosure — keyboard operable, understood by screen
+ * readers, functional with JavaScript off. The sliding "lens" behind the
+ * current item is progressive enhancement; without JS the current item
+ * carries its own lens.
  */
 import { localizePath, type Locale } from '../../i18n/config';
 import { useTranslations } from '../../i18n/ui';
-import { clinic, telUrl } from '../../data/clinic';
+import { clinic } from '../../data/clinic';
 import Icon from '../primitives/Icon.astro';
 import LanguageSwitcher from './LanguageSwitcher.astro';
 import Logo from '../primitives/Logo.astro';
@@ -28,6 +40,9 @@ const nav = [
   { key: 'nav.faq', path: 'faq' },
   { key: 'nav.contact', path: 'contact' },
 ] as const;
+// On wide screens "Contact us" sits beside the capsule as the primary
+// action, so the capsule itself carries the other four.
+const capsule = nav.filter((item) => item.path !== 'contact');
 
 function isActive(path: string): boolean {
   const href = localizePath(locale, path);
@@ -35,37 +50,34 @@ function isActive(path: string): boolean {
 }
 ---
 
-<header class="site-header sticky top-0 z-40 border-b border-[var(--color-line)] bg-[var(--color-porcelain)]/92 backdrop-blur-sm">
-  <div class="shell flex items-center justify-between gap-4 py-3">
+<header class="site-header sticky top-0 z-40" data-glass-header>
+  <div class="shell header-row">
     <a
       href={localizePath(locale, '')}
-      class="flex items-center gap-2.5 no-underline"
+      class="header-brand flex min-w-0 items-center gap-2.5 no-underline"
       aria-label={t('site.shortName')}
     >
       <Logo size={38} />
-      <span class="leading-tight">
-        <span class="block text-[var(--text-sm)] font-semibold text-[var(--color-ink)]">
+      <span class="min-w-0 leading-tight">
+        <span class="block text-[length:var(--text-sm)] font-semibold text-[var(--color-ink)]">
           {clinic.doctor[locale]}
         </span>
-        <span class="block text-[var(--text-xs)] text-[var(--color-muted)]">
+        <span class="block text-[length:var(--text-xs)] text-[var(--color-muted)]">
           {clinic.tagline[locale]}
         </span>
       </span>
     </a>
 
-    <!-- Desktop navigation -->
-    <nav class="header-wide hidden items-center gap-1 lg:flex" aria-label={t('a11y.mainNav')}>
+    <!-- Desktop navigation: one glass capsule with a lens on the current page. -->
+    <nav class="header-wide glass glass-capsule nav-capsule hidden lg:flex" aria-label={t('a11y.mainNav')} data-nav-capsule>
+      <span class="nav-lens" aria-hidden="true" data-nav-lens></span>
       {
-        nav.map((item) => (
+        capsule.map((item) => (
           <a
             href={localizePath(locale, item.path)}
             aria-current={isActive(item.path) ? 'page' : undefined}
-            class:list={[
-              'rounded-[var(--radius-btn)] px-3 py-2 text-[var(--text-sm)] no-underline transition-colors duration-[var(--dur-fast)]',
-              isActive(item.path)
-                ? 'bg-[var(--color-mist)] font-semibold text-[var(--color-ink)]'
-                : 'text-[var(--color-muted)] hover:bg-[var(--color-mist)] hover:text-[var(--color-ink)]',
-            ]}
+            class="nav-item press"
+            data-nav-item
           >
             {t(item.key)}
           </a>
@@ -73,45 +85,37 @@ function isActive(path: string): boolean {
       }
     </nav>
 
-    <div class="flex items-center gap-2">
+    <div class="header-actions flex items-center gap-2">
       <LanguageSwitcher locale={locale} />
 
       <a
-        href={telUrl('landline')}
-        class="header-wide hidden min-h-[44px] items-center gap-2 whitespace-nowrap rounded-[var(--radius-btn)] bg-[var(--color-ink)] px-4 text-[var(--text-sm)] font-semibold text-white no-underline transition-colors duration-[var(--dur-fast)] hover:bg-[var(--color-ink-deep)] lg:inline-flex"
+        href={localizePath(locale, 'contact')}
+        aria-current={isActive('contact') ? 'page' : undefined}
+        class="header-wide btn-prominent press hidden lg:inline-flex"
       >
-        <Icon name="phone" size={18} />
-        <span class="u-ltr">{clinic.phone.landline.display}</span>
+        {t('nav.contactCta')}
       </a>
 
-      <!-- Mobile disclosure -->
+      <!-- Phones and enlarged text: a glass menu button and sheet. -->
       <details class="header-compact group relative lg:hidden">
         <summary
-          class="flex min-h-[44px] min-w-[44px] cursor-pointer list-none items-center justify-center rounded-[var(--radius-btn)] border border-[var(--color-line-strong)] text-[var(--color-ink)] [&::-webkit-details-marker]:hidden"
+          class="glass glass-circle press flex size-11 cursor-pointer list-none items-center justify-center text-[var(--color-ink)] [&::-webkit-details-marker]:hidden"
           aria-label={t('a11y.openMenu')}
         >
-          <Icon name="menu" size={22} class="group-open:hidden" />
-          <Icon name="close" size={22} class="hidden group-open:block" />
+          <Icon name="menu" size={20} class="group-open:hidden" />
+          <Icon name="close" size={20} class="hidden group-open:block" />
         </summary>
 
-        <nav
-          class="absolute inset-inline-end-0 z-50 mt-2 w-[min(78vw,20rem)] rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-2 shadow-[0_18px_44px_-24px_rgba(12,82,131,0.45)]"
-          aria-label={t('a11y.mainNav')}
-          style="inset-inline-end:0"
-        >
+        <nav class="glass glass-sheet menu-sheet" aria-label={t('a11y.mainNav')}>
           {
             nav.map((item) => (
               <a
                 href={localizePath(locale, item.path)}
                 aria-current={isActive(item.path) ? 'page' : undefined}
-                class:list={[
-                  'block rounded-[var(--radius-btn)] px-4 py-3 text-[var(--text-base)] no-underline',
-                  isActive(item.path)
-                    ? 'bg-[var(--color-mist)] font-semibold text-[var(--color-ink)]'
-                    : 'text-[var(--color-body)] hover:bg-[var(--color-mist)]',
-                ]}
+                class="menu-item press"
               >
-                {t(item.key)}
+                <span>{t(item.key)}</span>
+                <Icon name="chevron" size={16} class="menu-chevron" />
               </a>
             ))
           }
@@ -120,3 +124,164 @@ function isActive(path: string): boolean {
     </div>
   </div>
 </header>
+
+<style>
+  .header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.75rem;
+  }
+  @media (min-width: 1024px) {
+    /* Brand · centred capsule · actions, like a macOS/iPadOS toolbar. */
+    .header-row {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+    }
+    .header-actions {
+      justify-self: end;
+    }
+  }
+
+  /* ---- Navigation capsule ---------------------------------------------- */
+  .nav-capsule {
+    position: relative;
+    align-items: center;
+    gap: 0.125rem;
+    padding: 0.3125rem;
+  }
+  .nav-item {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    min-block-size: 40px;
+    padding-inline: 1.125rem;
+    border-radius: var(--radius-pill);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--color-body);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color var(--dur-base) var(--ease-ios);
+  }
+  .nav-item[aria-current='page'] {
+    color: var(--color-ink);
+    font-weight: 600;
+    /* Without JS the current item carries its own lens. */
+    background: #fff;
+    box-shadow: var(--lens-shadow);
+  }
+  /* With JS one lens glides between items (see script below). */
+  .nav-lens {
+    position: absolute;
+    inset-block: 0.3125rem;
+    left: 0;
+    inline-size: var(--lens-w, 0px);
+    transform: translateX(var(--lens-x, 0px));
+    border-radius: var(--radius-pill);
+    background: #fff;
+    box-shadow: var(--lens-shadow);
+    opacity: 0;
+    transition:
+      transform var(--dur-lens) var(--ease-ios),
+      inline-size var(--dur-lens) var(--ease-ios),
+      opacity var(--dur-base) var(--ease-ios);
+    pointer-events: none;
+  }
+  .nav-capsule[data-lens-ready] .nav-lens {
+    opacity: 1;
+  }
+  .nav-capsule[data-lens-ready] .nav-item[aria-current='page'] {
+    background: transparent;
+    box-shadow: none;
+  }
+  /* The first placement must not slide in from the edge. */
+  .nav-capsule:not([data-lens-moved]) .nav-lens {
+    transition: opacity var(--dur-base) var(--ease-ios);
+  }
+
+  /* ---- Menu sheet (phones, enlarged text) ------------------------------ */
+  .menu-sheet {
+    position: absolute;
+    inset-inline-end: 0;
+    z-index: 50;
+    margin-block-start: 0.625rem;
+    inline-size: min(82vw, 20rem);
+    padding: 0.5rem;
+    transform-origin: top right;
+  }
+  :global(html[dir='rtl']) .menu-sheet {
+    transform-origin: top left;
+  }
+  .menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-block-size: 48px;
+    padding-inline: 1rem;
+    border-radius: 14px;
+    font-size: var(--text-base);
+    color: var(--color-body);
+    text-decoration: none;
+  }
+  .menu-item:hover {
+    background: color-mix(in srgb, var(--color-ink) 7%, transparent);
+  }
+  .menu-item[aria-current='page'] {
+    background: #fff;
+    color: var(--color-ink);
+    font-weight: 600;
+    box-shadow: var(--lens-shadow);
+  }
+  .menu-chevron {
+    color: var(--color-muted);
+  }
+  /* The sheet grows out of its button (spatial consistency). */
+  details[open] > .menu-sheet {
+    animation: sheet-in var(--dur-base) var(--ease-ios) both;
+  }
+  @keyframes sheet-in {
+    from {
+      opacity: 0;
+      transform: scale(0.94);
+    }
+  }
+</style>
+
+<script>
+  // The lens: one white capsule that glides to the hovered or focused item
+  // and settles back on the current page. Critically damped (no bounce) —
+  // nothing was thrown, so nothing overshoots.
+  const capsule = document.querySelector<HTMLElement>('[data-nav-capsule]');
+  const lens = capsule?.querySelector<HTMLElement>('[data-nav-lens]');
+  if (capsule && lens) {
+    const items = [...capsule.querySelectorAll<HTMLElement>('[data-nav-item]')];
+    const current = items.find((item) => item.getAttribute('aria-current') === 'page');
+    const place = (item: HTMLElement | undefined): void => {
+      if (!item) {
+        lens.style.opacity = '0';
+        return;
+      }
+      lens.style.removeProperty('opacity');
+      capsule.style.setProperty('--lens-x', `${item.offsetLeft}px`);
+      capsule.style.setProperty('--lens-w', `${item.offsetWidth}px`);
+    };
+    const settle = (): void => place(current);
+    settle();
+    capsule.setAttribute('data-lens-ready', '');
+    requestAnimationFrame(() => capsule.setAttribute('data-lens-moved', ''));
+    for (const item of items) {
+      item.addEventListener('pointerenter', () => place(item));
+      item.addEventListener('focus', () => place(item));
+    }
+    capsule.addEventListener('pointerleave', settle);
+    capsule.addEventListener('focusout', (event) => {
+      if (!capsule.contains(event.relatedTarget as Node | null)) settle();
+    });
+    // Fonts loading and resizing change item widths.
+    new ResizeObserver(settle).observe(capsule);
+  }
+</script>

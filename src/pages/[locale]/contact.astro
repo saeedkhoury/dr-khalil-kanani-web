@@ -51,7 +51,7 @@ const dayNames: Record<Locale, Record<string, string>> = {
       <EditControl kind="contact" locale={locale} /><EditControl kind="hours" locale={locale} /><EditControl kind="copy" focus="contact" locale={locale} />
       <p class="eyebrow">{t('nav.contact')}</p>
       <h1 class="mt-2">{t('contact.title')}</h1>
-      <p class="mt-4 text-[var(--text-lg)] text-[var(--color-muted)]">{t('contact.subtitle')}</p>
+      <p class="mt-4 text-[length:var(--text-lg)] text-[var(--color-muted)]">{t('contact.subtitle')}</p>
 
       <div class="mt-8 flex flex-col gap-3">
         <Button href={telUrl('landline')} variant="primary" size="lg" icon="phone" full>
@@ -87,7 +87,7 @@ const dayNames: Record<Locale, Record<string, string>> = {
             <dd class="mt-1.5" style="margin-inline-start:0">
               <ul class="space-y-1" style="list-style:none;padding-inline-start:0;margin:0">
                 {clinic.hours.map((h) => (
-                  <li class="flex justify-between gap-6 text-[var(--text-sm)]">
+                  <li class="flex justify-between gap-6 text-[length:var(--text-sm)]">
                     <span class="text-[var(--color-muted)]">{dayNames[locale][h.day]}</span>
                     <span class="u-ltr">{h.closed ? '—' : `${h.opens}–${h.closes}`}</span>
                   </li>

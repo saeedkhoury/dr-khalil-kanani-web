@@ -35,19 +35,19 @@ const Heading = headingLevel;
     <p class="eyebrow">{t('faq.title')}</p>
     <Heading id={`${id}-heading`} class="mt-2">{title ?? t('faq.title')}</Heading>
 
-    <div class="reveal reveal-soft mt-8 divide-y divide-[var(--color-line)] border-y border-[var(--color-line)]">
+    <div class="card reveal reveal-soft mt-8 overflow-hidden" data-faq-group>
       {
         items.map((item) => (
           <details class="group">
             <summary
-              class="flex cursor-pointer list-none items-start justify-between gap-4 py-5 text-[var(--text-base)] font-semibold text-[var(--color-ink)] transition-colors duration-[var(--dur-fast)] hover:text-[var(--color-ink-deep)] [&::-webkit-details-marker]:hidden"
+              class="faq-row flex cursor-pointer list-none items-start justify-between gap-4 px-5 py-5 text-[length:var(--text-base)] font-semibold text-[var(--color-ink)] transition-colors duration-[var(--dur-fast)] sm:px-6 [&::-webkit-details-marker]:hidden"
             >
               <span>{item.q}</span>
-              <span class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-[var(--color-haze)] transition-transform duration-[var(--dur-base)] ease-[var(--ease-out)] group-open:rotate-45">
+              <span class="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-ink)_8%,transparent)] text-[var(--color-ink)] transition-transform duration-[var(--dur-slow)] ease-[var(--ease-ios)] group-open:rotate-45">
                 <Icon name="plus" size={16} stroke={2} />
               </span>
             </summary>
-            <p class="pb-5 text-[var(--text-base)] leading-relaxed text-[var(--color-muted)]">
+            <p class="px-5 pb-5 text-[length:var(--text-base)] leading-relaxed text-[var(--color-muted)] sm:px-6">
               {item.a}
             </p>
           </details>
@@ -56,3 +56,17 @@ const Heading = headingLevel;
     </div>
   </div>
 </section>
+
+<style>
+  /* Inset grouped list: hairline separators that stop short of the edges. */
+  [data-faq-group] > details + details {
+    border-block-start: 1px solid transparent;
+    background-image: linear-gradient(var(--color-line), var(--color-line));
+    background-size: calc(100% - 2.5rem) 1px;
+    background-position: center top;
+    background-repeat: no-repeat;
+  }
+  .faq-row:hover {
+    background: color-mix(in srgb, var(--color-ink) 4%, transparent);
+  }
+</style>

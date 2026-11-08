@@ -58,7 +58,7 @@ const dayNames: Record<Locale, Record<string, string>> = {
 
 const actionClass =
   'inline-flex min-h-[48px] items-center justify-center gap-2 rounded-[var(--radius-btn)] ' +
-  'px-5 text-[var(--text-sm)] font-semibold no-underline ' +
+  'px-5 text-[length:var(--text-sm)] font-semibold no-underline ' +
   'transition-[background-color,border-color,transform] duration-[var(--dur-fast)] ' +
   'ease-[var(--ease-out)] active:translate-y-px';
 ---
@@ -68,10 +68,10 @@ const actionClass =
     <EditControl kind="contact" locale={locale} /><EditControl kind="hours" locale={locale} />
     <div class="max-w-2xl">
       <h2 id="location-heading">{t('location.title')}</h2>
-      <p class="mt-3 text-[var(--text-lg)] text-[var(--color-muted)]">{t('location.subtitle')}</p>
+      <p class="mt-3 text-[length:var(--text-lg)] text-[var(--color-muted)]">{t('location.subtitle')}</p>
     </div>
 
-    <div class="mt-10 grid overflow-hidden rounded-[var(--radius-media)] border border-[var(--color-line)] bg-[var(--color-porcelain)] lg:grid-cols-[0.85fr_1.15fr]">
+    <div class="card mt-10 grid overflow-hidden lg:grid-cols-[0.85fr_1.15fr]">
       <!-- Details -->
       <div class="p-6 sm:p-10">
         <dl class="grid gap-6 sm:grid-cols-2">
@@ -94,7 +94,7 @@ const actionClass =
                 <dd class="mt-1.5" style="margin-inline-start:0">
                   <ul class="grid gap-1 sm:grid-cols-2" style="list-style:none;padding-inline-start:0;margin:0">
                     {clinic.hours.map((h) => (
-                      <li class="flex justify-between gap-6 text-[var(--text-sm)]">
+                      <li class="flex justify-between gap-6 text-[length:var(--text-sm)]">
                         <span class="text-[var(--color-muted)]">{dayNames[locale][h.day]}</span>
                         <span class="u-ltr">{h.closed ? '—' : `${h.opens}–${h.closes}`}</span>
                       </li>
@@ -115,7 +115,7 @@ const actionClass =
                   href={maps}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class={`${actionClass} bg-[var(--color-ink)] text-white hover:bg-[var(--color-ink-deep)]`}
+                  class={`${actionClass} btn-filled`}
                 >
                   <Icon name="map-pin" size={18} />
                   {t('action.googleMaps')}
@@ -126,7 +126,7 @@ const actionClass =
                   href={waze}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class={`${actionClass} border border-[var(--color-line-strong)] bg-[var(--color-porcelain)] text-[var(--color-ink)] hover:border-[var(--color-ink)]`}
+                  class={`${actionClass} btn-tinted`}
                 >
                   <Icon name="chevron" size={18} class="u-flip" />
                   {t('action.waze')}
@@ -137,8 +137,8 @@ const actionClass =
             /* Address not yet verified — say so plainly and give the two
                channels that DO work, rather than guessing a location. */
             <div>
-              <h3 class="text-[var(--text-base)] font-semibold">{t('location.pendingTitle')}</h3>
-              <p class="mt-2 text-[var(--text-sm)] leading-relaxed text-[var(--color-muted)]">
+              <h3 class="text-[length:var(--text-base)] font-semibold">{t('location.pendingTitle')}</h3>
+              <p class="mt-2 text-[length:var(--text-sm)] leading-relaxed text-[var(--color-muted)]">
                 {t('location.pendingBody')}
               </p>
             </div>
@@ -148,7 +148,7 @@ const actionClass =
         {!canNavigate && <div class="mt-4 flex flex-col gap-3">
           <a
             href={telUrl('landline')}
-            class={`${actionClass} border border-[var(--color-line-strong)] bg-[var(--color-porcelain)] text-[var(--color-ink)] hover:border-[var(--color-ink)]`}
+            class={`${actionClass} btn-tinted`}
           >
             <Icon name="phone" size={18} />
             <span class="u-ltr">{clinic.phone.landline.display}</span>

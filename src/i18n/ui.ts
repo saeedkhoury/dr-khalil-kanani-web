@@ -33,6 +33,7 @@ export const ui = {
     'nav.treatments': 'טיפולים',
     'nav.faq': 'שאלות נפוצות',
     'nav.contact': 'צרו קשר',
+    'nav.contactCta': 'צרו קשר',
     'nav.menu': 'תפריט',
     'nav.close': 'סגירה',
 
@@ -187,6 +188,16 @@ export const ui = {
     'feedback.ratingLabel': 'דירוג ממוצע ב-Google',
 
     'footer.rights': 'כל הזכויות שמורות',
+    'footer.stayEyebrow': 'הישארו בקשר',
+    'footer.followTitle': 'עבודות הרופא באינסטגרם',
+    'footer.followBody': 'צילומי טיפולים נבחרים ועדכונים מהמרפאה.',
+    'footer.follow': 'עקבו באינסטגרם',
+    'footer.treatments': 'טיפולים',
+    'footer.clinic': 'המרפאה',
+    'footer.info': 'מידע',
+    'footer.contact': 'יצירת קשר',
+    'footer.social': 'המרפאה ברשתות',
+    'footer.newTab': '(נפתח בכרטיסייה חדשה)',
 
     'error.404.title': 'הדף לא נמצא',
     'error.404.body': 'ייתכן שהקישור שגוי או שהדף הוסר.',
@@ -206,6 +217,7 @@ export const ui = {
     'nav.treatments': 'العلاجات',
     'nav.faq': 'أسئلة شائعة',
     'nav.contact': 'اتصلوا بنا',
+    'nav.contactCta': 'تواصلوا معنا',
     'nav.menu': 'القائمة',
     'nav.close': 'إغلاق',
 
@@ -359,6 +371,16 @@ export const ui = {
     'feedback.ratingLabel': 'متوسط التقييم على Google',
 
     'footer.rights': 'جميع الحقوق محفوظة',
+    'footer.stayEyebrow': 'ابقوا على تواصل',
+    'footer.followTitle': 'أعمال الطبيب على إنستغرام',
+    'footer.followBody': 'صور علاجات مختارة ومستجدات من العيادة.',
+    'footer.follow': 'تابعونا على إنستغرام',
+    'footer.treatments': 'العلاجات',
+    'footer.clinic': 'العيادة',
+    'footer.info': 'معلومات',
+    'footer.contact': 'التواصل',
+    'footer.social': 'العيادة على الشبكات',
+    'footer.newTab': '(يُفتح في علامة تبويب جديدة)',
 
     'error.404.title': 'الصفحة غير موجودة',
     'error.404.body': 'قد يكون الرابط غير صحيح أو أن الصفحة أُزيلت.',
@@ -378,6 +400,7 @@ export const ui = {
     'nav.treatments': 'Treatments',
     'nav.faq': 'FAQ',
     'nav.contact': 'Contact',
+    'nav.contactCta': 'Contact us',
     'nav.menu': 'Menu',
     'nav.close': 'Close',
 
@@ -532,6 +555,16 @@ export const ui = {
     'feedback.ratingLabel': 'Average rating on Google',
 
     'footer.rights': 'All rights reserved',
+    'footer.stayEyebrow': 'Stay in touch',
+    'footer.followTitle': 'The doctor’s work on Instagram',
+    'footer.followBody': 'Selected treatment photographs and news from the clinic.',
+    'footer.follow': 'Follow on Instagram',
+    'footer.treatments': 'Treatments',
+    'footer.clinic': 'The clinic',
+    'footer.info': 'Information',
+    'footer.contact': 'Contact',
+    'footer.social': 'The clinic on social media',
+    'footer.newTab': '(opens in a new tab)',
 
     'error.404.title': 'Page not found',
     'error.404.body': 'The link may be wrong, or the page may have been removed.',
