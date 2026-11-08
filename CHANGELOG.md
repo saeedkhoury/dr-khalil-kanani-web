@@ -1,5 +1,11 @@
 # Changelog
 
+
+## 2026-11-08 — Terms, cookie policy, accurate privacy notice
+
+- Added terms of use and cookie policy pages in Hebrew, Arabic and English.
+- Corrected the appointment form's privacy notice and the privacy policy to describe the email relay actually in use.
+
 ## 2026-11-08 — Apple design and Liquid Glass
 
 - Floating Liquid Glass header: navigation capsule with a sliding lens,

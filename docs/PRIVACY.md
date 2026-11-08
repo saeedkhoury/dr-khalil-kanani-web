@@ -2,19 +2,27 @@
 
 Amendment 13 to the Protection of Privacy Law, 1981 — in force **14 Aug 2025**.
 
-## What the site stores: nothing
+## What the site stores: nothing — but the request does travel
 
-Since ADR 0007 the appointment form does not send anything to a server. It
-composes a WhatsApp message that the visitor sends themselves.
+The form POSTs to the appointment-email Worker (Cloudflare), which stores
+nothing and hands the request to Resend, which delivers it to the clinic
+inbox. If the relay is unreachable the form falls back to a WhatsApp message
+the visitor sends themselves (ADR 0007).
 
-That removes the Amendment 13 database duties entirely — there is no database,
-so there is no registration question, no retention policy to enforce, no
-deletion path to build and no security tier to maintain. From the moment the
-visitor presses send, the message lives in their WhatsApp account and the
-clinic's, under WhatsApp's own policies.
+No database means no registration question and no security tier for the
+site itself. The processors still have to be named: the inline notice and
+the privacy policy list Cloudflare, Resend, the clinic mailbox and, on
+fallback, WhatsApp, and say some of them process data outside Israel.
 
-The inline notice at the point of collection says exactly this. It previously
-described a server that, as deployed, did not exist.
+Until 2026-11-08 the inline notice still described the WhatsApp-only flow
+("does not send them to a server") and the policy described an encrypted
+lead database with 12-month deletion. Neither was true. Any change to the
+submit path must update `privacy.notice.body` and `src/data/legal.ts` in the
+same commit.
+
+**Open owner decisions:** which mailbox `MAIL_TO` is (its provider is a
+recipient too), and how long enquiries are kept there. The policy names no
+period until the clinic chooses one.
 
 ## What is entered
 
@@ -59,15 +67,20 @@ Transactional and marketing paths are physically separate. Adding a promotion
 to an appointment reminder converts it into a דבר פרסומת under Amendment 40 —
 ₪1,000 per message, no proof of harm required.
 
-## Analytics
+## Analytics and cookies
 
-Cookieless only. Israel has **no ePrivacy-equivalent cookie law**, and the
+None today: no analytics, no cookies, no pixels (see the cookie policy,
+`src/data/site-policies.ts`). The only browser storage is the accessibility
+panel's localStorage. Google content loads only on click. If analytics is
+ever added: cookieless only. Israel has **no ePrivacy-equivalent cookie law**, and the
 PPA's Consent Opinion contains zero mentions of cookies. Shipping cookieless
 analytics makes the banner question moot. Never Google Analytics or Meta Pixel.
 
 ## Retention
 
-Not applicable to the website: it stores nothing. Retention of an actual
+The website and the relay store nothing. Enquiries live in the clinic
+mailbox / WhatsApp; the policy promises only "as long as needed" until the
+clinic sets a period. Retention of an actual
 patient's record is governed by the Patient's Rights Law, 1996 and the clinic's
 own systems — a separate regime the site does not touch.
 

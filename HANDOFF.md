@@ -6,6 +6,15 @@ Current repository state. Not a history — see `CHANGELOG.md` for that.
 
 ---
 
+
+## Legal pages and privacy accuracy — 2026-11-08 (branch `legal/terms-cookies-privacy-accuracy`, not pushed)
+
+- New `/[locale]/terms/` and `/[locale]/cookies/` (content in `src/data/site-policies.ts`), linked from the footer's Information column. Clinic details block (`BusinessDetails.astro`) on privacy, terms and cookies, read from `clinic.ts`.
+- **Fixed a false privacy notice.** The form's inline notice still said nothing is sent to a server (WhatsApp-only), but the form POSTs to the live email relay (Cloudflare Worker → Resend → clinic inbox). The policy also claimed an encrypted database and 12-month deletion that never existed. Both now describe the real flow.
+- No cookie banner on purpose: the site sets no cookies and runs no analytics; only the accessibility panel uses localStorage; Google Maps loads on click.
+- No refund policy on purpose: nothing is sold online, and prices may not be advertised.
+- **Open for owner/lawyer:** legal review of all three texts (he/ar native review too); retention period for enquiries; which mailbox `MAIL_TO` is; whether the license number must appear; **the 10 published before/after treatment-work photos** (see ADR 0010) — prohibited-advertising risk under the 2009 dentists' regulations.
+
 ## Apple design + Liquid Glass — 2026-11-08
 
 - **Header** (`Header.astro`): no background bar. Clinic mark, a centred

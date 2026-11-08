@@ -1,0 +1,45 @@
+---
+/**
+ * Who runs the site — the controller named by the privacy policy and the
+ * operator named by the terms. Every value comes from src/data/clinic.ts
+ * through its existing guards, so nothing unverified is shown here that is
+ * not already shown in the footer, and nothing is hardcoded.
+ */
+import { type Locale } from '../../i18n/config';
+import { clinic, hasAddress, telUrl } from '../../data/clinic';
+
+interface Props {
+  locale: Locale;
+}
+const { locale } = Astro.props;
+
+const heading = { he: 'פרטי המרפאה', ar: 'تفاصيل العيادة', en: 'Clinic details' }[locale];
+const phoneLabel = { he: 'טלפון', ar: 'هاتف', en: 'Phone' }[locale];
+const mobileLabel = { he: 'נייד', ar: 'جوّال', en: 'Mobile' }[locale];
+const emailLabel = { he: 'דוא״ל', ar: 'البريد الإلكتروني', en: 'Email' }[locale];
+const address = hasAddress(locale)
+  ? `${clinic.address.street[locale]}, ${clinic.address.locality[locale]}`
+  : clinic.address.locality[locale];
+---
+
+<section class="mt-10 rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-mist)] p-6" aria-labelledby="business-details-heading">
+  <h2 id="business-details-heading" class="text-[length:var(--text-lg)]">{heading}</h2>
+  <ul class="mt-3 space-y-1.5" style="list-style:none;padding-inline-start:0">
+    <li class="font-semibold text-[var(--color-ink)]">{clinic.doctor[locale]}</li>
+    <li>{address}</li>
+    <li>
+      {phoneLabel}:{' '}
+      <a href={telUrl('landline')} class="u-ltr no-underline hover:underline">{clinic.phone.landline.display}</a>
+    </li>
+    <li>
+      {mobileLabel}:{' '}
+      <a href={telUrl('mobile')} class="u-ltr no-underline hover:underline">{clinic.phone.mobile.display}</a>
+    </li>
+    {clinic.email && (
+      <li>
+        {emailLabel}:{' '}
+        <a href={`mailto:${clinic.email}`} class="u-ltr no-underline hover:underline">{clinic.email}</a>
+      </li>
+    )}
+  </ul>
+</section>
