@@ -36,18 +36,20 @@ const mapsQuery = encodeURIComponent(
   `${clinic.address.street[locale]} ${clinic.address.locality[locale]}`.trim(),
 );
 
+// A floating Liquid Glass capsule, like an iOS tab bar: it hovers above the
+// content with a margin on every side instead of a full-width slab.
 const itemClass =
-  'flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 no-underline ' +
-  'text-[var(--text-xs)] font-semibold transition-colors duration-[var(--dur-fast)]';
+  'press flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-full no-underline ' +
+  'text-[length:var(--text-xs)] font-semibold hover:bg-[color-mix(in_srgb,var(--color-ink)_7%,transparent)]';
 ---
 
 <div
   data-action-bar
-  class="fixed inset-x-0 inset-be-0 z-50 border-t border-[var(--color-line)] bg-[var(--color-porcelain)]/97 backdrop-blur-sm md:hidden"
-  style="padding-block-end: env(safe-area-inset-bottom)"
+  class="pointer-events-none fixed inset-x-0 inset-be-0 z-50 md:hidden"
+  style="padding-inline: 0.75rem; padding-block-end: calc(0.5rem + env(safe-area-inset-bottom))"
 >
-  <nav class="flex items-stretch" aria-label={t('action.bookAppointment')}>
-    <a href={telUrl('landline')} class={`${itemClass} text-[var(--color-ink)] hover:bg-[var(--color-mist)]`}>
+  <nav class="glass glass-capsule pointer-events-auto flex items-stretch gap-1 p-1" aria-label={t('action.bookAppointment')}>
+    <a href={telUrl('landline')} class={`${itemClass} text-[var(--color-ink)]`}>
       <Icon name="phone" size={21} />
       <span>{t('action.call')}</span>
     </a>
@@ -56,8 +58,7 @@ const itemClass =
       href={whatsappUrl(waMessage)}
       target="_blank"
       rel="noopener noreferrer"
-      class={`${itemClass} border-inline-start border-[var(--color-line)] text-[var(--color-wa)] hover:bg-[var(--color-mist)]`}
-      style="border-inline-start:1px solid var(--color-line)"
+      class={`${itemClass} text-[var(--color-wa)]`}
     >
       <Icon name="whatsapp" size={21} />
       <span>{t('action.whatsapp')}</span>
@@ -69,8 +70,7 @@ const itemClass =
           href={`https://www.google.com/maps/search/?api=1&query=${mapsQuery}`}
           target="_blank"
           rel="noopener noreferrer"
-          class={`${itemClass} text-[var(--color-ink)] hover:bg-[var(--color-mist)]`}
-          style="border-inline-start:1px solid var(--color-line)"
+          class={`${itemClass} text-[var(--color-ink)]`}
         >
           <Icon name="map-pin" size={21} />
           <span>{t('action.directions')}</span>

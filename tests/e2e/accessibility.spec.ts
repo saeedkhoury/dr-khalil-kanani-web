@@ -148,6 +148,8 @@ for (const locale of locales) {
       await page.setViewportSize({ width, height: 800 });
       await page.goto(`/${locale}/`);
       const fab = page.locator('.a11y-fab');
+      // The button lifts while held and eases back after: measure it settled.
+      const settled = () => expect.poll(() => fab.evaluate((e) => getComputedStyle(e).transform)).toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/);
       const drag = async (toX: number, toY: number) => {
         const b = (await fab.boundingBox())!;
         await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
@@ -155,6 +157,7 @@ for (const locale of locales) {
         await page.mouse.move(b.x + b.width / 2 + 10, b.y + b.height / 2, { steps: 2 });
         await page.mouse.move(toX, toY, { steps: 8 });
         await page.mouse.up();
+        await settled();
       };
 
       // Drop near the middle-left: it snaps to the left edge at that height.

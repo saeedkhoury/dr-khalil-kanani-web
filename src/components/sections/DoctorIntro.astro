@@ -59,7 +59,7 @@ const portraitAsset = portrait ? resolveImage(portrait.file) : undefined;
       <p class="eyebrow">{t('nav.about')}</p>
       <h2 id="doctor-heading" class="mt-2">{t('doctor.title')}</h2>
 
-      <p class="mt-5 max-w-2xl text-[var(--text-lg)] leading-relaxed text-[var(--color-muted)]">
+      <p class="mt-5 max-w-2xl text-[length:var(--text-lg)] leading-relaxed text-[var(--color-muted)]">
         {doctor.intro[locale]}
       </p>
 
@@ -70,7 +70,7 @@ const portraitAsset = portrait ? resolveImage(portrait.file) : undefined;
               <span class="mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full bg-[var(--color-haze)] text-[var(--color-ink)]">
                 <Icon name="check" size={14} stroke={2.2} />
               </span>
-              <span class="text-[var(--text-base)] leading-relaxed">{line}</span>
+              <span class="text-[length:var(--text-base)] leading-relaxed">{line}</span>
             </li>
           ))
         }
@@ -83,7 +83,7 @@ const portraitAsset = portrait ? resolveImage(portrait.file) : undefined;
             style="list-style:none;padding-inline-start:0"
           >
             {doctor.credentials.map((c) => (
-              <li class="text-[var(--text-sm)] text-[var(--color-muted)]">
+              <li class="text-[length:var(--text-sm)] text-[var(--color-muted)]">
                 {c.label[locale]}
                 {c.year && <span class="u-ltr"> · {c.year}</span>}
               </li>

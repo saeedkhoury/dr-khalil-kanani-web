@@ -40,23 +40,23 @@ const {
   ...rest
 } = Astro.props;
 
+// Apple buttons: capsules that respond on press (.press, global.css).
 const base =
-  'inline-flex items-center justify-center gap-2 font-semibold no-underline ' +
-  'min-h-[44px] rounded-[var(--radius-btn)] cursor-pointer ' +
-  'transition-[background-color,border-color,color,transform] duration-[var(--dur-fast)] ' +
-  'ease-[var(--ease-out)] active:translate-y-px';
+  'press inline-flex items-center justify-center gap-2 font-semibold no-underline ' +
+  'min-h-[44px] rounded-[var(--radius-btn)] cursor-pointer';
 
+// primary: the one filled, prominent action. outline: Apple's tinted gray
+// capsule for secondary actions. whatsapp keeps the service's own green.
 const variants: Record<string, string> = {
-  primary: 'bg-[var(--color-ink)] text-white hover:bg-[var(--color-ink-deep)] border border-transparent',
-  outline:
-    'bg-transparent text-[var(--color-ink)] border border-[var(--color-line-strong)] hover:bg-[var(--color-mist)] hover:border-[var(--color-ink)]',
-  whatsapp: 'bg-[var(--color-wa)] text-white hover:brightness-90 border border-transparent',
-  ghost: 'bg-transparent text-[var(--color-ink)] border border-transparent hover:bg-[var(--color-mist)]',
+  primary: 'btn-filled',
+  outline: 'btn-tinted',
+  whatsapp: 'btn-filled btn-filled--wa',
+  ghost: 'bg-transparent text-[var(--color-ink)] hover:bg-[color-mix(in_srgb,var(--color-ink)_7%,transparent)]',
 };
 
 const sizes: Record<string, string> = {
-  md: 'px-5 py-2.5 text-[var(--text-sm)]',
-  lg: 'px-7 py-3.5 text-[var(--text-base)]',
+  md: 'px-5 py-2.5 text-[length:var(--text-sm)]',
+  lg: 'px-7 py-3.5 text-[length:var(--text-base)] min-h-[52px]',
 };
 
 const cls = [base, variants[variant], sizes[size], full ? 'w-full' : '', className]

@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-11-08 — Apple design and Liquid Glass
+
+- Floating Liquid Glass header: navigation capsule with a sliding lens,
+  glass language switcher, "Contact us" action; glass phone menu and action bar.
+- Site-wide Apple design language: capsule buttons with press feedback,
+  rounded cards, app-icon tiles, grouped FAQ, semibold display type.
+- Designed font sizes now actually apply (a utility compiled them as colours).
+- New footer: statement band, treatment/clinic/information/contact columns,
+  social icons, smaller studio credit.
+- Official WhatsApp mark.
+
 ## 2026-10-07 — Accessibility
 
 - Accessibility settings button (text size, contrast, underlined links, stop

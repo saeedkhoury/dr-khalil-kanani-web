@@ -42,11 +42,11 @@ const items = [
       {
         items.map((item, i) => (
           <li class="reveal" style={`--i:${i}`}>
-            <span class="flex size-11 items-center justify-center rounded-[var(--radius-btn)] bg-[var(--color-haze)] text-[var(--color-ink)]">
+            <span class="icon-tile flex size-11 items-center justify-center">
               <Icon name={item.icon} size={22} />
             </span>
-            <h3 class="mt-4 text-[var(--text-base)] font-semibold">{t(item.title)}</h3>
-            <p class="mt-1.5 text-[var(--text-sm)] leading-relaxed text-[var(--color-muted)]">
+            <h3 class="mt-4 text-[length:var(--text-base)] font-semibold">{t(item.title)}</h3>
+            <p class="mt-1.5 text-[length:var(--text-sm)] leading-relaxed text-[var(--color-muted)]">
               {t(item.body)}
             </p>
           </li>

@@ -36,14 +36,14 @@ export const TOKENS = `
   --text-lg: 1.1875rem;
   --text-xl: clamp(1.375rem, 1.2rem + 0.7vw, 1.625rem);
 
-  --radius-card: 14px;
-  --radius-btn: 12px;
-  --radius-field: 10px;
+  --radius-card: 22px;
+  --radius-btn: 999px;
+  --radius-field: 12px;
   --radius-pill: 999px;
 
-  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
-  --dur-fast: 150ms;
-  --dur-base: 240ms;
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --dur-fast: 160ms;
+  --dur-base: 260ms;
 }
 `.trim();
 

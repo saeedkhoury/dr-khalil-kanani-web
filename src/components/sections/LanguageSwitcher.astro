@@ -27,9 +27,9 @@ const alternates = alternatesFor(Astro.url.pathname);
 const currentMeta = alternates.find((a) => a.locale === locale)!;
 ---
 
-<details class="group relative">
+<details class="lang-switcher group relative">
   <summary
-    class="flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 rounded-[var(--radius-btn)] border border-[var(--color-line-strong)] px-3 text-[var(--text-sm)] font-semibold text-[var(--color-ink)] transition-colors duration-[var(--dur-fast)] hover:bg-[var(--color-mist)] [&::-webkit-details-marker]:hidden"
+    class="glass glass-capsule press flex min-h-[44px] cursor-pointer list-none items-center gap-1.5 px-3.5 text-[length:var(--text-sm)] font-semibold text-[var(--color-ink)] [&::-webkit-details-marker]:hidden"
     aria-label={`${t('a11y.languageSwitcher')} — ${t('a11y.currentLanguage')}: ${currentMeta.meta.label}`}
   >
     <Icon name="globe" size={18} />
@@ -37,8 +37,8 @@ const currentMeta = alternates.find((a) => a.locale === locale)!;
   </summary>
 
   <ul
-    class="absolute z-50 mt-2 min-w-[10rem] list-none rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-porcelain)] p-1.5 shadow-[0_18px_44px_-24px_rgba(12,82,131,0.45)]"
-    style="inset-inline-end:0; margin-block-start:0.5rem; padding-inline-start:0.375rem"
+    class="glass glass-sheet lang-menu absolute z-50 min-w-[11rem] list-none p-1.5"
+    style="inset-inline-end:0; margin-block-start:0.625rem; padding-inline-start:0.375rem"
   >
     {
       alternates.map((alt) => (
@@ -50,16 +50,34 @@ const currentMeta = alternates.find((a) => a.locale === locale)!;
             dir={alt.meta.dir}
             aria-current={alt.locale === locale ? 'true' : undefined}
             class:list={[
-              'flex min-h-[44px] items-center rounded-[var(--radius-btn)] px-3 text-[var(--text-sm)] no-underline',
+              'press flex min-h-[44px] items-center justify-between gap-3 rounded-[14px] px-3.5 text-[length:var(--text-sm)] no-underline',
               alt.locale === locale
-                ? 'bg-[var(--color-mist)] font-semibold text-[var(--color-ink)]'
-                : 'text-[var(--color-body)] hover:bg-[var(--color-mist)]',
+                ? 'bg-white font-semibold text-[var(--color-ink)] shadow-[var(--lens-shadow)]'
+                : 'text-[var(--color-body)] hover:bg-[color-mix(in_srgb,var(--color-ink)_7%,transparent)]',
             ]}
           >
-            {alt.meta.label}
+            <span>{alt.meta.label}</span>
+            {alt.locale === locale && <Icon name="check" size={16} />}
           </a>
         </li>
       ))
     }
   </ul>
 </details>
+
+<style>
+  /* The menu grows out of its capsule (spatial consistency). */
+  .lang-switcher[open] > .lang-menu {
+    transform-origin: top right;
+    animation: lang-in var(--dur-base) var(--ease-ios) both;
+  }
+  :global(html[dir='rtl']) .lang-switcher[open] > .lang-menu {
+    transform-origin: top left;
+  }
+  @keyframes lang-in {
+    from {
+      opacity: 0;
+      transform: scale(0.94);
+    }
+  }
+</style>

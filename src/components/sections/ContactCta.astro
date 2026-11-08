@@ -29,10 +29,10 @@ const waMessage = {
 <section class="section" aria-labelledby="cta-heading">
   <div class="shell">
     <div
-      class="reveal reveal-soft rounded-[var(--radius-card)] border border-[var(--color-line)] bg-[var(--color-haze)] px-6 py-12 text-center sm:px-12"
+      class="brand-wash reveal reveal-soft rounded-[28px] px-6 py-14 text-center sm:px-12"
     >
       <h2 id="cta-heading">{t('contact.title')}</h2>
-      <p class="mx-auto mt-3 max-w-xl text-[var(--text-lg)] text-[var(--color-muted)]">
+      <p class="mx-auto mt-3 max-w-xl text-[length:var(--text-lg)] text-[var(--color-muted)]">
         {t('contact.subtitle')}
       </p>
 
@@ -57,7 +57,7 @@ const waMessage = {
         </Button>
       </div>
 
-      <p class="mt-6 flex items-center justify-center gap-1.5 text-[var(--text-sm)] text-[var(--color-muted)]">
+      <p class="mt-6 flex items-center justify-center gap-1.5 text-[length:var(--text-sm)] text-[var(--color-muted)]">
         <Icon name="map-pin" size={15} />
         {clinic.address.locality[locale]}
       </p>

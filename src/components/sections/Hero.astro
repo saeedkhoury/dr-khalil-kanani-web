@@ -39,18 +39,9 @@ const withImage = hasHeroImage() && heroAsset !== undefined;
 ---
 
 <section
-  class="relative overflow-hidden border-b border-[var(--color-line)] bg-[var(--color-porcelain)]"
+  class="hero-section brand-wash relative overflow-hidden"
   aria-labelledby="hero-heading"
 >
-  <!-- Depth from layered tint, never a shadow. -->
-  <div
-    aria-hidden="true"
-    class="pointer-events-none absolute inset-0 -z-10"
-    style="background:
-      radial-gradient(64rem 34rem at 82% -12%, var(--color-haze) 0%, transparent 62%),
-      radial-gradient(44rem 28rem at 4% 108%, var(--color-mist) 0%, transparent 68%);"
-  >
-  </div>
 
   <div class="shell hero-layout py-12 md:py-20">
     <EditControl kind="copy" focus="hero" locale={locale} />
@@ -71,7 +62,7 @@ const withImage = hasHeroImage() && heroAsset !== undefined;
       </h1>
 
       <p
-        class="enter mt-6 max-w-xl text-[var(--text-lg)] leading-relaxed text-[var(--color-muted)]"
+        class="enter mt-6 max-w-xl text-[length:var(--text-lg)] leading-relaxed text-[var(--color-muted)]"
         style="--i:2"
       >
         {t('hero.subtitle')}
@@ -117,6 +108,11 @@ const withImage = hasHeroImage() && heroAsset !== undefined;
 </section>
 
 <style>
+  /* The header floats; the hero's colour runs up beneath its glass. */
+  .hero-section {
+    margin-block-start: calc(-1 * var(--header-h, 4.25rem));
+    padding-block-start: var(--header-h, 4.25rem);
+  }
   .hero-layout {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
