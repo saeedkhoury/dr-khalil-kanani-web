@@ -13,7 +13,7 @@ const locales = ['he', 'ar', 'en'] as const;
 // Every PUBLISHED treatment, read from the data the doctor edits: a fixed list
 // here failed the deploy the moment he added, hid or renamed one.
 const treatmentSlugs = services.filter((s) => s.status === 'published').map((s) => s.slug);
-const routes = ['', 'about/', 'contact/', 'faq/', 'privacy/', 'accessibility/', 'treatments/',
+const routes = ['', 'about/', 'contact/', 'faq/', 'privacy/', 'terms/', 'cookies/', 'accessibility/', 'treatments/',
   ...treatmentSlugs.map((slug) => `treatments/${slug}/`)];
 
 for (const locale of locales) {

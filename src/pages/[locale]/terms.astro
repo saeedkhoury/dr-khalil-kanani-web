@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import LegalPage from '../../components/sections/LegalPage.astro';
+import BusinessDetails from '../../components/sections/BusinessDetails.astro';
+import { LOCALES, type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { termsOfUse } from '../../data/site-policies';
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const locale = Astro.params.locale as Locale;
+const t = useTranslations(locale);
+
+const description = {
+  he: 'תנאי השימוש באתר המרפאה: מידע כללי בלבד, בקשות לתור, זכויות יוצרים ופרטי המרפאה.',
+  ar: 'شروط استخدام موقع العيادة: معلومات عامة فقط، طلبات المواعيد، حقوق النشر وتفاصيل العيادة.',
+  en: 'Terms of use for the clinic website: general information only, appointment requests, copyright and clinic details.',
+}[locale];
+---
+
+<BaseLayout locale={locale} title={t('legal.terms')} description={description}>
+  <LegalPage locale={locale} title={t('legal.terms')} sections={termsOfUse}>
+    <BusinessDetails locale={locale} />
+  </LegalPage>
+</BaseLayout>

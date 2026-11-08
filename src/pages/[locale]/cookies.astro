@@ -1,0 +1,27 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import LegalPage from '../../components/sections/LegalPage.astro';
+import BusinessDetails from '../../components/sections/BusinessDetails.astro';
+import { LOCALES, type Locale } from '../../i18n/config';
+import { useTranslations } from '../../i18n/ui';
+import { cookiePolicy } from '../../data/site-policies';
+
+export function getStaticPaths() {
+  return LOCALES.map((locale) => ({ params: { locale } }));
+}
+
+const locale = Astro.params.locale as Locale;
+const t = useTranslations(locale);
+
+const description = {
+  he: 'מדיניות העוגיות של אתר המרפאה: האתר אינו משתמש בעוגיות או בכלי מעקב, ומה נשמר בדפדפן שלכם.',
+  ar: 'سياسة ملفات تعريف الارتباط لموقع العيادة: لا يستخدم الموقع ملفات تعريف الارتباط أو أدوات التتبّع، وما يُحفظ في متصفحكم.',
+  en: 'Cookie policy for the clinic website: the site uses no cookies or tracking, and what is saved in your browser.',
+}[locale];
+---
+
+<BaseLayout locale={locale} title={t('legal.cookies')} description={description}>
+  <LegalPage locale={locale} title={t('legal.cookies')} sections={cookiePolicy}>
+    <BusinessDetails locale={locale} />
+  </LegalPage>
+</BaseLayout>

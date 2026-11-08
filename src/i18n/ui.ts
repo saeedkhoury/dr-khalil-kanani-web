@@ -146,11 +146,13 @@ export const ui = {
 
     'privacy.notice.title': 'מה קורה עם הפרטים שלכם',
     'privacy.notice.body':
-      'מסירת הפרטים היא בהתנדבות ואינה חובה חוקית; בלעדיהם לא נוכל לחזור אליכם. האתר אינו שומר את הפרטים ואינו שולח אותם לשרת — הם מוכנסים להודעת וואטסאפ שאתם שולחים בעצמכם למרפאה. מרגע השליחה ההודעה מנוהלת בחשבון הוואטסאפ שלכם ובמרפאה, ובכפוף למדיניות של וואטסאפ. הפרטים ישמשו אך ורק למענה לפנייה ולתיאום תור.',
+      'מסירת הפרטים היא בהתנדבות ואינה חובה חוקית; ללא שם ומספר טלפון לא נוכל לחזור אליכם. הפרטים ישמשו אך ורק למענה לפנייה ולתיאום תור. בלחיצה על ״שליחה״ הם עוברים מוצפנים, דרך שירות שליחה (Cloudflare) וספק דואר אלקטרוני (Resend), לתיבת הדואר של המרפאה — האתר אינו שומר עותק. אם השירות אינו זמין, נפתחת במקומו הודעת וואטסאפ עם הפרטים, שנשלחת רק אם תלחצו על שליחה. אפשר לבקש לעיין בפרטים, לתקנם או למחקם.',
     'privacy.readPolicy': 'מדיניות הפרטיות',
 
     'legal.accessibility': 'הצהרת נגישות',
     'legal.privacy': 'מדיניות פרטיות',
+    'legal.terms': 'תנאי שימוש',
+    'legal.cookies': 'מדיניות עוגיות',
     'legal.disclaimer':
       'המידע באתר הוא מידע כללי בלבד ואינו מהווה ייעוץ או המלצה רפואית. כל טיפול מותאם אישית לאחר בדיקה.',
     'legal.illustrative': 'תמונה להמחשה בלבד — אינה מטופל/ת של המרפאה.',
@@ -329,11 +331,13 @@ export const ui = {
 
     'privacy.notice.title': 'ماذا يحدث لتفاصيلكم',
     'privacy.notice.body':
-      'تقديم التفاصيل طوعي وليس إلزامًا قانونيًا؛ بدونها لن نتمكن من معاودة الاتصال بكم. لا يحفظ الموقع التفاصيل ولا يرسلها إلى خادم — تُدرَج في رسالة واتساب ترسلونها بأنفسكم إلى العيادة. ومنذ لحظة الإرسال تُدار الرسالة في حسابكم على واتساب وفي العيادة، ووفقًا لسياسة واتساب. ستُستخدم التفاصيل فقط للردّ على الطلب وتنسيق الموعد.',
+      'تقديم التفاصيل طوعي وليس إلزامًا قانونيًا؛ بدون الاسم ورقم الهاتف لن نتمكن من معاودة الاتصال بكم. ستُستخدم التفاصيل فقط للردّ على الطلب وتنسيق الموعد. عند الضغط على «إرسال» تنتقل مشفّرةً، عبر خدمة إرسال (Cloudflare) ومزوّد بريد إلكتروني (Resend)، إلى صندوق بريد العيادة — ولا يحفظ الموقع نسخة منها. إذا كانت الخدمة غير متاحة، تُفتح بدلًا منها رسالة واتساب بالتفاصيل، ولا تُرسَل إلا إذا ضغطتم على إرسال. يمكنكم طلب الاطلاع على التفاصيل أو تصحيحها أو حذفها.',
     'privacy.readPolicy': 'سياسة الخصوصية',
 
     'legal.accessibility': 'بيان إمكانية الوصول',
     'legal.privacy': 'سياسة الخصوصية',
+    'legal.terms': 'شروط الاستخدام',
+    'legal.cookies': 'سياسة ملفات تعريف الارتباط',
     'legal.disclaimer':
       'المعلومات في هذا الموقع عامة فقط ولا تشكّل استشارة أو توصية طبية. كل علاج يُحدَّد بشكل شخصي بعد الفحص.',
     'legal.illustrative': 'صورة توضيحية فقط — ليست لمريض/ة في العيادة.',
@@ -513,11 +517,13 @@ export const ui = {
 
     'privacy.notice.title': 'What happens to your details',
     'privacy.notice.body':
-      'Providing these details is voluntary and not a legal obligation; without them we cannot reply. This site does not store your details and does not send them to a server — they are placed into a WhatsApp message that you send to the clinic yourself. From the moment you send it, the message lives in your WhatsApp account and the clinic\u2019s, subject to WhatsApp\u2019s own policies. The details will be used solely to answer your enquiry and arrange an appointment.',
+      'Providing these details is voluntary and not a legal obligation; without your name and phone number we cannot reply. The details are used only to answer your enquiry and arrange an appointment. When you press Send they travel encrypted, through a sending service (Cloudflare) and an email provider (Resend), to the clinic\u2019s inbox \u2014 this site keeps no copy. If that service is unavailable, a WhatsApp message with your details opens instead, and it is sent only if you press send. You may ask to review, correct or delete your details.',
     'privacy.readPolicy': 'Privacy policy',
 
     'legal.accessibility': 'Accessibility Statement',
     'legal.privacy': 'Privacy policy',
+    'legal.terms': 'Terms of use',
+    'legal.cookies': 'Cookie policy',
     'legal.disclaimer':
       'Information on this site is general only and is not medical advice or a recommendation. Every treatment is determined individually after examination.',
     'legal.illustrative': 'Illustrative image only — not a patient of the clinic.',
