@@ -1,11 +1,15 @@
 # Removing the patient images from public Git history
 
-**Status: RECOMMENDATION ONLY. Nothing here has been executed.**
-Every step below is irreversible or externally visible, so each one needs the
-owner's explicit go-ahead. This document exists so that decision can be made
-with the facts in front of you rather than under pressure.
+**Status: CLOSED — NOT ACTIONED. Superseded by the publishing decision.**
 
-**Written:** 2026-09-21
+Nothing in this document was ever executed. No history was rewritten, no branch
+was force-pushed, and repository visibility was not changed. The analysis below
+is kept as a record of what was considered and why it was dropped.
+
+**Written:** 2026-09-21 · **Closed:** 2026-09-21 by the owner
+
+See [Why this was closed](#why-this-was-closed) at the end before reading the
+options — they no longer apply.
 
 **Phase 3 follow-up:** the branch has now been pushed and
 [draft PR #1](https://github.com/saeedkhoury/dr-khalil-kanani-web/pull/1) is open.
@@ -150,3 +154,85 @@ Already in place, committed in `e822ce7`:
 The guard cannot recognise a patient photograph. What it enforces is that a
 human classified the file before it entered a commit. That is the control that
 was missing on 2026-09-21.
+
+---
+
+## Why this was closed
+
+The owner reviewed this document on 2026-09-21 and chose not to proceed. The
+reasoning, recorded so a future reader does not reopen it from scratch:
+
+### The premise no longer held
+
+This plan was written on the assumption that the images were never intended to
+be public. That assumption was overtaken by the owner's own subsequent
+decisions:
+
+- Three of the twelve unique images were published to the live website under
+  [ADR 0009](./decisions/0009-owner-directed-instagram-gallery.md), at the
+  owner's explicit instruction.
+- The owner then approved publishing the remaining nine.
+
+Once every one of those images is deliberately served from the homepage,
+removing them from Git history protects nothing. A photograph on the front page
+is not made private by scrubbing a copy of it out of a commit.
+
+### What was verified before closing
+
+Checked on 2026-09-21, so the decision rests on facts rather than assumption:
+
+| Check | Result |
+|---|---|
+| Repository visibility | Public, 0 forks |
+| Original 13 files in history | Present |
+| Files in the working tree | 3, byte-identical (md5) to quarantined originals |
+| Those 3 live on the website | Yes, serving from `drkhalilkanani.com` |
+| EXIF / GPS / IPTC / XMP in the committed JPEGs | **None** |
+
+The EXIF check mattered independently of the publishing decision: Git stores
+the source JPEG with whatever metadata it carries, while the `.webp` and
+`.avif` derivatives Astro generates are re-encoded and carry none. Had the
+sources held GPS coordinates or device identifiers, that would have been a
+live exposure that publishing did not cover. They do not — the `PHOTO-2026-…`
+filenames are a WhatsApp export pattern, and WhatsApp strips this metadata.
+
+### Weighed against the cost
+
+A history rewrite changes every commit SHA after the rewrite point, strands
+existing clones, and — the part most often missed — does **not** delete the
+objects from GitHub. They stay retrievable by direct SHA URL until a GitHub
+Support ticket is processed. That is a real operational risk in exchange for no
+privacy benefit.
+
+### What this closure does NOT decide
+
+Three things are explicitly out of scope, and closing this document does not
+resolve any of them:
+
+1. **Whether publishing patient imagery is lawful.** That question is untouched
+   by anything Git does and is unchanged by this closure. It remains an open
+   item for Israeli counsel. Nothing here is legal advice or a legal
+   conclusion, and no assumption has been made on the owner's behalf.
+2. **Approval for any further images.** This closure covers the assets the
+   owner has individually approved. It is not blanket approval. Any new asset
+   requires its own review and its own explicit instruction, exactly as
+   ADR 0009 states.
+3. **Repository visibility.** Unchanged, and deliberately so. If the repository
+   is ever made private, note that GitHub Pages from a private repository
+   requires a paid plan on personal accounts — changing visibility without
+   checking would take the live site down.
+
+### The control that stays
+
+The reason this incident happened — an unreviewed `git add -A` — is addressed
+by controls that remain in force and must not be removed:
+
+- `scripts/check-assets.mjs` blocks any commit containing an image that is not
+  registered in `src/data/media.ts`. Registration demands a category and alt
+  text in three languages, which cannot be written without opening the file.
+- `.githooks/pre-commit`, wired by `npm run prepare`, runs it on every commit.
+- `AGENTS.md` §3.2 bans `git add -A` for anything that could include media.
+- `docs/ASSETS.md`: "Open every image before you commit it. No exceptions."
+
+All four were verified present and working at closing time. Closing this
+document changes none of them.
