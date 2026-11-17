@@ -11,7 +11,7 @@ import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { buildGraph, LOGO_PATH, serializeGraph } from '../../src/lib/schema.ts';
-import { inLocality, seoTitle } from '../../src/lib/seo.ts';
+import { inLocality, seoTitle, socialImageAlt } from '../../src/lib/seo.ts';
 import { clinic, LOCALES } from '../../src/data/clinic.ts';
 
 const ORIGIN = 'https://www.drkhalilkanani.com';
@@ -128,6 +128,19 @@ describe('page titles', () => {
       for (const title of [seoTitle.treatments(locale), seoTitle.contact(locale)]) {
         assert.ok(title.length <= 60, `${locale}: ${title} (${title.length})`);
       }
+    }
+  });
+});
+
+describe('link-preview alt text', () => {
+  // The preview is the logo, so its alt reads the logo's own words. Built from
+  // clinic data, an unverified translation stays behind the launch gate
+  // instead of reaching every shared link as a hand-typed variant.
+  test('names the doctor and tagline from clinic data in every language', () => {
+    for (const locale of LOCALES) {
+      const alt = socialImageAlt(locale);
+      assert.ok(alt.includes(clinic.doctor[locale]), `${locale}: ${alt}`);
+      assert.ok(alt.includes(clinic.tagline[locale]), `${locale}: ${alt}`);
     }
   });
 });

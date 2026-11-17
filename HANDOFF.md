@@ -2,9 +2,25 @@
 
 Current repository state. Not a history — see `CHANGELOG.md` for that.
 
-**Last updated:** 2026-10-01
+**Last updated:** 2026-11-18
 
 ---
+
+## Link preview + Spec Kit — 2026-11-18 (branch `feat/og-logo-speckit`)
+
+- **Link-preview image (og:image) is now the clinic logo**, not the tooth
+  illustration: `src/assets/brand/og-logo-01.png`, already 1200×630. Its alt
+  text comes from `socialImageAlt()` in `src/lib/seo.ts`, built from
+  `clinic.doctor` + `clinic.tagline` — never hand-typed, so the unverified
+  `tagline.ar` stays behind the launch gate. To change the preview, replace
+  that file with another 1200×630 image. The 1080×1080 source
+  `logo_full.jpg` was left uncommitted in the repo root.
+- **Spec Kit** installed (`.specify/`, `.claude/skills/speckit-*`). The
+  constitution, `.specify/memory/constitution.md` v1.0.0, has four principles
+  (small files, tests per feature, mobile-first, one-command run) and defers
+  to `AGENTS.md` for the legal rules. Existing debt against its file-size
+  rule: `workers/admin/src/index.ts` (870 lines) and seven files over 400
+  lines — split them when next touched.
 
 ## Favicon — 2026-10-01 (PRs #16, #18, #19; live bf66071)
 

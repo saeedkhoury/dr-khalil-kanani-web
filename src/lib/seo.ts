@@ -77,3 +77,19 @@ export function treatmentsDescription(locale: Locale, names: string[]): string {
     en: `What each treatment at the clinic in ${place} involves, who it may suit and how it works.`,
   }[locale];
 }
+
+/** The word for "logo", in each language's phrasing. */
+const LOGO_OF: Record<Locale, string> = {
+  he: 'הלוגו של',
+  ar: 'شعار',
+  en: 'Logo of',
+};
+
+/**
+ * Alt text for the link-preview image, which is the clinic's logo lockup.
+ * It transcribes the logo's words from clinic data, so an unverified
+ * translation stays behind the launch gate rather than shipping hand-typed.
+ */
+export function socialImageAlt(locale: Locale): string {
+  return `${LOGO_OF[locale]} ${clinic.doctor[locale]} — ${clinic.tagline[locale]}`;
+}
