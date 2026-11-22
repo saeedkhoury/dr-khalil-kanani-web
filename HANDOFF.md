@@ -2,10 +2,15 @@
 
 Current repository state. Not a history — see `CHANGELOG.md` for that.
 
-**Last updated:** 2026-10-28
+**Last updated:** 2026-11-18
 
 ---
 
+## Spec Kit + constitution — 2026-11-18 (branch `feat/og-logo-speckit`, PR #31)
+
+- Spec Kit 1.4.2 for Claude: `.specify/` and the `/speckit-*` skills in `.claude/skills/`. Workflow: constitution → specify → (clarify) → plan → tasks → implement.
+- `.specify/memory/constitution.md` v1.0.0: simple code and small files (new files ≤400 lines, none over 800, an over-400 file must not grow), a test for every feature (expectations from data, never pinned content), mobile-first at 375px, `npm run dev` runs everything locally with no env or secrets. It defers to `AGENTS.md` for the legal rules.
+- Existing debt against the file-size rule: `workers/admin/src/index.ts` (870 lines) plus nine files between 400 and 800 lines. Split them when next touched.
 
 ## Legal pages and privacy accuracy — 2026-11-08 (branch `legal/terms-cookies-privacy-accuracy`, not pushed)
 
