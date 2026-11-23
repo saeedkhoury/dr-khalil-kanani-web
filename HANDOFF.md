@@ -2,11 +2,16 @@
 
 Current repository state. Not a history — see `CHANGELOG.md` for that.
 
-**Last updated:** 2026-11-18
+**Last updated:** 2026-11-23
 
 ---
 
-## Spec Kit + constitution — 2026-11-18 (branch `feat/og-logo-speckit`, PR #31)
+## Brand logo + cross-agent skills — 2026-11-23
+
+- `src/assets/brand/logo-full.jpg`: the owner's full logo (mark + Hebrew name + tagline, 1080×1080). Stored for reference; not yet used on the site (the header and share image use `clinic-mark.svg`).
+- `.agents/skills/`: copies of the 12 project skills for non-Claude agents (Codex etc.). Identical to `.claude/skills/`; keep them in sync when a skill changes.
+
+## Spec Kit + constitution — 2026-11-18 (merged, PR #32)
 
 - Spec Kit 1.4.2 for Claude: `.specify/` and the `/speckit-*` skills in `.claude/skills/`. Workflow: constitution → specify → (clarify) → plan → tasks → implement.
 - `.specify/memory/constitution.md` v1.0.0: simple code and small files (new files ≤400 lines, none over 800, an over-400 file must not grow), a test for every feature (expectations from data, never pinned content), mobile-first at 375px, `npm run dev` runs everything locally with no env or secrets. It defers to `AGENTS.md` for the legal rules.
