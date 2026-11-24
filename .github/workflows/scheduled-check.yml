@@ -1,0 +1,132 @@
+name: Production watch
+
+# Read-only production monitoring. It WATCHES and REPORTS; it never deploys,
+# commits or changes production (docs/company/04-platform.md → Watch layers).
+#
+#   smoke     every 30 min  three locale home pages, robots, sitemap, lang/dir,
+#                           and that production serves the tip of main (a
+#                           doctor's save that never went live is caught here)
+#   perf      daily         mobile Lighthouse budget on /he/ /ar/ /en/
+#   security  weekly        gitleaks over the full git history + npm audit
+#
+# On failure it opens ONE issue per check (or comments on the open one).
+# Permissions: read the repo, write issues. Nothing else.
+#
+# Note: GitHub disables schedules in public repos after 60 days without a
+# commit. A doctor's save counts as a commit, so this is unlikely, but the
+# weekly review checks that the last run is recent.
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'    # smoke
+    - cron: '17 4 * * *'      # perf (04:17 UTC, quiet hours in Israel)
+    - cron: '27 4 * * 1'      # security (Mondays)
+  workflow_dispatch:
+    inputs:
+      check:
+        description: 'Which check to run'
+        type: choice
+        options: [smoke, perf, security, all]
+        default: all
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: production-watch-${{ github.event.schedule || inputs.check }}
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    if: github.event.schedule == '7,37 * * * *' || inputs.check == 'smoke' || inputs.check == 'all'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Smoke-check production (GET only)
+        run: |
+          export EXPECTED_SHA="$(git rev-parse HEAD)"
+          export COMMIT_AGE_MIN=$(( ( $(date +%s) - $(git log -1 --format=%ct) ) / 60 ))
+          node scripts/ops/prod-check.mjs smoke
+      - name: Open or update the alert issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: 'bash scripts/ops/alert-issue.sh "Production watch: smoke check failing"'
+
+  perf:
+    if: github.event.schedule == '17 4 * * *' || inputs.check == 'perf' || inputs.check == 'all'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Lighthouse (mobile) on the three home pages
+        run: |
+          mkdir -p lh
+          for l in he ar en; do
+            npx -y lighthouse@12.2.1 "https://www.drkhalilkanani.com/$l/" \
+              --quiet --only-categories=performance \
+              --chrome-flags="--headless=new --no-sandbox" \
+              --output=json --output-path="lh/$l.json" || echo "lighthouse failed for $l"
+          done
+      - name: Check the performance budget
+        run: node scripts/ops/prod-check.mjs perf lh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-${{ github.run_id }}
+          path: lh/
+          retention-days: 30
+      - name: Open or update the alert issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: 'bash scripts/ops/alert-issue.sh "Production watch: performance budget breached"'
+
+  security:
+    if: github.event.schedule == '27 4 * * 1' || inputs.check == 'security' || inputs.check == 'all'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secret scan (full history; findings are redacted)
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_ENABLE_COMMENTS: 'false'
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'false'
+      - uses: actions/setup-node@v4
+        if: always()
+        with:
+          node-version: 22
+          cache: 'npm'
+      - name: Dependency audit (production dependencies, high and above)
+        if: always()
+        run: |
+          npm ci --ignore-scripts
+          {
+            echo '## Dependency audit (npm audit --omit=dev)'
+            echo '```'
+            npm audit --omit=dev --audit-level=high 2>&1 | tail -40
+            echo '```'
+          } > ops-problems.md
+          cat ops-problems.md >> "$GITHUB_STEP_SUMMARY"
+          npm audit --omit=dev --audit-level=high > /dev/null
+      - name: Open or update the alert issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: 'bash scripts/ops/alert-issue.sh "Production watch: weekly security check failing"'
