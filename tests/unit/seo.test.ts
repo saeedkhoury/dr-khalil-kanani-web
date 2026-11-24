@@ -51,10 +51,10 @@ describe('structured data', () => {
   // 2026-10-01: "Dr Khalil Kanani" in Google showed a Beirut doctor's panel.
   // The Business Profile is named in Hebrew only; every language version must
   // say that the clinic and the doctor answer to each CONFIRMED spelling.
-  test('clinic and doctor carry every confirmed spelling of the name in every language', () => {
+  test('site, clinic and doctor carry every confirmed spelling of the name in every language', () => {
     for (const locale of LOCALES) {
       const graph = graphOf(locale);
-      for (const type of ['Dentist', 'Person']) {
+      for (const type of ['WebSite', 'Dentist', 'Person']) {
         const node = graph.find((n) => n['@type'] === type)!;
         const names = [node.name, ...((node.alternateName as string[]) ?? [])];
         for (const confirmed of confirmedDoctorNames()) assert.ok(names.includes(confirmed), `${locale} ${type}: ${confirmed}`);
@@ -67,7 +67,7 @@ describe('structured data', () => {
     const pending = (['he', 'ar', 'en'] as const).filter((l) => !['verified', 'owner'].includes(VERIFICATION[`doctor.${l}`].tier));
     for (const l of pending) {
       for (const locale of LOCALES.filter((x) => x !== l)) {
-        for (const type of ['Dentist', 'Person']) {
+        for (const type of ['WebSite', 'Dentist', 'Person']) {
           const node = graphOf(locale).find((n) => n['@type'] === type)!;
           assert.ok(!((node.alternateName as string[]) ?? []).includes(clinic.doctor[l]), `${locale} ${type} repeats unconfirmed ${l}`);
         }

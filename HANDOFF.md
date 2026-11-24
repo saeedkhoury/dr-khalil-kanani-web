@@ -8,6 +8,8 @@ Current repository state. Not a history — see `CHANGELOG.md` for that.
 
 ## Entity disambiguation — written 2026-10-02, landed 2026-11-24 (replaces PR #24)
 
+- Follow-up 2026-11-24: the `WebSite` node now uses the same confirmed-only names (it listed the unconfirmed Arabic spelling on every language since 2026-09-21).
+
 Google showed an unrelated "Dr. Khalil Kanaan" (ENT, Beirut) panel for
 "dr khalil kanani", and "Khalil Kanani Jadeidi-Makr" a Kiryat Ata bus stop. Cause: the
 Business Profile is named in Hebrew only, `/en/` and `/ar/` are "crawled –
