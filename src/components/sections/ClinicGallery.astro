@@ -184,8 +184,9 @@ const EMPTY_NOTE = {
                 type="button"
                 class:list={['group relative block w-full cursor-pointer overflow-hidden card card-interactive p-0', clinicGallery ? 'aspect-[4/3]' : !workGallery && 'h-full']}
                 data-gallery-open={i}
-                aria-label={asset.alt[locale]}
               >
+                {/* Named by the image alt + caption inside it. An aria-label
+                    would hide the visible caption (WCAG 2.5.3). */}
                 <Image
                   src={resolved}
                   alt={asset.alt[locale]}

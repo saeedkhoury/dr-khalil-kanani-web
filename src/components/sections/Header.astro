@@ -55,8 +55,10 @@ function isActive(path: string): boolean {
     <a
       href={localizePath(locale, '')}
       class="header-brand flex min-w-0 items-center gap-2.5 no-underline"
-      aria-label={t('site.shortName')}
     >
+      <!-- No aria-label: the visible name and tagline ARE the accessible
+           name. An aria-label that drops visible text fails WCAG 2.5.3
+           (Label in Name); voice-control users say what they see. -->
       <Logo size={38} />
       <span class="min-w-0 leading-tight">
         <span class="block text-[length:var(--text-sm)] font-semibold text-[var(--color-ink)]">
