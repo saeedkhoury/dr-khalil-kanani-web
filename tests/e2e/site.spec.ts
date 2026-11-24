@@ -65,7 +65,7 @@ for (const locale of locales) {
     await expect.poll(() => page.locator('#lightbox-image').evaluate((element: HTMLImageElement) => element.naturalWidth)).toBeGreaterThan(0);
     await page.locator('[data-gallery-next]').click();
     await expect(page.locator('#lightbox-position')).toHaveText(`2 / ${WORK_TILE_COUNT}`);
-    await expect(page.locator('#lightbox-image')).toHaveAttribute('alt', await tiles.nth(1).getAttribute('aria-label') ?? '');
+    await expect(page.locator('#lightbox-image')).toHaveAttribute('alt', await tiles.nth(1).locator('img').getAttribute('alt') ?? '');
     await page.locator('[data-gallery-prev]').click();
     await expect(page.locator('#lightbox-position')).toHaveText(`1 / ${WORK_TILE_COUNT}`);
     expect((await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa']).analyze()).violations).toEqual([]);

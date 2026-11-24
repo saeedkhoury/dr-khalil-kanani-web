@@ -24,7 +24,7 @@ for (const locale of ['he', 'ar', 'en']) {
     await tile.click();
     const dialog = page.locator('#gallery-lightbox');
     await expect(dialog).toBeVisible();
-    await expect(page.locator('#lightbox-image')).toHaveAttribute('alt', await tile.getAttribute('aria-label') ?? '');
+    await expect(page.locator('#lightbox-image')).toHaveAttribute('alt', await tile.locator('img').getAttribute('alt') ?? '');
     await expect(page.locator('#lightbox-position')).toHaveText('1 / 2');
     await page.keyboard.press(locale === 'en' ? 'ArrowRight' : 'ArrowLeft');
     await expect(page.locator('#lightbox-position')).toHaveText('2 / 2');
