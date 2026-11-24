@@ -104,8 +104,10 @@ export function buildGraph({ origin, locale, pathname, title, description, bread
     name: clinic.doctor[locale],
     // alternateName recovers the multi-script naming that Google Business
     // Profile no longer permits in a single listing name (policy change
-    // 2026-08-10 banning repeated names across scripts).
-    alternateName: [clinic.doctor.he, clinic.doctor.ar, clinic.doctor.en],
+    // 2026-08-10 banning repeated names across scripts). Confirmed spellings
+    // only, as on the clinic and doctor nodes: an unconfirmed one stays on its
+    // own locale's pages until the owner confirms it.
+    alternateName: otherNames(locale),
     inLanguage: locale,
     publisher: { '@id': abs(ID.clinic) },
   });
