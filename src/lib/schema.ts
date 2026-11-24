@@ -1,7 +1,7 @@
 /**
  * JSON-LD graph builder.
  *
- * Decisions encoded here (docs/SEO.md):
+ * Decisions encoded here (docs/seo/SEO.md):
  *
  *  • @type is `Dentist` — simultaneously a LocalBusiness, MedicalBusiness and
  *    MedicalOrganization, so it is strictly the most specific correct type.

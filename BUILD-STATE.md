@@ -16,14 +16,14 @@ Read first: `AGENTS.md` (rules) → `HANDOFF.md` (state) → this file → `docs
 |---|---|---|---|---|
 | K | Kickoff | **pending owner approval** (2 open items) | 2026-11-24 | docs/company/00-brief.md |
 | 0 | Founder Office | skipped: client site, the clinic is the business | — | — |
-| 1 | Product | recorded (pre-pro-build) | 2026-09 | docs/REQUIREMENTS.md, planning/ROADMAP.md |
-| 2 | Engineering Leadership | recorded; docs drift noted | 2026-09 → 11 | docs/ARCHITECTURE.md, docs/decisions/ (0001–0012) |
-| 3 | Design | recorded | 2026-11-08 | docs/DESIGN_SYSTEM.md (Apple design, PR #29) |
+| 1 | Product | PRD written | 2026-11-24 | docs/product/PRD.md, planning/ROADMAP.md |
+| 2 | Engineering Leadership | recorded; docs drift noted | 2026-09 → 11 | docs/engineering/ARCHITECTURE.md, docs/decisions/ (0001–0012) |
+| 3 | Design | recorded | 2026-11-08 | docs/design/DESIGN_SYSTEM.md (Apple design, PR #29) |
 | 4 | Platform / DevOps | **in progress** (this PR) | 2026-11-24 | docs/company/04-platform.md |
 | 5 | Engineering | ongoing | | backlog below |
-| 6 | QA & Security | partly: automated gates green; human checks open | | docs/QA-CHECKLIST.md |
+| 6 | QA & Security | partly: automated gates green; human checks open | | docs/engineering/QA-CHECKLIST.md |
 | 7 | Release | release = merge to `main` (ADR 0012) | | deploy log below, CHANGELOG.md |
-| 8 | Go-to-Market | SEO and local listings only | 2026-10-01 | docs/SEO-*.md, docs/LOCAL-CITATIONS.md |
+| 8 | Go-to-Market | SEO and local listings only | 2026-10-01 | docs/SEO-*.md, docs/seo/LOCAL-CITATIONS.md |
 | 9 | Operate & Grow | baseline review done | 2026-11-24 | docs/company/09-reviews/2026-11-24.md |
 
 ## Decisions
@@ -37,7 +37,7 @@ Read first: `AGENTS.md` (rules) → `HANDOFF.md` (state) → this file → `docs
 - [ ] Upgrade build dependencies to clear 5 high + 2 moderate advisories: astro ≥ 7.4.5, sharp ≥ 0.35.5, zod ≥ 4.6.6, plus transitive vite / undici / source-map-js / smol-toml (acceptance: `npm audit --omit=dev` shows 0 high; full CI green; Lighthouse within budget)
 - [ ] Then raise the PR audit gate in `preview.yml` from `critical` to `high`
 ### Next
-- [ ] Fix docs drift: ARCHITECTURE / DEPLOYMENT / SECURITY still describe a WhatsApp-only form and Supabase; the live form uses the Resend relay (acceptance: each doc matches the code and live endpoints)
+- [ ] Fix docs drift: `engineering/DEPLOYMENT.md` and `legal-security/SECURITY.md` still describe a WhatsApp-only form and Supabase; the live form uses the Resend relay (ARCHITECTURE fixed 2026-11-24)
 - [ ] Owner: set `CLOUDFLARE_API_TOKEN` + `ADMIN_PREVIEW=on` so Edit Mode rebuilds itself after saves (level C: owner creates the token)
 - [ ] Owner: enable Dependabot security updates (Settings → Code security)
 - [ ] Split `workers/admin/src/index.ts` (870 lines) when next touched (constitution I)
@@ -47,6 +47,7 @@ Read first: `AGENTS.md` (rules) → `HANDOFF.md` (state) → this file → `docs
 - Clinic and doctor photography; ar/en logo lockups
 - Educational content under the reg. 4 exemption (strongest permitted SEO play)
 ### Done
+- [x] Docs organised by type; PRD written (`docs/product/PRD.md`) (2026-11-24)
 - [x] Company kit + read-only production watch (PR #34, 2026-11-24)
 - [x] Brand logo + `.agents/skills` (PR #33, 2026-11-24)
 - [x] Spec Kit + constitution (PR #32, 2026-11-22)

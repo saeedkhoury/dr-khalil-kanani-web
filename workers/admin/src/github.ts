@@ -70,7 +70,7 @@ const MANAGED_PATHS = Object.freeze({
 const IMAGE_DIR = 'src/assets/images';
 
 /**
- * `<category>-<subject>-<nn>.<ext>` per docs/ASSETS.md: lowercase ASCII,
+ * `<category>-<subject>-<nn>.<ext>` per docs/design/ASSETS.md: lowercase ASCII,
  * hyphen separated, two-digit index. Anchored, so nothing may precede or
  * follow it — no directory component, no second extension, no trailing dot.
  *

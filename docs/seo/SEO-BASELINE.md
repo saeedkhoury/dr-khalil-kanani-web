@@ -1,7 +1,7 @@
 # SEO baseline — 2026-09-27
 
 The measured starting point, before the SEO foundation release. Re-measure
-with docs/SEO-RUNBOOK.md and append a dated section; never edit this one.
+with docs/seo/SEO-RUNBOOK.md and append a dated section; never edit this one.
 
 Rankings below are **observations**, not results: one query, one moment, one
 signed-in browser in Israel, `pws=0`. Location, language, device and

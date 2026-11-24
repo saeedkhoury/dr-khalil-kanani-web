@@ -2,7 +2,7 @@
 
 How the site is built, deployed, watched and recovered. Facts here were read
 from the repository and the live endpoints on 2026-11-24. Engineering rules
-are in `AGENTS.md`; hosting history is in `docs/DEPLOYMENT.md`.
+are in `AGENTS.md`; hosting history is in `docs/engineering/DEPLOYMENT.md`.
 
 ## Environments
 
@@ -28,7 +28,7 @@ are in `AGENTS.md`; hosting history is in `docs/DEPLOYMENT.md`.
 | Dependabot security updates | auto PRs for advisories | owner | **off**, owner can enable in Settings → Code security |
 | Cloudflare | admin Worker, Access, relay Worker | owner | live |
 | Resend | sends appointment requests to the clinic inbox | owner | live (preflight 204 on 2026-11-24) |
-| Google Search Console / Business Profile | search visibility | owner | live (`docs/SEO-GEO-MONITORING.md`) |
+| Google Search Console / Business Profile | search visibility | owner | live (`docs/seo/SEO-GEO-MONITORING.md`) |
 | Error tracking (Sentry) | — | — | N/A: static site, no client errors worth paying for; revisit if JS grows |
 | Product analytics | — | — | N/A by decision: no cookies, no analytics (privacy policy) |
 | Uptime monitor (external) | — | — | not set up; the 30-min GitHub check covers it (see Watch layers) |

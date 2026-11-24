@@ -9,7 +9,7 @@
  *
  * `import.meta.glob` with `eager: true` builds the filename-to-asset map at
  * build time, so the manifest stays declarative and the promise in
- * docs/ASSETS.md ("add the file, register it, done") is actually true.
+ * docs/design/ASSETS.md ("add the file, register it, done") is actually true.
  *
  * Only files that really exist are resolved. A manifest entry pointing at a
  * missing file returns undefined, and the caller skips it — a broken <img>

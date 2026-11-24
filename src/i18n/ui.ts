@@ -11,7 +11,7 @@
  *
  * The clinic's own flyer promises "תוצאות אסתטיות ומדויקות", "אחריות" and
  * "חיוך לבן ביטחון עצמי גבוה" — all outcome/guarantee claims. They are
- * deliberately NOT reproduced here. See docs/CONTENT.md.
+ * deliberately NOT reproduced here. See docs/product/CONTENT.md.
  *
  * ⚠ he/ar copy needs native review before launch; ar especially (Levantine
  *   Palestinian register, not MSA-formal or Gulf vocabulary).

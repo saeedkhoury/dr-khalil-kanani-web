@@ -216,7 +216,7 @@ for (const file of media) {
   if (ALLOWED_PATHS.some((p) => file.startsWith(p))) continue;
 
   if (!file.startsWith('src/assets/images/')) {
-    problems.push({ file, why: 'media must live in src/assets/images/ (see docs/ASSETS.md)' });
+    problems.push({ file, why: 'media must live in src/assets/images/ (see docs/design/ASSETS.md)' });
     continue;
   }
   if (!registered.has(basename(file))) {
@@ -260,7 +260,7 @@ ${DIM}Before committing a clinic image you must OPEN IT and classify it.
   1. Look at the file. If it shows a patient, any part of a patient, or a
      before/after comparison, it CANNOT be published — move it to
      .private-assets/ (gitignored) and stop.
-  2. Otherwise rename it per docs/ASSETS.md and register it — clinic
+  2. Otherwise rename it per docs/design/ASSETS.md and register it — clinic
      photography in src/data/clinic-photography.json, developer-managed
      media in src/data/media.ts — with a category and alt text in he, ar
      and en.

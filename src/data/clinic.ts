@@ -8,7 +8,7 @@
  * phone numbers across their own sites, and one linked Waze to the wrong street.
  * Centralising here makes that failure class structurally impossible.
  *
- * VERIFICATION TIERS — see docs/CONTENT.md. Enforced at build time by
+ * VERIFICATION TIERS — see docs/product/CONTENT.md. Enforced at build time by
  * `assertLaunchReady()` in src/lib/verify.ts, which fails a production build
  * while any launch-blocking field is still unverified.
  */

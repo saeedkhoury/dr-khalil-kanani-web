@@ -145,7 +145,7 @@ Already in place, committed in `e822ce7`:
   opened the file.
 - `.githooks/pre-commit`, wired by `npm run prepare`.
 - `AGENTS.md` §3.2 — `git add -A` is banned outright.
-- `docs/ASSETS.md` — "Open every image before you commit it. No exceptions."
+- `docs/design/ASSETS.md` — "Open every image before you commit it. No exceptions."
 
 The guard cannot recognise a patient photograph. What it enforces is that a
 human classified the file before it entered a commit. That is the control that

@@ -1,8 +1,8 @@
 # SEO runbook — how search visibility is kept and measured
 
 Search is measured, not declared finished. This is what runs automatically,
-what to check by hand, and how often. Baseline: docs/SEO-BASELINE.md.
-Query ↔ page map: docs/SEO-SEARCH-MAP.md.
+what to check by hand, and how often. Baseline: docs/seo/SEO-BASELINE.md.
+Query ↔ page map: docs/seo/SEO-SEARCH-MAP.md.
 
 ## What runs on every deploy (automatic)
 
@@ -104,7 +104,7 @@ clinic is cited and which page. Record as observations.
 no analytics, so these are not counted today. If the owner wants them
 measured, the least invasive option is Cloudflare Web Analytics (cookieless,
 no personal data) — that is an owner decision and needs the privacy policy
-updated first (docs/PRIVACY.md).
+updated first (docs/legal-security/PRIVACY.md).
 
 ## What must never be done
 

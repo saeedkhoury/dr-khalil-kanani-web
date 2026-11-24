@@ -6,7 +6,7 @@
 **2026-09-21 scope update:** the owner explicitly directed publication of three
 selected Instagram work photographs after this exclusion was explained. The
 current implementation follows that instruction for the exact selection in
-[ADR 0009](./0009-owner-directed-instagram-gallery.md). This is not a legal
+[ADR 0009](0009-owner-directed-instagram-gallery.md). This is not a legal
 clearance; the legal-review item remains open. The original reasoning below
 is retained as historical context.
 

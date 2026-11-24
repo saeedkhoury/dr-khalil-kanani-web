@@ -160,7 +160,7 @@ by the `Deploy to Production` GitHub workflow.
 - 13 patient before/after photographs, swept into `7cd7ea5` by a `git add -A`,
   quarantined to gitignored `.private-assets/` and removed from the tree. They
   were never referenced and never served. **They remain in public Git history** —
-  see `docs/GIT-HISTORY-REMEDIATION.md`. No irreversible action taken.
+  see `docs/legal-security/GIT-HISTORY-REMEDIATION.md`. No irreversible action taken.
 - `scripts/check-assets.mjs` + `.githooks/pre-commit`: an image cannot be
   committed unless it is registered in `src/data/media.ts`, which requires a
   category and alt text in three languages — impossible to write without having
@@ -219,8 +219,8 @@ by the `Deploy to Production` GitHub workflow.
 - Unit tests 65 → **73**: review-aggregate guards, star-fill rounding, a test
   asserting `aggregateRating` never appears in structured data, and structural
   tests that the facade contacts nobody before being pressed.
-- New: `docs/QA-CHECKLIST.md` (nothing on it has been ticked),
-  `docs/GIT-HISTORY-REMEDIATION.md`, ADR 0008.
+- New: `docs/engineering/QA-CHECKLIST.md` (nothing on it has been ticked),
+  `docs/legal-security/GIT-HISTORY-REMEDIATION.md`, ADR 0008.
 
 ### Phase 2
 

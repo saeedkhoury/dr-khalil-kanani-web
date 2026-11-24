@@ -6,7 +6,7 @@ The clean local remediation run passed 418 unit tests (257 admin and 37
 appointment Worker tests included), 52 Chromium tests and the 47-page built
 HTML audit. Detailed commands, limits, mutation evidence, baseline comparison
 and the reconstructed requirements matrix are in
-[the remediation audit](audits/2026-09-24-admin-cms-remediation.md).
+[the remediation audit](../audits/2026-09-24-admin-cms-remediation.md).
 
 `npm test` includes both Workers. To run their subsets independently:
 

@@ -147,5 +147,5 @@ jobs:
           echo "Then open <http://localhost:4330/he/>, \`/ar/\` and \`/en/\`." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "> A hosted preview URL is not possible on GitHub Pages, which allows" >> $GITHUB_STEP_SUMMARY
-          echo "> one deployment per repository. See docs/DEPLOYMENT.md for the" >> $GITHUB_STEP_SUMMARY
+          echo "> one deployment per repository. See docs/engineering/DEPLOYMENT.md for the" >> $GITHUB_STEP_SUMMARY
           echo "> options if a live preview link becomes worth adding." >> $GITHUB_STEP_SUMMARY

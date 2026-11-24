@@ -39,11 +39,11 @@ The older completion notes below describe the earlier public-site workstream.
 
 ## Remaining launch follow-up
 
-- Complete human checks in `docs/QA-CHECKLIST.md`: VoiceOver, real iPhone/Android
+- Complete human checks in `docs/engineering/QA-CHECKLIST.md`: VoiceOver, real iPhone/Android
   handoff, native-language review and outdoor legibility.
 - Owner confirmation of hours, domain, doctor spellings,
   Arabic tagline, credentials and accessibility contact. Do not invent these.
-- Owner/legal decision on `docs/GIT-HISTORY-REMEDIATION.md` and legal review
+- Owner/legal decision on `docs/legal-security/GIT-HISTORY-REMEDIATION.md` and legal review
   of clinic copy, accessibility statement and privacy policy.
 
 ## Later, separate work

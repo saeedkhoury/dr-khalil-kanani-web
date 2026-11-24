@@ -173,7 +173,7 @@ most patients use — so two short phrases is not real work. English is the
 least-used locale and gets a placeholder rather than blocking the upload.
 
 **The filename is generated**, never typed: `<category>-<nn>.jpg`, following
-`docs/ASSETS.md`.
+`docs/design/ASSETS.md`.
 
 ### Photo lifecycle — three states, not deletion
 
@@ -200,7 +200,7 @@ and requires a confirmation naming the specific photograph.
 It **current-tree only**. It does not rewrite git history, force-push, purge
 historical objects or change repository visibility. Historical git objects are
 outside the CMS's responsibility — see
-[`GIT-HISTORY-REMEDIATION.md`](../GIT-HISTORY-REMEDIATION.md), which closed
+[`GIT-HISTORY-REMEDIATION.md`](../legal-security/GIT-HISTORY-REMEDIATION.md), which closed
 history rewriting as not worth its risk.
 
 ---
@@ -251,7 +251,7 @@ Every upload requires ticking:
 > אני מאשר/ת: בתמונה אין מטופל, אין חלק מגוף של מטופל, ואין השוואת לפני/אחרי.
 
 Save stays disabled until it is ticked. **No software can detect a patient in a
-photograph.** This is the same control as `docs/ASSETS.md`'s "open every image
+photograph.** This is the same control as `docs/design/ASSETS.md`'s "open every image
 before you commit it", moved to the point of upload — and this project has
 already had thirteen patient photographs committed unreviewed.
 
@@ -293,7 +293,7 @@ is the control:
 
 - Type: JPEG or PNG only, verified by magic bytes rather than the extension
 - Size: 8 MB maximum
-- Dimensions: minimum 1200px on the long edge, per `docs/ASSETS.md`
+- Dimensions: minimum 1200px on the long edge, per `docs/design/ASSETS.md`
 
 ---
 

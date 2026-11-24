@@ -100,4 +100,4 @@ remains an open item for Israeli counsel, unchanged by this extension.
   not pixels, would then be routed around. A test enforces this.
 - **Not used as clinic photography.** All twelve are `treatment-work`. The
   hero, the doctor portrait and `clinicPhotography` remain empty and still need
-  real photographs; see docs/ASSETS.md.
+  real photographs; see docs/design/ASSETS.md.

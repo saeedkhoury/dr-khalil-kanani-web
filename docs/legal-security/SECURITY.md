@@ -3,7 +3,7 @@
 ## Admin CMS boundary — current local state, 2026-09-24
 
 The admin Worker is separate from the appointment email relay. Its current
-security evidence is [the remediation audit](audits/2026-09-24-admin-cms-remediation.md)
+security evidence is [the remediation audit](../audits/2026-09-24-admin-cms-remediation.md)
 and `workers/admin/README.md`. Header-only Access JWT verification and the
 server identity list fail closed. GitHub credentials remain server-side,
 repository and paths are fixed, the branch has no default, and stale writes

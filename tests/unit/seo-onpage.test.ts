@@ -1,5 +1,5 @@
 /**
- * On-page search rules from the 2026-10-01 research (docs/SEARCH-INTENT-MAP.md).
+ * On-page search rules from the 2026-10-01 research (docs/seo/SEARCH-INTENT-MAP.md).
  *
  * - Titles use the words people type: "רופא שיניים / طبيب أسنان / dentist"
  *   + the town — not only the clinic's tagline.

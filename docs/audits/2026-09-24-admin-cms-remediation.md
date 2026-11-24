@@ -78,7 +78,7 @@ payloads are byte-for-byte identical to the four font files in the preserved
 accepted output and to the recorded Google Fonts CDN responses. They cover the
 same scripts and the existing 300/400/600/700 normal weights. Source URLs,
 SHA-256 hashes, and the three bundled SIL OFL 1.1 licenses are in
-`docs/FONTS.md`. No other external build-time asset fetch was found in the
+`docs/engineering/FONTS.md`. No other external build-time asset fetch was found in the
 site config or source. There is no external font request in the new config.
 
 The production build succeeded after clearing Astro's font cache while a macOS

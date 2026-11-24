@@ -18,7 +18,7 @@
  * screen-reader output or whether alt text is truthful rather than merely
  * present. It catches the mechanical failures — the ones that should never
  * survive a commit — so that human review is spent on the rest.
- * docs/QA-CHECKLIST.md covers what only a person can check.
+ * docs/engineering/QA-CHECKLIST.md covers what only a person can check.
  *
  * Run: npm run lint:a11y   (after a build)
  */

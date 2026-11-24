@@ -56,7 +56,7 @@ async function fetchText(path) {
 /**
  * build.txt and the per-build asset hashes are the only bytes that differ
  * between two builds of the same content (the build is deterministic, see
- * docs/HANDOFF.md), so pages are compared as served.
+ * HANDOFF.md), so pages are compared as served.
  */
 async function changed() {
   const dist = flag('--dist') ?? 'dist';

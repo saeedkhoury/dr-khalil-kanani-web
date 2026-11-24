@@ -24,7 +24,7 @@ channel, so local discoverability and one-tap contact outrank everything else.
 When two sources disagree, the higher one wins.
 
 1. Israeli law (advertising, accessibility, privacy) — see §3, §6, §7
-2. `docs/REQUIREMENTS.md`
+2. `docs/product/PRD.md`
 3. `docs/decisions/` (ADRs)
 4. This file
 5. `docs/` (the rest)
@@ -77,7 +77,7 @@ review remains open.
 This rule exists because thirteen patient before/after images reached the
 public repository in a single unreviewed `git add -A`. The guard cannot
 recognise a patient photograph; it makes skipping the look impossible.
-See docs/ASSETS.md.
+See docs/design/ASSETS.md.
 
 ### 3.3 Never introduce a prohibited medical claim
 
@@ -272,7 +272,7 @@ Every file needs a reason to exist. Never create `temp`, `new`, `final2`,
 - [ ] axe-core: zero violations
 - [ ] Heading order has no skips (`npm run lint:a11y` proves this mechanically)
 - [ ] Anything claimed as *visually* verified was actually looked at. If it was
-      not, say so — `docs/QA-CHECKLIST.md` is the list of what only a person
+      not, say so — `docs/engineering/QA-CHECKLIST.md` is the list of what only a person
       can check
 - [ ] No new medical claim introduced
 - [ ] No unverified fact promoted to verified

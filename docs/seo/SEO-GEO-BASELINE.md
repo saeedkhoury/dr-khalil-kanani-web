@@ -1,8 +1,8 @@
 # SEO + GEO baseline — 2026-10-01
 
 The measured starting point for the SEO / local SEO / AI-search project.
-Earlier measurements: `docs/SEO-BASELINE.md` (2026-09-27 → 09-30). Re-measure
-with `docs/SEO-GEO-MONITORING.md` and add a dated section; never edit this one.
+Earlier measurements: `docs/seo/SEO-BASELINE.md` (2026-09-27 → 09-30). Re-measure
+with `docs/seo/SEO-GEO-MONITORING.md` and add a dated section; never edit this one.
 
 **Four states, never mixed up:** IMPLEMENTED (in the code) → CRAWLABLE (a
 crawler can fetch it) → INDEXED (Search Console says so) → RANKING / OBSERVED
@@ -224,4 +224,4 @@ IMPLEMENTED and live (merge → live 3 min 55 s). Rollback tag
 | CMS | admin rebuilt from the same commit; editors open; session valid |
 
 CRAWLABLE immediately; INDEXED / RANKING not yet observable — re-measure on
-the monthly cadence (docs/SEO-GEO-MONITORING.md).
+the monthly cadence (docs/seo/SEO-GEO-MONITORING.md).

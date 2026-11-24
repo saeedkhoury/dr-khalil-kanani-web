@@ -1,7 +1,7 @@
 # Admin CMS — implementation plan
 
 > **Status: PLAN ONLY. Nothing implemented, deployed or configured.**
-> Design spec: [`2026-09-22-admin-cms-design.md`](./2026-09-22-admin-cms-design.md)
+> Design spec: [`2026-09-22-admin-cms-design.md`](2026-09-22-admin-cms-design.md)
 
 **Goal:** A two-job management interface at `admin.drkhalilkanani.com` letting
 Dr. Kanani change opening hours and manage gallery photographs without a
@@ -183,7 +183,7 @@ other's capability.
 | `src/data/media.ts` | `clinicPhotography` imports and filters the JSON; types move to `media-types.ts`; `treatmentWork` stays inline. |
 | `scripts/check-assets.mjs` | Read registered filenames from **both** `media.ts` and `clinic-photography.json`. |
 | `scripts/serve-qa-fixtures.mjs` | Rewrite the JSON rather than `media.ts`. |
-| `docs/ASSETS.md` | Document the JSON split and the published/unpublished states. |
+| `docs/design/ASSETS.md` | Document the JSON split and the published/unpublished states. |
 | `docs/specs/2026-09-22-admin-cms-design.md` | Correct §3.1 per §0.2 below. |
 
 ### LEAVE UNCHANGED

@@ -8,7 +8,7 @@
  * on the wrong domain, a link to the admin, a broken internal link.
  *
  * It cannot judge whether content is helpful, only whether it is reachable,
- * indexable and consistently labelled. docs/SEO-RUNBOOK.md covers the rest.
+ * indexable and consistently labelled. docs/seo/SEO-RUNBOOK.md covers the rest.
  *
  * Usage:
  *   node scripts/audit-seo.mjs https://www.drkhalilkanani.com   (live)
