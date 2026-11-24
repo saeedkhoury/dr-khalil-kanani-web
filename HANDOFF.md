@@ -304,7 +304,7 @@ or route. With explicit owner approval, its Git connection was disconnected on
 GitHub Pages workflow. Historical failed checks remain historical; the Worker
 was not deleted, and DNS and clinic verification were not changed.
 
-### ⚠️ Open safety item — read `docs/legal-security/GIT-HISTORY-REMEDIATION.md`
+### Closed (not actioned): Git-history remediation — see `docs/legal-security/GIT-HISTORY-REMEDIATION.md`
 
 Thirteen patient before/after photographs were committed to this **public**
 repository on 2026-09-21 in `7cd7ea5`. They were removed from the tree in
@@ -312,10 +312,12 @@ repository on 2026-09-21 in `7cd7ea5`. They were removed from the tree in
 gallery publishes only the three reviewed originals listed in ADR 0009; it
 does not resolve the historical exposure of the remaining files.
 
-Nothing irreversible has been done about this. The recommendation, the risks of
-each option, and the order to do them in are in
-[docs/legal-security/GIT-HISTORY-REMEDIATION.md](docs/legal-security/GIT-HISTORY-REMEDIATION.md). It needs the
-owner's decision, and probably a lawyer's.
+**Closed by the owner, not actioned** (recorded 2026-11-24, PR #2's text):
+the images are deliberately published on the site, so rewriting history
+protects nothing. The repository stays public (owner decision 2026-11-24;
+GitHub Pages needs a paid plan for private repos). Whether publishing patient
+imagery is lawful remains open for counsel. Reasoning in
+[docs/legal-security/GIT-HISTORY-REMEDIATION.md](docs/legal-security/GIT-HISTORY-REMEDIATION.md).
 
 ### Branch `feat/admin-cms` — local audit complete, unmerged
 
@@ -603,8 +605,7 @@ Also blocking, but not build-enforced:
 
 ## Recommended next action
 
-1. Read `docs/legal-security/GIT-HISTORY-REMEDIATION.md` and decide. This is time-sensitive in
-   a way the rest is not.
+1. ~~Git-history remediation~~: closed by the owner, not actioned (2026-11-24).
 2. Use the latest `Deploy to Production` run for deployment status. The obsolete
    Cloudflare Git connection has been disconnected with owner approval.
 3. Complete the remaining human checks in `docs/engineering/QA-CHECKLIST.md`.

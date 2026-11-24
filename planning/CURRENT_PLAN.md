@@ -43,8 +43,9 @@ The older completion notes below describe the earlier public-site workstream.
   handoff, native-language review and outdoor legibility.
 - Owner confirmation of hours, domain, doctor spellings,
   Arabic tagline, credentials and accessibility contact. Do not invent these.
-- Owner/legal decision on `docs/legal-security/GIT-HISTORY-REMEDIATION.md` and legal review
-  of clinic copy, accessibility statement and privacy policy.
+- Legal review of clinic copy, accessibility statement and privacy policy.
+  (The Git-history remediation is closed, not actioned, by the owner:
+  `docs/legal-security/GIT-HISTORY-REMEDIATION.md`.)
 
 ## Later, separate work
 
