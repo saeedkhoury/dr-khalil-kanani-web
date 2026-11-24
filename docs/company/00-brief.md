@@ -59,7 +59,7 @@ invented to fill them.
   broken RTL page, a privacy leak.
 - **Top risks:** (1) the 10 published treatment-work photos — prohibited-
   advertising risk pending legal review (ADR 0010); (2) unverified facts
-  shipped under `ACK_UNVERIFIED` (doctor.ar, doctor.en, tagline.ar);
+  shipped under `ACK_UNVERIFIED` (doctor.ar, tagline.ar; doctor.en owner-confirmed 2026-11-24);
   (3) five high-severity advisories in build dependencies (fix available).
 - **References:** Apple design language (PR #29); not like the two
   competitor clinic sites studied in discovery (inconsistent phone numbers,

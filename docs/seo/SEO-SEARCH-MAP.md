@@ -24,7 +24,7 @@ Jadeidi-Makr), eight published treatments. Reviewed 2026-09-27.
 |---|---|---|---|---|---|---|
 | 1 | ד"ר חליל כנעאני · חליל כנעאני רופא שיניים | he | Navigational (the doctor) | `/he/` · `/he/about/` | **#1 on Google** (observed, see baseline). Only the apex `http://` URL is indexed. | Search Console + sitemap so the canonical `https://www.…/he/` replaces it. Keep the name identical everywhere (GBP, Facebook, Instagram). |
 | 2 | د. خليل كنعاني · طبيب اسنان خليل كنعاني | ar | Navigational | `/ar/` · `/ar/about/` | Not indexed | Indexing (GSC/IndexNow). **Owner to confirm the Arabic spelling** (`doctor.ar` is unverified). |
-| 3 | Dr Khalil Kanani dentist | en | Navigational | `/en/` · `/en/about/` | Hebrew home ranks; `/en/` not indexed | Indexing. **Owner to confirm Latin spelling** (`doctor.en`). |
+| 3 | Dr Khalil Kanani dentist | en | Navigational | `/en/` · `/en/about/` | Hebrew home ranks; `/en/` not indexed | Indexing. Latin spelling `doctor.en` owner-confirmed ("Dr. Khalil Kanani", 2026-11-24). |
 | 4 | רופא שיניים ג׳דיידה מכר · מרפאת שיניים ג'דיידה | he | Local | `/he/` + GBP | Not on page 1; directories and a map pack of distant dentists rank | **Google Business Profile** (owner). Title now names the town. Citations (see SEO.md). |
 | 5 | طبيب اسنان الجديدة المكر · عيادة اسنان جديدة المكر | ar | Local | `/ar/` + GBP | Not indexed | Same as 4. |
 | 6 | dentist Jadeidi-Makr · dental clinic near Acre | en | Local | `/en/` + GBP | Not indexed | Same as 4. No "near Acre" copy — proximity is Google's job, from the address. |

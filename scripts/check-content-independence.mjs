@@ -98,7 +98,7 @@ const results = {
   'lint:claims': run('lint:claims', 'npm run -s lint:claims'),
   'lint:scripts': run('lint:scripts', 'npm run -s lint:scripts'),
   unit: run('unit tests', 'npm test --silent'),
-  build: run('production build', 'npm run -s build', { NODE_ENV: 'production', ASTRO_SITE: 'https://www.drkhalilkanani.com', ASTRO_BASE: '/', ACK_UNVERIFIED: 'doctor.ar,doctor.en,tagline.ar' }),
+  build: run('production build', 'npm run -s build', { NODE_ENV: 'production', ASTRO_SITE: 'https://www.drkhalilkanani.com', ASTRO_BASE: '/', ACK_UNVERIFIED: 'doctor.ar,tagline.ar' }),
 };
 results.a11y = results.build && run('a11y audit', 'npm run -s lint:a11y');
 results.seo = results.build && run('SEO crawl', 'npm run -s lint:seo');

@@ -6,6 +6,30 @@ Current repository state. Not a history — see `CHANGELOG.md` for that.
 
 ---
 
+## Entity disambiguation — written 2026-10-02, landed 2026-11-24 (replaces PR #24)
+
+Google showed an unrelated "Dr. Khalil Kanaan" (ENT, Beirut) panel for
+"dr khalil kanani", and "Khalil Kanani Jadeidi-Makr" a Kiryat Ata bus stop. Cause: the
+Business Profile is named in Hebrew only, `/en/` and `/ar/` are "crawled –
+not indexed", and the site's graph never linked the profile. With "dentist"
+or "Israel" in the query Google already shows the right profile.
+
+Now (src/lib/schema.ts, src/data/clinic.ts): the one `#clinic` / `#dentist`
+entity carries every CONFIRMED spelling as `alternateName` on every
+language (`confirmedDoctorNames()`; the Arabic spelling joins automatically
+once `doctor.ar` is owner-confirmed), and `sameAs` + `hasMap` point at the
+verified profile `GOOGLE_BUSINESS_PROFILE` (Maps CID 475737018590581798,
+/g/11p1b5lmfj — structured data only; the visible Google link stays behind
+the owner's Edit Mode field). English and Arabic home subtitle and about
+intro say "Jadeidi-Makr, Israel". `doctor.en` is owner-confirmed
+("Dr. Khalil Kanani"; reconfirmed by the owner 2026-11-24), so it left `ACK_UNVERIFIED`.
+
+Search Console 2026-10-01: `/he/` indexed (crawled 22:01 IDT, canonical as
+declared); `/` "alternate page with proper canonical"; `/ar/` and `/en/`
+crawled – not indexed (live test: indexable; `/ar/` already requested).
+Owner: confirm the Arabic spelling, add Arabic/English to the profile
+description, list the Facebook page in Edit Mode.
+
 ## Docs organised by type + PRD — 2026-11-24 (branch `docs/organize-by-type`)
 
 - `docs/` is now grouped: `product/` (PRD, content), `engineering/`, `design/`, `legal-security/`, `seo/`, plus the existing `decisions/`, `specs/`, `audits/`, `company/`. Index and tree in `docs/README.md`.

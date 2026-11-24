@@ -16,7 +16,7 @@ a strict build, the built-HTML accessibility audit and Chromium/axe browser
 QA before deploying. Asset checks scan tracked files in CI.
 
 The workflow sets `ASTRO_SITE=https://www.drkhalilkanani.com`, `ASTRO_BASE=/`
-and the existing explicit `ACK_UNVERIFIED=doctor.ar,doctor.en,tagline.ar`
+and the existing explicit `ACK_UNVERIFIED=doctor.ar,tagline.ar`
 allowlist. These three fields remain unconfirmed; acknowledgement does not
 promote them to verified. Any other unacknowledged published fact blocks the
 build. Unconfirmed hours remain hidden. Street 1003 and the map coordinates
