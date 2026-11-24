@@ -1,0 +1,15 @@
+# gitleaks false positives, by fingerprint (commit:file:rule:line).
+#
+# ACCESS_AUD is the Cloudflare Access "Application Audience" tag for
+# admin.drkhalilkanani.com. It is a public identifier, not a credential:
+# Cloudflare Access serves it in the login redirect to anyone who opens the
+# admin URL, and it only names which Access application a JWT must be issued
+# for. Verified 2026-11-24 that the committed value equals the public one.
+# The Worker's real secrets (GITHUB_TOKEN, ALLOWED_EMAILS, RESEND_API_KEY,
+# MAIL_TO) are Cloudflare secrets and were never committed.
+#
+# Each entry is one exact finding. A new commit that changes that line is a new
+# finding and is scanned again; nothing else is exempted.
+e5b2a4db7f7ac661667e6253b82bb1639bf14213:workers/admin/wrangler.toml:generic-api-key:81
+3a77b254928996cd7504930ed409640eb76b923b:workers/admin/wrangler.toml:generic-api-key:43
+3c897faed330b5e730a87c9c36f4d45e19fb9810:workers/admin/wrangler.toml:generic-api-key:34
