@@ -88,6 +88,24 @@ export function relayEndpointFrom(source) {
 }
 
 /**
+ * The run with the median LCP. A single Lighthouse run is noisy: right after a
+ * deploy the CDN copy is cold and one slow fetch can double LCP. Judging the
+ * median of several runs keeps the budget about the site, not one request.
+ * Failed runs (no score) sort as slowest, so all-failed stays failed.
+ *
+ * @param {object[]} runs Lighthouse JSON results for one page
+ * @returns {object} the median run
+ */
+export function medianRun(runs) {
+  const lcp = (r) =>
+    typeof r?.categories?.performance?.score === 'number'
+      ? (r.audits?.['largest-contentful-paint']?.numericValue ?? Infinity)
+      : Infinity;
+  const sorted = [...runs].sort((a, b) => lcp(a) - lcp(b));
+  return sorted[Math.floor((sorted.length - 1) / 2)];
+}
+
+/**
  * @param {string} path
  * @param {{ categories?: object, audits?: object }} lhr Lighthouse JSON result
  * @returns {string[]}

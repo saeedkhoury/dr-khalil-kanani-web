@@ -6,6 +6,11 @@ Current repository state. Not a history — see `CHANGELOG.md` for that.
 
 ---
 
+## Production watch: first run — 2026-11-24
+
+- Smoke ✅. Security ❌ was 3 gitleaks false positives (Cloudflare Access's public `ACCESS_AUD`), exempted by fingerprint in `.gitleaksignore` (#47); re-run ✅.
+- Perf ❌ (alert #46): single Lighthouse runs on `/he/` `/ar/` read LCP 2.6–3.3 s vs 1.1–1.4 s that morning. A local bisection across 2cb29e3 / de51fb0 (motion 14) / 3b0b36f (Astro 7.4) measured identical LCP (±20 ms), so no code regressed; one run right after a deploy (cold CDN copy) is noise. The perf job now warms each page and judges the median of 3 runs.
+
 ## Entity disambiguation — written 2026-10-02, landed 2026-11-24 (replaces PR #24)
 
 - Follow-up 2026-11-24: the `WebSite` node now uses the same confirmed-only names (it listed the unconfirmed Arabic spelling on every language since 2026-09-21).

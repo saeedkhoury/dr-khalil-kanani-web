@@ -19,3 +19,6 @@ playwright-report/
 # Staging for assets awaiting inspection. Never committed; contents are
 # reviewed here, then moved into src/assets/images/ only once approved.
 .incoming-assets/
+
+# written by scripts/ops/prod-check.mjs when a check fails
+ops-problems.md
