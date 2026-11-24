@@ -22,6 +22,9 @@ verified the outstanding clinic facts. That is intentional — see
 | [AGENTS.md](./AGENTS.md) | Engineering rules. Start here. |
 | [CLAUDE.md](./CLAUDE.md) | Claude Code workflow |
 | [HANDOFF.md](./HANDOFF.md) | Actual current state and blockers |
+| [BUILD-STATE.md](./BUILD-STATE.md) | Stage, backlog, decisions, deploy log, risks |
+| [docs/README.md](./docs/README.md) | Index of every document |
+| [docs/company/04-platform.md](./docs/company/04-platform.md) | Environments, secrets map, SLOs, runbook |
 | [docs/](./docs/) | Architecture, i18n, SEO, privacy, security, design system |
 | [docs/decisions/](./docs/decisions/) | Why things are the way they are |
 

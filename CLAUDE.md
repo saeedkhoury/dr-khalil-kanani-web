@@ -8,8 +8,9 @@ file only adds Claude-specific workflow.
 
 1. `AGENTS.md` — rules, especially §3 (the two non-negotiables)
 2. `HANDOFF.md` — what state the repo is actually in
-3. `planning/CURRENT_PLAN.md` — the approved plan
-4. Relevant `docs/`
+3. `BUILD-STATE.md` — stage, backlog, decisions, deploy log (continue with `/pro-build`)
+4. `planning/CURRENT_PLAN.md` — the approved plan
+5. Relevant `docs/` — index in `docs/README.md`
 
 ## Commands
 
@@ -20,6 +21,7 @@ npm run build:preview  # VERIFY_RELAX=1, local preview only, never CI
 npm run verify         # claims + mixed-script linters + astro check
 npm run lint:claims    # Israeli dental advertising regulations check
 npm run lint:scripts   # Cyrillic/Greek homoglyphs in Hebrew/Arabic text
+node scripts/ops/prod-check.mjs smoke   # read-only check of the live site
 ```
 
 ## The three things most likely to go wrong here
@@ -52,3 +54,5 @@ Not worth delegating: component work that shares files.
 ## When you finish
 
 Update `HANDOFF.md`. Add to `CHANGELOG.md` only if the change is notable.
+Tick the item in `BUILD-STATE.md` → Backlog, and add a deploy-log row once it
+is live. Operations (SLOs, alerts, rollback) are in `docs/company/04-platform.md`.

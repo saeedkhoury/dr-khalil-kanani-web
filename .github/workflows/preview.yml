@@ -52,6 +52,34 @@ jobs:
       - name: Unit tests
         run: npm test
 
+  # Secrets and vulnerable dependencies, on every pull request. Runs in parallel
+  # with verify. PRs only: a doctor's save goes straight to main and is never
+  # held up by this. The full-history scan and the "high" audit run weekly in
+  # scheduled-check.yml.
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secret scan (commits in this PR; findings are redacted)
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          GITLEAKS_ENABLE_COMMENTS: 'false'
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'false'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      # Blocks on critical only: five known high advisories in build-time
+      # dependencies are tracked in BUILD-STATE.md (Now) and fixed separately.
+      # Raise this to high once that upgrade has merged.
+      - name: Dependency audit (production dependencies, critical blocks)
+        run: |
+          npm ci --ignore-scripts
+          npm audit --omit=dev --audit-level=critical
+
   build-preview:
     needs: verify
     runs-on: ubuntu-latest
