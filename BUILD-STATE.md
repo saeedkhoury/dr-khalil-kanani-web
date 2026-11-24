@@ -27,15 +27,17 @@ Read first: `AGENTS.md` (rules) → `HANDOFF.md` (state) → this file → `docs
 | 9 | Operate & Grow | baseline review done | 2026-11-24 | docs/company/09-reviews/2026-11-24.md |
 
 ## Decisions
+- 2026-11-24: repository stays **public**: GitHub Pages needs a paid plan for private repos, and free secret scanning/push protection would be lost (owner).
+- 2026-11-24: Git-history remediation closed, not actioned: the photos are published on purpose (owner; PR #41).
+- 2026-11-24: `doctor.en` "Dr. Khalil Kanani" owner-confirmed; leaves `ACK_UNVERIFIED` (PR #42).
+- 2026-11-24: TypeScript 7 skipped until `@astrojs/check` supports it (Dependabot #38 closed).
 - 2026-11-24: `main` deploys straight to production; protection is the blocking gates plus a 30-min read-only watch, not a staging hop (the doctor's Edit Mode saves go to `main`; GitHub Pages hosts one deployment). ADR 0012.
 - 2026-11-24: alerts are GitHub issues opened by `scheduled-check.yml` (no paging service; solo owner).
-- 2026-11-24: PR dependency audit blocks on critical until the upgrade below merges, then on high.
+- 2026-11-24: PR dependency audit blocks on high (raised from critical after the upgrade cleared all advisories).
 - 2026-11-22: Spec Kit + constitution v1.0.0 adopted (PR #32).
 
 ## Backlog
 ### Now
-- [ ] Upgrade build dependencies to clear 5 high + 2 moderate advisories: astro ≥ 7.4.5, sharp ≥ 0.35.5, zod ≥ 4.6.6, plus transitive vite / undici / source-map-js / smol-toml (acceptance: `npm audit --omit=dev` shows 0 high; full CI green; Lighthouse within budget)
-- [ ] Then raise the PR audit gate in `preview.yml` from `critical` to `high`
 ### Next
 - [ ] Fix docs drift: `engineering/DEPLOYMENT.md` and `legal-security/SECURITY.md` still describe a WhatsApp-only form and Supabase; the live form uses the Resend relay (ARCHITECTURE fixed 2026-11-24)
 - [ ] Owner: set `CLOUDFLARE_API_TOKEN` + `ADMIN_PREVIEW=on` so Edit Mode rebuilds itself after saves (level C: owner creates the token)
@@ -47,6 +49,7 @@ Read first: `AGENTS.md` (rules) → `HANDOFF.md` (state) → this file → `docs
 - Clinic and doctor photography; ar/en logo lockups
 - Educational content under the reg. 4 exemption (strongest permitted SEO play)
 ### Done
+- [x] Dependency upgrade: 5 high + 2 moderate advisories → 0 (Dependabot #36's updates, rebuilt on main as this PR); PR audit gate raised to high (2026-11-24)
 - [x] Docs organised by type; PRD written (`docs/product/PRD.md`) (2026-11-24)
 - [x] Company kit + read-only production watch (PR #34, 2026-11-24)
 - [x] Brand logo + `.agents/skills` (PR #33, 2026-11-24)
@@ -74,7 +77,7 @@ Full list with reasons: `docs/company/04-platform.md` → Services.
 | Smoke checks passing (SLO) | 99.5 % / 28 d | — | starts after merge |
 | Mobile Lighthouse perf he / ar / en | ≥ 90 | — | 97 / 100 / 100 |
 | LCP he / ar / en | ≤ 2.5 s | — | 1.4 / 1.1 / 1.3 s |
-| High advisories (prod deps) | 0 | — | 5 |
+| High advisories (prod deps) | 0 | 5 | 0 |
 
 ## Approvals log (level B)
 | Date | Action | Scope | User's words |
@@ -117,7 +120,6 @@ Not used: release = merge to `main` (ADR 0012). Each merge is one deploy-log row
 
 ## Risks and blockers
 - 10 published treatment-work photos: prohibited-advertising risk pending legal review (owner + lawyer; ADR 0010)
-- Shipped unverified fields `doctor.ar`, `doctor.en`, `tagline.ar` (owner to confirm; `deploy.yml` ACK list)
-- Five high advisories in build dependencies (agent; Now item)
+- Shipped unverified fields `doctor.ar`, `tagline.ar` (owner to confirm; `deploy.yml` ACK list)
 - Edit Mode does not auto-rebuild: `ADMIN_PREVIEW` / `CLOUDFLARE_API_TOKEN` unset (owner, level C)
 - Scheduled workflows stop after 60 days without a commit on a public repo (weekly review checks the last run)
