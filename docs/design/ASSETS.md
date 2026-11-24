@@ -22,7 +22,7 @@ which you can write without having seen the file.
 ## What may never be published
 
 The owner's later explicit instruction adds the three individually reviewed
-Instagram work posts documented in [ADR 0009](./decisions/0009-owner-directed-instagram-gallery.md).
+Instagram work posts documented in [ADR 0009](../decisions/0009-owner-directed-instagram-gallery.md).
 That selection is the sole exception to the default exclusion below. It does
 not establish patient consent or legal clearance.
 
@@ -31,7 +31,7 @@ not establish patient consent or legal clearance.
 - Anything with a face, mouth, or intraoral view of a real person
 
 Not with consent. Not cropped. Not anonymised.
-See [ADR 0006](./decisions/0006-no-before-after-gallery.md).
+See [ADR 0006](../decisions/0006-no-before-after-gallery.md).
 
 If you receive such an image: move it to `.private-assets/` (gitignored) and
 tell the owner why it cannot be used.
@@ -87,7 +87,7 @@ Adding to `treatmentWork` requires the owner's explicit, per-image instruction
 are no clinic photographs, the component shows the illustrations with explicit
 AI-art disclosure in all languages. Never use generated art to imply a real
 clinic interior, real patient or treatment result. Current originals and exact
-generation prompts are recorded in [ILLUSTRATIONS.md](./ILLUSTRATIONS.md).
+generation prompts are recorded in [ILLUSTRATIONS.md](ILLUSTRATIONS.md).
 
 ## Filenames
 

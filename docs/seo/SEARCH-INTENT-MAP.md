@@ -1,13 +1,13 @@
 # Search-intent map — 2026-10-01
 
 Which ONE page answers which search, per language. Supersedes the query table
-in `docs/SEO-SEARCH-MAP.md` (2026-09-27), whose rules still apply: one
+in `docs/seo/SEO-SEARCH-MAP.md` (2026-09-27), whose rules still apply: one
 location (Jadeidi-Makr), no neighbouring-town pages, no prices, no
 superlatives, no on-site reviews.
 
 **Evidence codes.** AC = Google autocomplete (`hl` = language, `gl=il`,
 2026-10-01) — what people really type, without volumes. SERP = observed result
-page (`docs/SEO-GEO-BASELINE.md` §7). GSC = Search Console. Keyword volumes are
+page (`docs/seo/SEO-GEO-BASELINE.md` §7). GSC = Search Console. Keyword volumes are
 not available to this project (no Ads account); priority is judged from
 autocomplete presence, the business's services, and what already ranks.
 

@@ -12,7 +12,7 @@ already-built artifact. This site does the opposite on purpose:
   `main`, and `deploy.yml` publishes it. A staging hop would mean every
   content edit waits for a developer to promote it, which defeats the editor.
 - GitHub Pages allows one deployment per repository, so there is no second
-  hosted environment to stage on (docs/DEPLOYMENT.md).
+  hosted environment to stage on (docs/engineering/DEPLOYMENT.md).
 - The site is static: no database, no server state, no migrations. A bad
   deploy is undone by reverting a commit, and the previous build is one
   re-run away.

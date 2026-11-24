@@ -2,7 +2,7 @@
 
 **Status:** draft for owner approval · 2026-11-24 · Track: **Existing project**
 (Client site). Built from what the repository already records
-(`docs/REQUIREMENTS.md`, ADRs, `HANDOFF.md`, live checks). Items marked
+(`docs/product/PRD.md`, ADRs, `HANDOFF.md`, live checks). Items marked
 **OPEN** are not in the repo and must come from the owner; nothing here is
 invented to fill them.
 
@@ -13,7 +13,7 @@ invented to fill them.
   **System** (two Cloudflare Workers: the Edit Mode admin CMS and the
   appointment email relay).
 - **Problem:** the clinic had no meaningful web presence; patients searching
-  in three languages found little or wrong information (REQUIREMENTS → Goal).
+  in three languages found little or wrong information (PRD §1).
 - **Goal (3 months):** **OPEN — needs a number from the owner.** Candidates,
   with today's baseline: Search Console clicks per month (baseline 5 clicks /
   38 impressions over 3 months to 2026-09-28); appointment requests per month
@@ -23,7 +23,7 @@ invented to fill them.
   **Buyer:** the clinic. · **Editor:** the doctor, through Edit Mode.
 - **Core value (v1 must-do):** contact the clinic in one tap on a phone
   (call, WhatsApp, or the request form).
-- **Must-have:** the nine "Must" items in `docs/REQUIREMENTS.md` (trilingual
+- **Must-have:** the nine "Must" items in `docs/product/PRD.md` §4 (trilingual
   RTL/LTR, factual doctor and treatments, easy mobile contact, appointment
   *requests*, WCAG 2.1 AA, Israeli dental advertising rules, Privacy Law,
   fast on mobile, maintainable by one developer).
@@ -63,7 +63,7 @@ invented to fill them.
   (3) five high-severity advisories in build dependencies (fix available).
 - **References:** Apple design language (PR #29); not like the two
   competitor clinic sites studied in discovery (inconsistent phone numbers,
-  wrong map links — docs/ARCHITECTURE.md).
+  wrong map links — docs/engineering/ARCHITECTURE.md).
 - **Assumptions (accepted defaults, change any):** Fable off; main session on
   Sonnet; native spec mode with spec-kit for large features; alerts as GitHub
   issues (no paging).

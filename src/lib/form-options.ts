@@ -12,7 +12,7 @@
  *
  * Treatment options carry non-clinical labels: a field inviting clinical
  * detail would turn an ordinary enquiry into especially-sensitive medical
- * information. See docs/PRIVACY.md.
+ * information. See docs/legal-security/PRIVACY.md.
  */
 
 export const CONTACT_METHODS = ['phone', 'whatsapp'] as const;

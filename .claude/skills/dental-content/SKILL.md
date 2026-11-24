@@ -23,7 +23,7 @@ Component structure, styling, routing, build config — nothing patient-facing.
 ## Inputs
 
 - `AGENTS.md` §3.2 — the prohibition table
-- `docs/CONTENT.md` — verification tiers and what is actually confirmed
+- `docs/product/CONTENT.md` — verification tiers and what is actually confirmed
 - `src/data/clinic.ts` — the `VERIFICATION` manifest
 
 ## Workflow

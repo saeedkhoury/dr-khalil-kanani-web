@@ -7,7 +7,9 @@
 | Framework | **Astro 7.3** | Content site, not an app. Ships zero JS by default, which serves the two hardest constraints: mobile Core Web Vitals and accessibility. Content Collections + Zod make trilingual content a build-time contract. |
 | Styling | **Tailwind 4.3** | Native logical properties (`inline-s-*`/`inline-e-*`) — exactly what RTL needs, no plugin. |
 | Hosting | **GitHub Pages** (static) | Where the site is actually deployed, at www.drkhalilkanani.com. No adapter — the build is plain static output, so what is built is what is served. |
-| Store | **None** | The form hands off to WhatsApp (ADR 0007); the site stores nothing at all. |
+| Store | **None** | The site stores nothing. The form POSTs to the appointment relay Worker, which emails the clinic through Resend; if the relay is unreachable it falls back to the WhatsApp handoff (ADR 0007). |
+| Edit Mode | **Cloudflare Worker + Access** (`workers/admin/`) | The doctor edits the real pages; the Worker commits JSON content to `main` through the GitHub API (ADR 0010, `VISUAL-CMS.md`). |
+| Mail | **Cloudflare Worker + Resend** (`workers/appointment-email/`) | The one piece that sends mail; separate from the static build. |
 | Motion | **motion** (2.3kb) | `framer-motion` renamed to `motion`; the vanilla API avoids pulling React into a zero-JS site. |
 | Fonts | Noto Sans Hebrew / Arabic / Latin | Modular but cross-script harmonised. Self-hosted and subset by Astro's Fonts API. |
 
@@ -36,20 +38,17 @@ removes that whole class of mismatch: `dist/` is the site.
 
 ```
 src/
-  data/        clinic.ts (NAP SoT) · doctor.ts · faq.ts · legal.ts
+  pages/       [locale]/ index · about · contact · faq · treatments/[slug] ·
+               accessibility · privacy · terms · cookies · 404
+  components/  sections/ (Hero, TreatmentsGrid, DoctorIntro, FindTheClinic,
+               StickyActionBar, …) · primitives/
+  data/        clinic.ts (NAP SoT) · *.json (CMS-editable content) · media.ts
   i18n/        config.ts (routing, dir) · ui.ts (all UI strings)
-  lib/         verify.ts (gates) · schema.ts (JSON-LD) · validation.ts (zod)
-               phone.ts (ZERO-DEP — client-safe) · content.ts · delivery.ts
-               rate-limit.ts · env.ts (Workers secrets/bindings)
-  content/     treatments/{he,ar,en}/*.md
-  components/  primitives/ · sections/ · islands/
-  pages/       [locale]/... · api/ · 404
-scripts/       lint-claims.mjs · lint-mixed-scripts.mjs
+  lib/         seo.ts · schema.ts (JSON-LD) · phone.ts (ZERO-DEP) · verify.ts
+workers/       admin/ (Edit Mode) · appointment-email/ (relay)
+scripts/       linters, audits, ops/ (production watch)
+tests/         unit/ (node:test) · e2e/ (Playwright + axe)
 ```
 
 `lib/phone.ts` exists solely so the client form script can validate a phone
 number without importing Zod — that import cost 85KB of browser JS.
-
-`lib/env.ts` exists because Cloudflare Workers secrets and bindings resolve
-through `cloudflare:workers`, not `process.env`. Reading them the wrong way
-failed silently in production while looking correct locally.

@@ -17,7 +17,7 @@ never a ranking: it depends on who searches, where, on what device, and when.
 | Sitemap | Search Console → Sitemaps | Success, 45 discovered, read 2026-09-30 | 2026-10-01 |
 | Business Profile rating / reviews | Google Maps | 5.0 / 2 (see the review-policy note) | 2026-10-01 |
 | Local pack, "רופא שיניים ג'דיידה מכר" | observed (manager's browser) | in the 3-pack | 2026-10-01 |
-| Citations live with identical facts | `docs/LOCAL-CITATIONS.md` | 2 (Business Profile, Instagram) | 2026-10-01 |
+| Citations live with identical facts | `docs/seo/LOCAL-CITATIONS.md` | 2 (Business Profile, Instagram) | 2026-10-01 |
 | Lighthouse mobile (perf, home HE/AR/EN) | local Lighthouse | 96 / 99 / 98; LCP 2.4 / 1.8 / 1.3 s | 2026-10-01 |
 | Live crawl gate | `node scripts/audit-seo.mjs https://www.drkhalilkanani.com` | 46 pages, 0 errors, 1 warning | 2026-10-01 |
 | IndexNow | deploy log, job `indexnow` | last submission HTTP 200 | 2026-09-30 |

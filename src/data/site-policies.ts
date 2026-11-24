@@ -8,9 +8,9 @@
  *    accessibility panel's two localStorage keys (src/lib/a11y-prefs.ts),
  *    which never leave the device. Israel has no ePrivacy-style cookie law,
  *    and with no cookies or tracking there is nothing to ask consent for —
- *    so there is deliberately no banner (docs/PRIVACY.md).
+ *    so there is deliberately no banner (docs/legal-security/PRIVACY.md).
  *  - Google content appears only after an explicit click (MapFacade, ADR 0008).
- *  - Fonts and images are served from the site itself (docs/FONTS.md).
+ *  - Fonts and images are served from the site itself (docs/engineering/FONTS.md).
  *
  * If analytics, an embed or any cookie is ever added, the cookie policy must
  * change first — and a consent step may then be needed.

@@ -15,8 +15,8 @@ belongs in [AGENTS.md](../../AGENTS.md), not in a skill.
 | Not built | Why |
 |---|---|
 | `frontend` | That is AGENTS.md §5 |
-| `testing` | `docs/TESTING.md` + `npm run verify` cover it |
-| `seo` | `docs/SEO.md` is reference, not a workflow |
+| `testing` | `docs/engineering/TESTING.md` + `npm run verify` cover it |
+| `seo` | `docs/seo/SEO.md` is reference, not a workflow |
 | `security-review` | The global `security-reviewer` agent covers it |
 | `forms`, `release`, `accessibility` | Add when a phase actually needs them |
 

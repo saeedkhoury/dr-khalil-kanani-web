@@ -1,7 +1,7 @@
 # ADR 0007 — Appointment requests hand off to WhatsApp
 
 **Status:** Accepted · 2026-09-21
-**Supersedes:** [ADR 0003](./0003-appointment-request-delivery.md)
+**Supersedes:** [ADR 0003](0003-appointment-request-delivery.md)
 
 ## Context
 

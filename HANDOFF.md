@@ -6,6 +6,13 @@ Current repository state. Not a history — see `CHANGELOG.md` for that.
 
 ---
 
+## Docs organised by type + PRD — 2026-11-24 (branch `docs/organize-by-type`)
+
+- `docs/` is now grouped: `product/` (PRD, content), `engineering/`, `design/`, `legal-security/`, `seo/`, plus the existing `decisions/`, `specs/`, `audits/`, `company/`. Index and tree in `docs/README.md`.
+- **`docs/product/PRD.md`** replaces `REQUIREMENTS.md` (moved with history; the must / must-not rules are carried over unchanged) and adds goals and metrics, users, pages and features, key flows and how the site is built.
+- All 23 moves used `git mv`; every reference across code comments, scripts, workflows, skills and docs was rewritten (48 files) and a link check finds none broken. Code changes are comment and message strings only.
+- `engineering/ARCHITECTURE.md` corrected: the form uses the relay (not WhatsApp-only), the Workers are listed, the directory map matches the tree, the dead `lib/env.ts` note is gone. DEPLOYMENT / SECURITY drift remains a backlog item.
+
 ## Company kit + DevOps watch — 2026-11-24 (merged, PR #34)
 
 - **Company kit (pro-build, Existing project track):** `BUILD-STATE.md` (stage, backlog, decisions, deploy log D-001–D-004, risks), `docs/README.md` (index, maps kit roles to existing docs), `docs/company/00-brief.md` (draft; owner must give the 3-month goal number and budget), `04-platform.md` (environments, secrets map by name, SLOs, watch layers, runbook), `09-reviews/2026-11-24.md` (baseline).
@@ -138,9 +145,9 @@ gate fails if a page's `og:image` is off-host, if `og:image:secure_url` or
 
 ## SEO + GEO project — 2026-10-01
 
-Research: `docs/SEO-GEO-BASELINE.md` (measured starting point),
-`docs/SEARCH-INTENT-MAP.md` (one page per query, HE/AR/EN evidence),
-`docs/LOCAL-CITATIONS.md`, `docs/SEO-GEO-MONITORING.md` (what to re-measure,
+Research: `docs/seo/SEO-GEO-BASELINE.md` (measured starting point),
+`docs/seo/SEARCH-INTENT-MAP.md` (one page per query, HE/AR/EN evidence),
+`docs/seo/LOCAL-CITATIONS.md`, `docs/seo/SEO-GEO-MONITORING.md` (what to re-measure,
 monthly). First release PR #14: titles in searched words, generated treatments
 description, related-treatment links, ProfilePage. The biggest remaining
 levers are owner facts and listings, not code: one phone number, published
@@ -229,8 +236,8 @@ uses it.
 - **SEO foundation** (PR #6, merged and live 2026-09-27): robots.txt, canonical
   sitemap, JSON-LD on the real origin (it named `example.invalid` before),
   og:image, localized titles with the town, logo, IndexNow on deploy, and a
-  deploy-blocking SEO crawl (`npm run lint:seo`). See docs/SEO-RUNBOOK.md,
-  docs/SEO-SEARCH-MAP.md, docs/SEO-BASELINE.md, ADR 0011.
+  deploy-blocking SEO crawl (`npm run lint:seo`). See docs/seo/SEO-RUNBOOK.md,
+  docs/seo/SEO-SEARCH-MAP.md, docs/seo/SEO-BASELINE.md, ADR 0011.
 - **Search Console:** Domain property verified by a DNS TXT record on the
   Cloudflare zone (do not remove it); sitemap submitted and read. Google
   Business Profile "ד״ר חליל כנעאני" is verified; public visibility not yet
@@ -297,7 +304,7 @@ or route. With explicit owner approval, its Git connection was disconnected on
 GitHub Pages workflow. Historical failed checks remain historical; the Worker
 was not deleted, and DNS and clinic verification were not changed.
 
-### ⚠️ Open safety item — read `docs/GIT-HISTORY-REMEDIATION.md`
+### ⚠️ Open safety item — read `docs/legal-security/GIT-HISTORY-REMEDIATION.md`
 
 Thirteen patient before/after photographs were committed to this **public**
 repository on 2026-09-21 in `7cd7ea5`. They were removed from the tree in
@@ -307,7 +314,7 @@ does not resolve the historical exposure of the remaining files.
 
 Nothing irreversible has been done about this. The recommendation, the risks of
 each option, and the order to do them in are in
-[docs/GIT-HISTORY-REMEDIATION.md](docs/GIT-HISTORY-REMEDIATION.md). It needs the
+[docs/legal-security/GIT-HISTORY-REMEDIATION.md](docs/legal-security/GIT-HISTORY-REMEDIATION.md). It needs the
 owner's decision, and probably a lawyer's.
 
 ### Branch `feat/admin-cms` — local audit complete, unmerged
@@ -327,7 +334,7 @@ deployment status, still pending real-token verification.
 
 Commit `3943e50` vendors the exact four Noto WOFF2 payloads from the accepted
 public baseline and uses Astro's local font provider. [Font provenance and
-licenses](docs/FONTS.md) records the upstream CDN responses, byte hashes,
+licenses](docs/engineering/FONTS.md) records the upstream CDN responses, byte hashes,
 and bundled SIL OFL 1.1 licenses. A cache-cleared production build passed
 with outbound network denied except localhost, which Astro needs internally.
 
@@ -390,7 +397,7 @@ remain excluded from public Tailwind scanning.
 
 `admin.drkhalilkanani.com` is now **the website with Edit Mode on**, not a
 dashboard. Same Astro components, same 47 pages; a pencil appears beside each
-editable section. See [docs/VISUAL-CMS.md](docs/VISUAL-CMS.md).
+editable section. See [docs/engineering/VISUAL-CMS.md](docs/engineering/VISUAL-CMS.md).
 
 This supersedes the earlier "hours and gallery only" design and ADR 0004's
 "no CMS" position.
@@ -555,7 +562,7 @@ reads staged registrations, fails on Git errors and disallows CI bypass.
 VoiceOver, physical iPhone/Android app handoff, outdoor legibility, native
 language review, on-site arrival at the supplied pin and live rating confirmation remain unperformed.
 Screenshot review is not a screen-reader or real-device pass. No approved
-visual regression baseline exists. See [docs/QA-CHECKLIST.md](docs/QA-CHECKLIST.md)
+visual regression baseline exists. See [docs/engineering/QA-CHECKLIST.md](docs/engineering/QA-CHECKLIST.md)
 for the remaining human checks.
 
 ## Outstanding owner verification
@@ -583,7 +590,7 @@ Also blocking, but not build-enforced:
   exists, `clinic.googleRating` copied from the live profile. Reviews live on
   Google by legal necessity (ADR 0005); this is the clinic's only review surface.
 - **Clinic photography** — 9–12 images (exterior, reception, rooms, equipment)
-  plus a doctor portrait and one hero landscape. See `docs/ASSETS.md`.
+  plus a doctor portrait and one hero landscape. See `docs/design/ASSETS.md`.
   These are still distinct from the three treatment posts selected under ADR 0009.
 
 ## Known gaps (not blockers)
@@ -596,9 +603,9 @@ Also blocking, but not build-enforced:
 
 ## Recommended next action
 
-1. Read `docs/GIT-HISTORY-REMEDIATION.md` and decide. This is time-sensitive in
+1. Read `docs/legal-security/GIT-HISTORY-REMEDIATION.md` and decide. This is time-sensitive in
    a way the rest is not.
 2. Use the latest `Deploy to Production` run for deployment status. The obsolete
    Cloudflare Git connection has been disconnected with owner approval.
-3. Complete the remaining human checks in `docs/QA-CHECKLIST.md`.
+3. Complete the remaining human checks in `docs/engineering/QA-CHECKLIST.md`.
 4. Send the owner the verification list above. Everything else waits on it.

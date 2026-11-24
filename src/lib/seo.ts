@@ -1,5 +1,5 @@
 /**
- * Page titles for search results — developer-controlled (docs/SEO-SEARCH-MAP.md).
+ * Page titles for search results — developer-controlled (docs/seo/SEO-SEARCH-MAP.md).
  *
  * The doctor edits visible headings in Edit Mode; the <title> patterns live
  * here so a content edit can never empty a title or drop the clinic's town
@@ -37,7 +37,7 @@ export const CONTACT_SUBJECT: Record<Locale, string> = {
 /**
  * The profession, in the words people type: "רופא שיניים ג'דיידה מכר" and
  * "دكتور/طبيب اسنان جديده المكر" are what local searches ask for
- * (docs/SEARCH-INTENT-MAP.md, 2026-10-01). The clinic's tagline stays on the
+ * (docs/seo/SEARCH-INTENT-MAP.md, 2026-10-01). The clinic's tagline stays on the
  * page; the title answers the search.
  */
 const PROFESSION: Record<Locale, string> = {

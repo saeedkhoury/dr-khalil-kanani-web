@@ -56,7 +56,7 @@ export type MediaCategory =
  * expected. The guarantee is the type system's, not a reviewer's memory.
  */
 export interface MediaAsset<C extends MediaCategory = MediaCategory> {
-  /** Filename inside src/assets/images/. See docs/ASSETS.md for the convention. */
+  /** Filename inside src/assets/images/. See docs/design/ASSETS.md for the convention. */
   file: string;
   category: C;
   /**

@@ -1,7 +1,7 @@
 # Phase 1 — data model and safe content foundation
 
 > **PROPOSAL ONLY. Nothing implemented.**
-> Parent plan: [`2026-09-22-admin-cms-plan.md`](./2026-09-22-admin-cms-plan.md)
+> Parent plan: [`2026-09-22-admin-cms-plan.md`](2026-09-22-admin-cms-plan.md)
 
 **Objective:** move CMS-editable opening hours and clinic photography into
 structured JSON, **with zero intentional change to the public website**, while
@@ -36,7 +36,7 @@ touch two files.
 | `tests/unit/assets.test.ts` | Add the six regression cases | Acceptance criterion |
 | `tests/unit/form.test.ts` | Media-manifest assertions follow the moved data | They import from `media.ts`, which still re-exports |
 | `tests/unit/clinic.test.ts` | Add derived-verification assertions | §F |
-| `docs/ASSETS.md` | Document the two sources and the lifecycle | The guard's instructions currently name only `media.ts` |
+| `docs/design/ASSETS.md` | Document the two sources and the lifecycle | The guard's instructions currently name only `media.ts` |
 
 ### DELETE
 
@@ -460,7 +460,7 @@ leaving the repository green.
 | 2 | `feat(guard): read registrations from both sources` | `check-assets.mjs` + cases A–F | **Before the JSON exists.** The guard handles an absent file as an empty list, so it is ready and tested *before* anything depends on it. Inverting this order leaves a window where the guard covers less. |
 | 3 | `refactor(data): move opening hours to JSON` | `hours.json`, `clinic.ts`, derived verification, `data-schema.ts` + tests | Depends on nothing above; smallest independently verifiable migration. |
 | 4 | `refactor(data): move clinic photography to JSON` | `clinic-photography.json`, `media.ts`, schema + tests | Depends on 1 (types) and 2 (guard). |
-| 5 | `chore: QA fixtures and asset documentation` | `serve-qa-fixtures.mjs`, `docs/ASSETS.md` | Last because the fixture server must target the final shape. |
+| 5 | `chore: QA fixtures and asset documentation` | `serve-qa-fixtures.mjs`, `docs/design/ASSETS.md` | Last because the fixture server must target the final shape. |
 
 The equivalence check (§H) runs against the **whole series**, since
 intermediate commits are not deployed.

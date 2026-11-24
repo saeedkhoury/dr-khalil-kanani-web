@@ -1,5 +1,5 @@
 /**
- * /robots.txt — a deliberate policy, not a default (docs/SEO-RUNBOOK.md).
+ * /robots.txt — a deliberate policy, not a default (docs/seo/SEO-RUNBOOK.md).
  *
  * The public site is meant to be found: every crawler may fetch every page,
  * including search crawlers for AI answers (OAI-SearchBot, and PerplexityBot,

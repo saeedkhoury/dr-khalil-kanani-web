@@ -88,7 +88,7 @@ export const treatmentWork: TreatmentWorkPhotograph[] = treatmentWorkRecords
 
 /** Original AI-generated artwork, visually reviewed on 2026-09-21.
  * Inanimate objects only; never presented as clinic or patient photography.
- * Generation prompts and review record: docs/ILLUSTRATIONS.md.
+ * Generation prompts and review record: docs/design/ILLUSTRATIONS.md.
  */
 export const illustrations: Illustration[] = [
   {
@@ -137,7 +137,7 @@ export const illustrations: Illustration[] = [
  * rather than borrowing treatment-result images to fill the space: a result
  * photograph cannot tell a patient what the waiting room looks like.
  *
- * What is needed, and at what resolution, is in docs/ASSETS.md.
+ * What is needed, and at what resolution, is in docs/design/ASSETS.md.
  * OWNER ACTION REQUIRED.
  */
 export const clinicPhotographyRecords: ClinicPhotographRecord[] =
