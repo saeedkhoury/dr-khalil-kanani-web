@@ -2,11 +2,20 @@
 
 Current repository state. Not a history — see `CHANGELOG.md` for that.
 
-**Last updated:** 2026-11-18
+**Last updated:** 2026-11-24
 
 ---
 
-## Spec Kit + constitution — 2026-11-18 (branch `feat/og-logo-speckit`, PR #31)
+## Company kit + DevOps watch — 2026-11-24 (branch `ops/company-kit-devops`)
+
+- **Company kit (pro-build, Existing project track):** `BUILD-STATE.md` (stage, backlog, decisions, deploy log D-001–D-004, risks), `docs/README.md` (index, maps kit roles to existing docs), `docs/company/00-brief.md` (draft; owner must give the 3-month goal number and budget), `04-platform.md` (environments, secrets map by name, SLOs, watch layers, runbook), `09-reviews/2026-11-24.md` (baseline).
+- **ADR 0012:** `main` deploys straight to production on purpose (Edit Mode saves; one Pages deployment). Protection = blocking gates + watch.
+- **Production watch** `.github/workflows/scheduled-check.yml`: smoke every 30 min (pages, lang/dir, `build.txt` = tip of `main`, relay preflight), Lighthouse daily (perf ≥ 90, LCP ≤ 2.5 s, CLS ≤ 0.1), gitleaks full history + `npm audit` weekly. Read-only; opens one issue per failing check (`scripts/ops/alert-issue.sh`). Logic in `scripts/ops/checks.mjs`, 17 unit tests, never pins content.
+- **PR gate:** `preview.yml` gains a `security` job (gitleaks on the PR, `npm audit` blocking on critical). Dependabot weekly grouped PRs; PR template with the AGENTS.md checks.
+- **Findings:** 5 high advisories in build deps (fix available; Now item). `ADMIN_PREVIEW` and `CLOUDFLARE_API_TOKEN` are unset, so `admin-preview.yml` has skipped on every run. ARCHITECTURE / DEPLOYMENT / SECURITY docs still describe a WhatsApp-only form.
+- **Baseline:** Lighthouse mobile he/ar/en 97/100/100, LCP 1.4/1.1/1.3 s. DORA 28 d: 4 deploys, ~4 min lead time, 0 % failure.
+
+## Spec Kit + constitution — 2026-11-18 (merged, PR #32)
 
 - Spec Kit 1.4.2 for Claude: `.specify/` and the `/speckit-*` skills in `.claude/skills/`. Workflow: constitution → specify → (clarify) → plan → tasks → implement.
 - `.specify/memory/constitution.md` v1.0.0: simple code and small files (new files ≤400 lines, none over 800, an over-400 file must not grow), a test for every feature (expectations from data, never pinned content), mobile-first at 375px, `npm run dev` runs everything locally with no env or secrets. It defers to `AGENTS.md` for the legal rules.
