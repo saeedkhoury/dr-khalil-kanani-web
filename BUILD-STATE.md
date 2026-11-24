@@ -36,7 +36,6 @@ Read first: `AGENTS.md` (rules) → `HANDOFF.md` (state) → this file → `docs
 ### Now
 - [ ] Upgrade build dependencies to clear 5 high + 2 moderate advisories: astro ≥ 7.4.5, sharp ≥ 0.35.5, zod ≥ 4.6.6, plus transitive vite / undici / source-map-js / smol-toml (acceptance: `npm audit --omit=dev` shows 0 high; full CI green; Lighthouse within budget)
 - [ ] Then raise the PR audit gate in `preview.yml` from `critical` to `high`
-- [ ] Merge PR #33 (brand logo + `.agents/skills`)
 ### Next
 - [ ] Fix docs drift: ARCHITECTURE / DEPLOYMENT / SECURITY still describe a WhatsApp-only form and Supabase; the live form uses the Resend relay (acceptance: each doc matches the code and live endpoints)
 - [ ] Owner: set `CLOUDFLARE_API_TOKEN` + `ADMIN_PREVIEW=on` so Edit Mode rebuilds itself after saves (level C: owner creates the token)
@@ -48,6 +47,8 @@ Read first: `AGENTS.md` (rules) → `HANDOFF.md` (state) → this file → `docs
 - Clinic and doctor photography; ar/en logo lockups
 - Educational content under the reg. 4 exemption (strongest permitted SEO play)
 ### Done
+- [x] Company kit + read-only production watch (PR #34, 2026-11-24)
+- [x] Brand logo + `.agents/skills` (PR #33, 2026-11-24)
 - [x] Spec Kit + constitution (PR #32, 2026-11-22)
 - [x] Legal pages and accurate privacy notice (PR #30, 2026-11-08)
 - [x] Apple design language, Liquid Glass header, new footer (PR #29, 2026-11-08)
@@ -79,6 +80,7 @@ Full list with reasons: `docs/company/04-platform.md` → Services.
 |---|---|---|---|
 | 2026-11-22 | Merge PR #32 | merge commit 56e2380 | "merge #32 and pull" |
 | 2026-11-23 | Delete remote branch `feat/og-logo-speckit` | tip 38de451 | "delete the old remote branch" |
+| 2026-11-24 | Merge PR #34, then PR #33 | merge ba227e2 (#34); #33 after conflict resolution | "merge #34 and #33 and pull" |
 
 ## Release candidate (stage 7)
 Not used: release = merge to `main` (ADR 0012). Each merge is one deploy-log row.
