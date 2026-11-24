@@ -72,13 +72,12 @@ jobs:
         with:
           node-version: 22
           cache: 'npm'
-      # Blocks on critical only: five known high advisories in build-time
-      # dependencies are tracked in BUILD-STATE.md (Now) and fixed separately.
-      # Raise this to high once that upgrade has merged.
-      - name: Dependency audit (production dependencies, critical blocks)
+      # Blocks on high and critical. Production dependencies were at zero
+      # advisories after the 2026-11-24 upgrade (Dependabot #36).
+      - name: Dependency audit (production dependencies, high blocks)
         run: |
           npm ci --ignore-scripts
-          npm audit --omit=dev --audit-level=critical
+          npm audit --omit=dev --audit-level=high
 
   build-preview:
     needs: verify
