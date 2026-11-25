@@ -192,8 +192,8 @@ const EMPTY_NOTE = {
                   alt={asset.alt[locale]}
                   widths={[400, 800, 1200]}
                   sizes={asset.feature ? '(min-width: 1024px) 66vw, 100vw' : '(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw'}
-                  loading={i < 3 ? 'eager' : 'lazy'}
-                  decoding={i < 3 ? 'sync' : 'async'}
+                  loading="lazy"
+                  decoding="async"
                   style={workGallery ? `aspect-ratio:${asset.width} / ${asset.height}` : clinicGallery ? frameStyle(asset.frame) : undefined}
                   class:list={[
                     'transition-opacity duration-[var(--dur-base)] group-hover:opacity-90',
