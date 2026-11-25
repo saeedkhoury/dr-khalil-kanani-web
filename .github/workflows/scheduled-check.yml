@@ -6,7 +6,7 @@ name: Production watch
 #   smoke     every 30 min  three locale home pages, robots, sitemap, lang/dir,
 #                           and that production serves the tip of main (a
 #                           doctor's save that never went live is caught here)
-#   perf      daily         mobile Lighthouse budget on /he/ /ar/ /en/
+#   perf      daily         mobile Lighthouse budget on /he/ /ar/ /en/ (median of 3)
 #   security  weekly        gitleaks over the full git history + npm audit
 #
 # On failure it opens ONE issue per check (or comments on the open one).
@@ -71,14 +71,19 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: 22
-      - name: Lighthouse (mobile) on the three home pages
+      # Warm each page first (a deploy leaves the CDN copy cold), then run 3
+      # times; prod-check judges the median run, so one slow fetch is not an alert.
+      - name: Lighthouse (mobile) on the three home pages, 3 runs each
         run: |
           mkdir -p lh
           for l in he ar en; do
-            npx -y lighthouse@12.2.1 "https://www.drkhalilkanani.com/$l/" \
-              --quiet --only-categories=performance \
-              --chrome-flags="--headless=new --no-sandbox" \
-              --output=json --output-path="lh/$l.json" || echo "lighthouse failed for $l"
+            curl -s -o /dev/null "https://www.drkhalilkanani.com/$l/"
+            for i in 1 2 3; do
+              npx -y lighthouse@12.2.1 "https://www.drkhalilkanani.com/$l/" \
+                --quiet --only-categories=performance \
+                --chrome-flags="--headless=new --no-sandbox" \
+                --output=json --output-path="lh/$l-$i.json" || echo "lighthouse run $i failed for $l"
+            done
           done
       - name: Check the performance budget
         run: node scripts/ops/prod-check.mjs perf lh

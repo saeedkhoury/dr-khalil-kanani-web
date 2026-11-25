@@ -77,7 +77,7 @@ under 1 hour (revert + ~5 min deploy).
 |---|---|---|---|
 | Site is up and correct | share of 30-min smoke checks that pass (`scheduled-check.yml` smoke) | 99.5 % | 1,344 checks/28 d → **6 failed checks** (~3 h) |
 | Edits go live | share of `main` commits live within 45 min (smoke build check) | 98 % | 1 in 50 deploys |
-| Fast on mobile | share of daily Lighthouse runs within budget on all three homes (perf ≥ 90, LCP ≤ 2.5 s, CLS ≤ 0.1) | 95 % | 1 day in 28 |
+| Fast on mobile | share of days the median of 3 Lighthouse runs (after a warm-up request) is within budget on all three homes (perf ≥ 90, LCP ≤ 2.5 s, CLS ≤ 0.1) | 95 % | 1 day in 28 |
 
 Missing runs are **unknown coverage**, never counted as good. When a budget is
 spent, the next cycle is reliability work (the owner decides in the weekly

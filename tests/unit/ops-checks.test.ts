@@ -19,6 +19,7 @@ import {
   evaluateLighthouse,
   evaluateRelay,
   relayEndpointFrom,
+  medianRun,
 } from '../../scripts/ops/checks.mjs';
 
 const html = (lang: string, dir: string) =>
@@ -129,5 +130,34 @@ describe('performance budget', () => {
     const problems = evaluateLighthouse('/ar/', { categories: { performance: { score: null } }, audits: {} });
     assert.equal(problems.length, 1);
     assert.match(problems[0], /no performance score/);
+  });
+});
+
+describe('median of several Lighthouse runs', () => {
+  type Run = {
+    categories: { performance: { score: number | null } };
+    audits: { 'largest-contentful-paint'?: { numericValue: number } };
+  };
+  const run = (lcp: number, score = 0.95): Run => ({
+    categories: { performance: { score } },
+    audits: { 'largest-contentful-paint': { numericValue: lcp } },
+  });
+
+  test('picks the run with the median LCP, so one cold fetch cannot raise an alert', () => {
+    assert.equal(medianRun([run(1300), run(3300), run(1400)]).audits['largest-contentful-paint']?.numericValue, 1400);
+  });
+
+  test('a real slowdown in most runs still surfaces', () => {
+    assert.equal(medianRun([run(3100), run(1200), run(3300)]).audits['largest-contentful-paint']?.numericValue, 3100);
+  });
+
+  test('failed runs (no score) count as slowest, and all-failed stays failed', () => {
+    const failed: Run = { categories: { performance: { score: null } }, audits: {} };
+    assert.equal(medianRun([failed, run(1500), run(1600)]).audits['largest-contentful-paint']?.numericValue, 1600);
+    assert.equal(medianRun([failed, failed, failed]).categories.performance.score, null);
+  });
+
+  test('a single run is returned as is', () => {
+    assert.equal(medianRun([run(2000)]).audits['largest-contentful-paint']?.numericValue, 2000);
   });
 });

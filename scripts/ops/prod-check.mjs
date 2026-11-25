@@ -24,6 +24,7 @@ import {
   evaluateLighthouse,
   evaluateRelay,
   relayEndpointFrom,
+  medianRun,
 } from './checks.mjs';
 
 const ORIGIN = process.env.ORIGIN || 'https://www.drkhalilkanani.com';
@@ -94,17 +95,25 @@ async function checkRelay(problems) {
 }
 
 async function perf(dir) {
+  // Files are <locale>.json or <locale>-<run>.json; runs of one page are
+  // judged by their median (see medianRun).
   const files = (await readdir(dir)).filter((f) => f.endsWith('.json')).sort();
-  const rows = [];
-  const problems = [];
+  const pages = new Map();
   for (const file of files) {
-    const path = `/${file.replace(/\.json$/, '')}/`;
+    const page = file.replace(/(-\d+)?\.json$/, '');
     let lhr = {};
     try {
       lhr = JSON.parse(await readFile(join(dir, file), 'utf8'));
     } catch {
-      // An unreadable report is reported below as "no performance score".
+      // An unreadable report counts as a failed run.
     }
+    pages.set(page, [...(pages.get(page) ?? []), lhr]);
+  }
+  const rows = [];
+  const problems = [];
+  for (const [page, runs] of pages) {
+    const path = `/${page}/`;
+    const lhr = medianRun(runs);
     problems.push(...evaluateLighthouse(path, lhr));
     const score = lhr.categories?.performance?.score;
     const lcp = lhr.audits?.['largest-contentful-paint']?.numericValue;
@@ -115,7 +124,11 @@ async function perf(dir) {
     );
   }
   if (files.length === 0) problems.push(`no Lighthouse reports found in ${dir}`);
-  return report('Mobile performance budget', ['| Page | Perf | LCP | CLS |', '|---|---|---|---|', ...rows], problems);
+  return report(
+    'Mobile performance budget (median of runs)',
+    ['| Page | Perf | LCP | CLS |', '|---|---|---|---|', ...rows],
+    problems,
+  );
 }
 
 async function report(title, lines, problems) {
