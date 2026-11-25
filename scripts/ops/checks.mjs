@@ -93,8 +93,9 @@ export function relayEndpointFrom(source) {
  * median of several runs keeps the budget about the site, not one request.
  * Failed runs (no score) sort as slowest, so all-failed stays failed.
  *
- * @param {object[]} runs Lighthouse JSON results for one page
- * @returns {object} the median run
+ * @template T
+ * @param {T[]} runs Lighthouse JSON results for one page
+ * @returns {T} the median run
  */
 export function medianRun(runs) {
   const lcp = (r) =>
