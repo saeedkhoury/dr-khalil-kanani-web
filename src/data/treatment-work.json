@@ -267,5 +267,24 @@
       "ar": "خلع سن",
       "en": "extracted Tooth"
     }
+  },
+  {
+    "id": "work-04",
+    "file": "work-04.jpg",
+    "category": "treatment-work",
+    "width": 1290,
+    "height": 1280,
+    "status": "published",
+    "provenance": "owner-supplied",
+    "alt": {
+      "he": "פרסום של המרפאה עם שתי תמונות של השיניים והחניכיים, מסומנות לפני ואחרי",
+      "ar": "منشور للعيادة يعرض صورتين للأسنان واللثة، موسومتين بقبل وبعد",
+      "en": "Clinic post with two photographs of the teeth and gums, labelled before and after"
+    },
+    "caption": {
+      "he": "ניקוי אבנית",
+      "ar": "تنظيف الجير",
+      "en": "Dental cleaning"
+    }
   }
 ]
