@@ -103,7 +103,7 @@
     "category": "treatment-work",
     "width": 1254,
     "height": 1254,
-    "status": "published",
+    "status": "unpublished",
     "provenance": "owner-supplied",
     "alt": {
       "he": "פרסום של המרפאה עם שתי תמונות של השיניים והחניכיים, מסומנות לפני ואחרי",
@@ -179,6 +179,25 @@
     "category": "treatment-work",
     "width": 900,
     "height": 1600,
+    "status": "published",
+    "provenance": "owner-supplied",
+    "alt": {
+      "he": "פרסום של המרפאה עם שתי תמונות של השיניים הקדמיות, מסומנות לפני ואחרי",
+      "ar": "منشور للعيادة يعرض صورتين للأسنان الأمامية، موسومتين بقبل وبعد",
+      "en": "Clinic post with two photographs of the front teeth, labelled before and after"
+    },
+    "caption": {
+      "he": "סתימות",
+      "ar": "حشوات تجميلية",
+      "en": "Fillings"
+    }
+  },
+  {
+    "id": "work-01",
+    "file": "work-01.jpg",
+    "category": "treatment-work",
+    "width": 640,
+    "height": 1138,
     "status": "published",
     "provenance": "owner-supplied",
     "alt": {
