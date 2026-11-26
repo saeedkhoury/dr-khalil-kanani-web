@@ -248,5 +248,24 @@
       "ar": "خلع سن",
       "en": "Tooth extraction"
     }
+  },
+  {
+    "id": "work-03",
+    "file": "work-03.jpg",
+    "category": "treatment-work",
+    "width": 1290,
+    "height": 2261,
+    "status": "published",
+    "provenance": "owner-supplied",
+    "alt": {
+      "he": "פרסום של המרפאה ובו תצלום של שן שנעקרה.",
+      "ar": "منشور للعيادة يعرض صورة لسن مخلوع",
+      "en": "Clinic post showing a photograph of an extracted tooth."
+    },
+    "caption": {
+      "he": "עקירות",
+      "ar": "خلع سن",
+      "en": "extracted Tooth"
+    }
   }
 ]
